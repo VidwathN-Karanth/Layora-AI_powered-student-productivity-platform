@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { 
   Settings, Key, Eye, EyeOff, Check, Sparkles, 
-  User, Bell, Calendar, ShieldCheck, RefreshCw 
+  User, Bell, Calendar, ShieldCheck, RefreshCw,
+  AlertTriangle, Trash2
 } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -62,6 +63,13 @@ export default function SettingsPage() {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
     }, 1000);
+  };
+
+  const handleSystemReset = () => {
+    if (confirm("Are you absolutely sure you want to erase all registration and application data? This action cannot be undone.")) {
+      store.resetStore();
+      window.location.href = '/login';
+    }
   };
 
   const themeAccents = [
@@ -330,6 +338,27 @@ export default function SettingsPage() {
                 </button>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* --- PANEL 5: DANGER ZONE (SYSTEM RESET) --- */}
+        <div className="glass-card rounded-2xl p-5 space-y-4 border border-rose-500/20 bg-rose-950/5">
+          <div className="flex items-center gap-2.5 border-b border-white/5 pb-2">
+            <AlertTriangle className="w-4 h-4 text-rose-500" />
+            <h3 className="text-xs font-mono font-bold tracking-wider text-rose-500 uppercase">Danger Zone: Data Erasure</h3>
+          </div>
+
+          <div className="space-y-4">
+            <p className="text-[10px] text-white/50 font-mono leading-relaxed">
+              Permanently clear your student registration details, timetable rhythm, tasks, and custom AI configurations. All local caches will be wiped. This action is irreversible.
+            </p>
+
+            <button
+              onClick={handleSystemReset}
+              className="w-full bg-rose-600/10 hover:bg-rose-600 border border-rose-500/20 hover:border-rose-500 text-rose-300 hover:text-white text-xs font-mono font-bold py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center gap-2 active:scale-[0.98]"
+            >
+              <Trash2 className="w-4 h-4" /> Erase All Registration & Store Data
+            </button>
           </div>
         </div>
       </div>

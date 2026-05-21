@@ -111,6 +111,7 @@ interface AppState {
   chatHistory: ChatMessage[];
   addChatMessage: (role: 'user' | 'assistant', content: string) => void;
   clearChat: () => void;
+  resetStore: () => void;
 }
 
 export const useStore = create<AppState>()(
@@ -359,7 +360,58 @@ export const useStore = create<AppState>()(
         chatHistory: [
           { id: 'msg-welcome', role: 'assistant', content: 'Chat history cleared. What study goals do we have now?', timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
         ]
-      })
+      }),
+      resetStore: () => {
+        if (typeof window !== 'undefined') {
+          window.localStorage.removeItem('layora-productivity-store');
+        }
+        set({
+          user: null,
+          isAuthenticated: false,
+          subjects: [
+            { id: 'sub-math', name: 'Advanced Calculus', code: 'MATH201', credits: 4, difficulty: 'Hard', priority: 'High' },
+            { id: 'sub-cs', name: 'Data Structures & Algorithms', code: 'CS202', credits: 4, difficulty: 'Hard', priority: 'High' },
+            { id: 'sub-phy', name: 'Quantum Physics', code: 'PHY102', credits: 3, difficulty: 'Medium', priority: 'Medium' }
+          ],
+          resources: {
+            'sub-math': [
+              { id: 'res-1', name: 'Calculus Limits CheatSheet.pdf', url: '#', type: 'pdf' },
+              { id: 'res-2', name: 'Lecture Notes Differentiation.pptx', url: '#', type: 'ppt' }
+            ],
+            'sub-cs': [
+              { id: 'res-3', name: 'Binary Trees Complete Guide.pdf', url: '#', type: 'pdf' }
+            ]
+          },
+          activities: [
+            { id: 'act-gym', name: 'Gym Training', duration: 60, preferredTimings: 'evening', priority: 'High' },
+            { id: 'act-med', name: 'Meditation', duration: 15, preferredTimings: 'morning', priority: 'Medium' }
+          ],
+          websites: [
+            { id: 'site-lc', name: 'LeetCode', url: 'https://leetcode.com', timeSpentGoal: 45 },
+            { id: 'site-gh', name: 'GitHub', url: 'https://github.com', timeSpentGoal: 30 }
+          ],
+          courses: [
+            { id: 'course-1', name: 'Next.js 15 Foundations', platform: 'Vercel Academy', progress: 65, weeklyGoal: 3, deadline: '2026-06-15' },
+            { id: 'course-2', name: 'React Native for Beginners', platform: 'Udemy', progress: 40, weeklyGoal: 5, deadline: '2026-07-01' }
+          ],
+          tasks: [
+            { id: 'task-1', subjectId: 'sub-math', subjectName: 'Advanced Calculus', title: 'Complete Integration Assignment Sheet', deadline: '2026-05-24', estimatedMinutes: 90, actualMinutesSpent: 0, status: 'pending' },
+            { id: 'task-2', subjectId: 'sub-cs', subjectName: 'Data Structures & Algorithms', title: 'Implement Red-Black Tree Balance Rotation', deadline: '2026-05-26', estimatedMinutes: 120, actualMinutesSpent: 45, status: 'in_progress' },
+            { id: 'task-3', subjectId: 'sub-phy', subjectName: 'Quantum Physics', title: 'Review Photoelectric Effect Lab Report', deadline: '2026-05-28', estimatedMinutes: 60, actualMinutesSpent: 60, status: 'completed' }
+          ],
+          timetable: [],
+          activeTaskId: null,
+          activeTimerStart: null,
+          activeTimerElapsed: 0,
+          themeAccent: 'purple',
+          apiKeys: {},
+          selectedModel: 'gemini',
+          calendarSynced: false,
+          chatHistory: [
+            { id: 'msg-welcome', role: 'assistant', content: 'Welcome to your AI Academic Dashboard! I am your student co-pilot. I can help analyze your weekly load, suggest breaks, or resolve complex study questions. Let me know how I can assist you today.', timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+          ]
+        });
+      }
     }),
     {
       name: 'layora-productivity-store',

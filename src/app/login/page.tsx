@@ -10,6 +10,7 @@ import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient';
 export default function LoginPage() {
   const router = useRouter();
   const loginUser = useStore((state) => state.login);
+  const resetStore = useStore((state) => state.resetStore);
   
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
@@ -295,6 +296,22 @@ export default function LoginPage() {
               </button>
             </div>
           )}
+        </div>
+
+        {/* Reset App Data Link */}
+        <div className="text-center mt-6">
+          <button
+            onClick={() => {
+              if (confirm("Are you sure you want to completely erase all local registration & productivity data?")) {
+                resetStore();
+                alert("All application data has been successfully erased.");
+                window.location.reload();
+              }
+            }}
+            className="text-[11px] font-mono text-rose-400/60 hover:text-rose-400 hover:underline transition cursor-pointer bg-transparent border-none outline-none"
+          >
+            Erase Local Registration & App Data
+          </button>
         </div>
       </div>
 
