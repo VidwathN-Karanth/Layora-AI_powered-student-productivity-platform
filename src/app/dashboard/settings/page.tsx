@@ -65,24 +65,24 @@ export default function SettingsPage() {
   };
 
   const themeAccents = [
-    { name: 'purple', label: 'NEON_PURPLE', color: 'bg-purple-600 border-purple-400' },
-    { name: 'blue', label: 'CYBER_BLUE', color: 'bg-blue-600 border-blue-400' },
-    { name: 'pink', label: 'TOKYO_PINK', color: 'bg-pink-600 border-pink-400' },
-    { name: 'emerald', label: 'MATRIX_EMERALD', color: 'bg-emerald-600 border-emerald-400' }
+    { name: 'purple', label: 'Neon Purple', color: 'bg-purple-600 border-purple-400' },
+    { name: 'blue', label: 'Cyber Blue', color: 'bg-blue-600 border-blue-400' },
+    { name: 'pink', label: 'Tokyo Pink', color: 'bg-pink-600 border-pink-400' },
+    { name: 'emerald', label: 'Matrix Emerald', color: 'bg-emerald-600 border-emerald-400' }
   ];
 
   return (
     <div className="space-y-6">
       {/* Top Header */}
       <div className="border-b border-white/5 pb-4">
-        <h2 className="text-xl font-mono font-bold tracking-wide">SYSTEM_SETTINGS</h2>
+        <h2 className="text-xl font-mono font-bold tracking-wide">System Settings</h2>
         <p className="text-xs text-white/40 font-mono mt-0.5">Customize UI configurations, sync calendars, and manage AI API bindings.</p>
       </div>
 
       {saveSuccess && (
         <div className="bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 p-4 rounded-2xl text-xs font-mono flex items-center gap-2">
           <Check className="w-4 h-4 animate-bounce" />
-          SYSTEM_CONFIGURATION_SUCCESSFULLY_UPDATED
+          Configuration updated successfully
         </div>
       )}
 
@@ -91,12 +91,12 @@ export default function SettingsPage() {
         <div className="glass-card rounded-2xl p-5 space-y-4">
           <div className="flex items-center gap-2.5 border-b border-white/5 pb-2">
             <User className="w-4 h-4 text-purple-400" />
-            <h3 className="text-xs font-mono font-bold tracking-wider text-purple-400">ACADEMIC_RHYTHM_PROFILE</h3>
+            <h3 className="text-xs font-mono font-bold tracking-wider text-purple-400">Academic Rhythm Profile</h3>
           </div>
 
           <form onSubmit={handleSaveProfile} className="space-y-4">
             <div>
-              <label className="block text-[10px] font-mono text-white/50 mb-1">USERNAME_ALIAS</label>
+              <label className="block text-[10px] font-mono text-white/50 mb-1">Username / Alias</label>
               <input
                 type="text"
                 value={name}
@@ -107,7 +107,7 @@ export default function SettingsPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[10px] font-mono text-white/50 mb-1">WAKE_CYCLE</label>
+                <label className="block text-[10px] font-mono text-white/50 mb-1">Wake Cycle</label>
                 <input
                   type="time"
                   value={wakeTime}
@@ -116,7 +116,7 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-mono text-white/50 mb-1">SLEEP_CYCLE</label>
+                <label className="block text-[10px] font-mono text-white/50 mb-1">Sleep Cycle</label>
                 <input
                   type="time"
                   value={sleepTime}
@@ -128,7 +128,7 @@ export default function SettingsPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[10px] font-mono text-white/50 mb-1">COLLEGE_START</label>
+                <label className="block text-[10px] font-mono text-white/50 mb-1">College Start</label>
                 <input
                   type="time"
                   value={collegeStart}
@@ -137,7 +137,7 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-mono text-white/50 mb-1">COLLEGE_END</label>
+                <label className="block text-[10px] font-mono text-white/50 mb-1">College End</label>
                 <input
                   type="time"
                   value={collegeEnd}
@@ -151,7 +151,7 @@ export default function SettingsPage() {
               type="submit"
               className="bg-purple-600 hover:bg-purple-500 text-white rounded-lg px-4 py-2 text-xs font-mono font-bold transition cursor-pointer"
             >
-              SAVE_RHYTHM_CYCLES
+              Save Rhythm Cycles
             </button>
           </form>
         </div>
@@ -160,7 +160,7 @@ export default function SettingsPage() {
         <div className="glass-card rounded-2xl p-5 space-y-4">
           <div className="flex items-center gap-2.5 border-b border-white/5 pb-2">
             <Key className="w-4 h-4 text-purple-400" />
-            <h3 className="text-xs font-mono font-bold tracking-wider text-purple-400 font-bold">MODULAR_AI_API_KEYS</h3>
+            <h3 className="text-xs font-mono font-bold tracking-wider text-purple-400 font-bold">Modular AI API Keys</h3>
           </div>
 
           <form onSubmit={handleSaveKeys} className="space-y-4">
@@ -171,7 +171,7 @@ export default function SettingsPage() {
             <div className="space-y-3">
               {/* OpenAI Key */}
               <div>
-                <label className="block text-[9px] font-mono text-white/50 mb-1">OPENAI_API_KEY</label>
+                <label className="block text-[9px] font-mono text-white/50 mb-1">OpenAI API Key</label>
                 <div className="relative">
                   <input
                     type={showKeys.openai ? 'text' : 'password'}
@@ -192,7 +192,7 @@ export default function SettingsPage() {
 
               {/* Gemini Key */}
               <div>
-                <label className="block text-[9px] font-mono text-white/50 mb-1">GEMINI_API_KEY</label>
+                <label className="block text-[9px] font-mono text-white/50 mb-1">Gemini API Key</label>
                 <div className="relative">
                   <input
                     type={showKeys.gemini ? 'text' : 'password'}
@@ -213,7 +213,7 @@ export default function SettingsPage() {
 
               {/* Claude Key */}
               <div>
-                <label className="block text-[9px] font-mono text-white/50 mb-1">CLAUDE_API_KEY</label>
+                <label className="block text-[9px] font-mono text-white/50 mb-1">Claude API Key</label>
                 <div className="relative">
                   <input
                     type={showKeys.claude ? 'text' : 'password'}
@@ -234,7 +234,7 @@ export default function SettingsPage() {
 
               {/* Grok Key */}
               <div>
-                <label className="block text-[9px] font-mono text-white/50 mb-1">GROK_API_KEY</label>
+                <label className="block text-[9px] font-mono text-white/50 mb-1">Grok API Key</label>
                 <div className="relative">
                   <input
                     type={showKeys.grok ? 'text' : 'password'}
@@ -260,7 +260,7 @@ export default function SettingsPage() {
               className="bg-purple-600 hover:bg-purple-500 text-white rounded-lg px-4 py-2 text-xs font-mono font-bold transition cursor-pointer flex items-center gap-1.5"
             >
               {savingKeys ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
-              COMMIT_MODEL_KEYS
+              Save API Keys
             </button>
           </form>
         </div>
@@ -269,7 +269,7 @@ export default function SettingsPage() {
         <div className="glass-card rounded-2xl p-5 space-y-4">
           <div className="flex items-center gap-2.5 border-b border-white/5 pb-2">
             <Sparkles className="w-4 h-4 text-purple-400" />
-            <h3 className="text-xs font-mono font-bold tracking-wider text-purple-400">INTERFACE_THEMING</h3>
+            <h3 className="text-xs font-mono font-bold tracking-wider text-purple-400">Interface Theming</h3>
           </div>
 
           <div className="space-y-4">
@@ -303,7 +303,7 @@ export default function SettingsPage() {
         <div className="glass-card rounded-2xl p-5 space-y-4">
           <div className="flex items-center gap-2.5 border-b border-white/5 pb-2">
             <Calendar className="w-4 h-4 text-purple-400" />
-            <h3 className="text-xs font-mono font-bold tracking-wider text-purple-400">CALENDAR_OAUTH_INTEGRATION</h3>
+            <h3 className="text-xs font-mono font-bold tracking-wider text-purple-400">Calendar OAuth Integration</h3>
           </div>
 
           <div className="space-y-4">
@@ -314,7 +314,7 @@ export default function SettingsPage() {
             <div className="bg-white/5 border border-white/5 rounded-xl p-4 flex items-center justify-between">
               <div>
                 <span className="text-xs font-mono font-bold text-white block">Google OAuth Token</span>
-                <span className="text-[9px] font-mono text-white/40">Status: {store.calendarSynced ? 'ACTIVE_SYNC' : 'INACTIVE'}</span>
+                <span className="text-[9px] font-mono text-white/40">Status: {store.calendarSynced ? 'Active Sync' : 'Inactive'}</span>
               </div>
 
               {store.calendarSynced ? (
@@ -326,7 +326,7 @@ export default function SettingsPage() {
                   onClick={() => { store.setCalendarSynced(true); setSaveSuccess(true); setTimeout(() => setSaveSuccess(false), 2000); }}
                   className="bg-cyan-900/30 border border-cyan-500/30 text-cyan-200 text-[10px] font-mono font-bold px-3 py-1.5 rounded-lg hover:bg-cyan-900/50 transition cursor-pointer"
                 >
-                  AUTHORIZE_OAUTH
+                  Authorize OAuth
                 </button>
               )}
             </div>

@@ -52,9 +52,9 @@ export default function DashboardHome() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-4">
         <div>
           <h2 className="text-xl font-mono font-bold tracking-wide">
-            WELCOME_BACK, <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">{user?.name || 'STUDENT'}</span>
+            Welcome Back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">{user?.name || 'Student'}</span>
           </h2>
-          <p className="text-xs text-white/40 font-mono mt-0.5">ACADEMIC CYBER-POD STATUS: SYSTEM_ONLINE</p>
+          <p className="text-xs text-white/40 font-mono mt-0.5">Academic Cyber-pod Status: System Online</p>
         </div>
 
         {/* Streak counter with fire glow */}
@@ -62,7 +62,7 @@ export default function DashboardHome() {
           <Flame className="w-5 h-5 text-pink-500 animate-bounce" />
           <div>
             <div className="text-xs font-mono font-bold leading-none">{user?.streakCount || 0} DAYS</div>
-            <span className="text-[9px] font-mono text-pink-400 uppercase tracking-widest">ACTIVE_STREAK</span>
+            <span className="text-[9px] font-mono text-pink-400 uppercase tracking-widest">Active Streak</span>
           </div>
         </div>
       </div>
@@ -74,7 +74,7 @@ export default function DashboardHome() {
             <Clock className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-xs font-mono text-white/50">STUDY_HOURS</div>
+            <div className="text-xs font-mono text-white/50">Study Hours</div>
             <div className="text-lg font-mono font-bold">{user?.totalStudyHours || 0} hrs</div>
           </div>
         </div>
@@ -84,7 +84,7 @@ export default function DashboardHome() {
             <CheckSquare className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-xs font-mono text-white/50">PENDING_TASKS</div>
+            <div className="text-xs font-mono text-white/50">Pending Tasks</div>
             <div className="text-lg font-mono font-bold">{pendingTasks} active</div>
           </div>
         </div>
@@ -94,7 +94,7 @@ export default function DashboardHome() {
             <Award className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-xs font-mono text-white/50">COMPLETION_RATE</div>
+            <div className="text-xs font-mono text-white/50">Completion Rate</div>
             <div className="text-lg font-mono font-bold">{completionRate}%</div>
           </div>
         </div>
@@ -104,7 +104,7 @@ export default function DashboardHome() {
             <BookOpen className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-xs font-mono text-white/50">TOTAL_SUBJECTS</div>
+            <div className="text-xs font-mono text-white/50">Total Subjects</div>
             <div className="text-lg font-mono font-bold">{subjects.length} loaded</div>
           </div>
         </div>
@@ -124,7 +124,7 @@ export default function DashboardHome() {
               </div>
               <div className="space-y-1">
                 <h3 className="text-xs font-mono font-black text-purple-300 uppercase tracking-widest flex items-center gap-1.5">
-                  AI_RECOMMENDATION: {recommendation.title}
+                  AI Recommendation: {recommendation.title}
                 </h3>
                 <p className="text-xs text-white/70 leading-relaxed font-sans mt-1">
                   {recommendation.body}
@@ -136,9 +136,9 @@ export default function DashboardHome() {
           {/* Daily Schedule Timeline */}
           <div className="glass-card rounded-2xl p-5 space-y-4">
             <div className="flex justify-between items-center border-b border-white/5 pb-2">
-              <h3 className="text-xs font-mono font-bold tracking-wider text-purple-400">DAILY_TIMETABLE_AGENDA</h3>
+              <h3 className="text-xs font-mono font-bold tracking-wider text-purple-400">Daily Schedule</h3>
               <Link href="/dashboard/planner" className="text-[10px] font-mono text-cyan-400 hover:underline flex items-center gap-1">
-                FULL_PLANNER <ChevronRight className="w-3.5 h-3.5" />
+                Full Planner <ChevronRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
@@ -160,7 +160,7 @@ export default function DashboardHome() {
                     </div>
                     {block.type === 'study' && (
                       <span className="text-[9px] font-mono bg-purple-950/40 text-purple-300 px-2 py-0.5 rounded border border-purple-800/30 uppercase shrink-0">
-                        STUDY_SESSION
+                        Study Session
                       </span>
                     )}
                   </div>
@@ -174,7 +174,7 @@ export default function DashboardHome() {
         <div className="space-y-6">
           {/* Active Courses Widget */}
           <div className="glass-card rounded-2xl p-5 space-y-4">
-            <h3 className="text-xs font-mono font-bold tracking-wider text-purple-400 border-b border-white/5 pb-2">ACTIVE_COURSES</h3>
+            <h3 className="text-xs font-mono font-bold tracking-wider text-purple-400 border-b border-white/5 pb-2">Active Courses</h3>
             
             <div className="space-y-4">
               {courses.length === 0 ? (
@@ -210,7 +210,7 @@ export default function DashboardHome() {
 
           {/* Quick Access Launchers */}
           <div className="glass-card rounded-2xl p-5 space-y-4">
-            <h3 className="text-xs font-mono font-bold tracking-wider text-purple-400 border-b border-white/5 pb-2">WEB_LAUNCHERS</h3>
+            <h3 className="text-xs font-mono font-bold tracking-wider text-purple-400 border-b border-white/5 pb-2">Quick Launchers</h3>
             
             <div className="grid grid-cols-2 gap-2">
               {websites.map((site) => (

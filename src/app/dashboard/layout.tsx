@@ -133,7 +133,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <button onClick={() => setMobileMenuOpen(true)} className="p-2 hover:bg-white/5 rounded-lg text-purple-400">
           <Menu className="w-5 h-5" />
         </button>
-        <span className="font-mono font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">AERO_LAB</span>
+        <span className="font-mono font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">Layora</span>
         <button onClick={() => setChatOpen(!chatOpen)} className="p-2 hover:bg-white/5 rounded-lg text-cyan-400">
           <MessageCircle className="w-5 h-5" />
         </button>
@@ -159,7 +159,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             >
               <div className="space-y-6">
                 <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                  <span className="font-mono font-bold text-purple-400 text-sm">Æ AERO STUDY</span>
+                  <span className="font-mono font-bold text-purple-400 text-sm">Layora</span>
                   <button onClick={() => setMobileMenuOpen(false)} className="text-white/40"><X className="w-5 h-5" /></button>
                 </div>
                 <nav className="space-y-1">
@@ -186,12 +186,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <div className="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/5">
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center font-mono font-black text-xs">U</div>
                   <div>
-                    <div className="text-xs font-mono font-semibold truncate">{store.user?.name || 'Aero Student'}</div>
+                    <div className="text-xs font-mono font-semibold truncate">{store.user?.name || 'Layora Student'}</div>
                     <div className="text-[9px] font-mono text-white/40 truncate">{store.user?.email}</div>
                   </div>
                 </div>
                 <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 border border-red-500/20 bg-red-950/10 hover:bg-red-950/30 text-red-400 py-2 rounded-xl text-xs font-mono transition">
-                  <LogOut className="w-4 h-4" /> LOGOUT
+                  <LogOut className="w-4 h-4" /> Logout
                 </button>
               </div>
             </motion.aside>
@@ -217,7 +217,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   exit={{ opacity: 0 }}
                   className="font-mono font-black text-sm tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400 flex items-center gap-2"
                 >
-                  <span className="w-6 h-6 rounded bg-purple-600 flex items-center justify-center text-white text-[10px]">Æ</span> AERO_STUDY
+                  <span className="w-6 h-6 rounded bg-purple-600 flex items-center justify-center text-white text-[10px]">L</span> LAYORA
                 </motion.span>
               ) : (
                 <motion.span 
@@ -227,7 +227,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   exit={{ opacity: 0 }}
                   className="font-mono font-black text-base text-purple-400 w-full text-center"
                 >
-                  Æ
+                  L
                 </motion.span>
               )}
             </AnimatePresence>
@@ -282,7 +282,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             className="w-full flex items-center justify-center gap-2 border border-red-500/20 bg-red-950/10 hover:bg-red-950/30 text-red-400 py-2 rounded-xl text-xs font-mono transition cursor-pointer"
           >
             <LogOut className="w-4 h-4 shrink-0" /> 
-            {sidebarOpen && <span>LOGOUT</span>}
+            {sidebarOpen && <span>Logout</span>}
           </button>
         </div>
       </motion.aside>
@@ -293,7 +293,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* --- DESKTOP TOP NAVIGATION BAR --- */}
         <header className="h-14 border-b border-white/5 bg-[#05050a]/40 backdrop-blur-md px-6 hidden md:flex items-center justify-between z-20">
           <div className="flex items-center gap-2 font-mono text-xs text-white/50">
-            <span>SYS_LOC:</span>
+            <span>Workspace:</span>
             <span className="text-purple-400 font-bold uppercase">{pathname.split('/').pop() || 'DASHBOARD'}</span>
           </div>
 
@@ -302,7 +302,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {store.activeTaskId && activeTask && (
               <div className="flex items-center gap-2.5 bg-purple-950/30 border border-purple-500/30 rounded-full px-3.5 py-1 text-xs text-purple-200 animate-pulse-glow">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span>
-                <span className="font-mono text-[10px] text-white/40 uppercase">TIMER:</span>
+                <span className="font-mono text-[10px] text-white/40 uppercase">Timer:</span>
                 <span className="font-bold truncate max-w-[120px] font-mono text-purple-300">{activeTask.title}</span>
                 <span className="font-mono font-black text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded-full border border-cyan-800/30">
                   {formatTimer(store.activeTimerElapsed)}
@@ -357,7 +357,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/2">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
-                <span className="font-mono text-xs font-bold">CO-PILOT_CHAT</span>
+                <span className="font-mono text-xs font-bold">Co-pilot Chat</span>
               </div>
               <div className="flex items-center gap-2">
                 {/* Provider select dropdown */}
@@ -385,7 +385,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
                 >
                   <div className={`text-[9px] font-mono text-white/30 mb-1`}>
-                    {msg.role === 'user' ? 'USER_SESSION' : 'AI_COPILOT'} • {msg.timestamp}
+                    {msg.role === 'user' ? 'User' : 'Co-pilot'} • {msg.timestamp}
                   </div>
                   <div className={`p-3 rounded-2xl text-xs leading-relaxed max-w-[85%] font-sans ${
                     msg.role === 'user' 
@@ -405,7 +405,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
               {chatLoading && (
                 <div className="flex flex-col items-start">
-                  <div className="text-[9px] font-mono text-white/30 mb-1">AI_COPILOT is typing...</div>
+                  <div className="text-[9px] font-mono text-white/30 mb-1">Co-pilot is typing...</div>
                   <div className="bg-white/5 border border-white/5 p-3 rounded-2xl rounded-tl-none flex gap-1.5 items-center">
                     <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce"></span>
                     <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>

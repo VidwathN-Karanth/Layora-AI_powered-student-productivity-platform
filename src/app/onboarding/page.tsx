@@ -48,8 +48,8 @@ export default function OnboardingPage() {
 
   // Study materials (simulated file names uploaded)
   const [uploadedFiles, setUploadedFiles] = useState<{ [subIndex: number]: { name: string; type: string }[] }>({
-    0: [{ name: 'Calculus_Syllabus.pdf', type: 'pdf' }],
-    1: [{ name: 'Algorithms_Sorting_Notes.docx', type: 'docx' }]
+    0: [{ name: 'Calculus Syllabus.pdf', type: 'pdf' }],
+    1: [{ name: 'Algorithms Sorting Notes.docx', type: 'docx' }]
   });
   const [mockFileName, setMockFileName] = useState('');
 
@@ -198,11 +198,11 @@ export default function OnboardingPage() {
         {/* Onboarding Header */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
-            <span className="text-xl font-mono text-purple-400 font-bold">AERO_ONBOARDING</span>
+            <span className="text-xl font-mono text-purple-400 font-bold">Layora Onboarding</span>
             <span className="text-xs font-mono text-white/30">| v1.0.4</span>
           </div>
           <div className="text-xs font-mono text-cyan-400">
-            STEP_0{step}_OF_0{totalSteps}
+            Step {step} of {totalSteps}
           </div>
         </div>
 
@@ -232,16 +232,16 @@ export default function OnboardingPage() {
                   <div className="flex items-center gap-3 border-b border-white/10 pb-4">
                     <Clock className="w-6 h-6 text-purple-400" />
                     <div>
-                      <h3 className="text-lg font-mono font-bold">ROUTINE_CYCLE_SETUP</h3>
+                      <h3 className="text-lg font-mono font-bold">Routine Setup</h3>
                       <p className="text-xs text-white/50">Determine sleep windows, mandatory lecture schedules, and study blocks.</p>
                     </div>
                   </div>
-
+ 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-xs font-mono text-purple-300/70 mb-1">WAKE_TIME</label>
+                          <label className="block text-xs font-mono text-purple-300/70 mb-1">Wake Time</label>
                           <input 
                             type="time" 
                             value={wakeTime}
@@ -250,7 +250,7 @@ export default function OnboardingPage() {
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-mono text-purple-300/70 mb-1">SLEEP_TIME</label>
+                          <label className="block text-xs font-mono text-purple-300/70 mb-1">Sleep Time</label>
                           <input 
                             type="time" 
                             value={sleepTime}
@@ -259,10 +259,10 @@ export default function OnboardingPage() {
                           />
                         </div>
                       </div>
-
+ 
                       <div className="grid grid-cols-2 gap-4 pt-2">
                         <div>
-                          <label className="block text-xs font-mono text-cyan-300/70 mb-1">COLLEGE_START</label>
+                          <label className="block text-xs font-mono text-cyan-300/70 mb-1">College Start</label>
                           <input 
                             type="time" 
                             value={collegeStart}
@@ -271,7 +271,7 @@ export default function OnboardingPage() {
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-mono text-cyan-300/70 mb-1">COLLEGE_END</label>
+                          <label className="block text-xs font-mono text-cyan-300/70 mb-1">College End</label>
                           <input 
                             type="time" 
                             value={collegeEnd}
@@ -336,17 +336,17 @@ export default function OnboardingPage() {
                   <div className="flex items-center gap-3 border-b border-white/10 pb-4">
                     <BookOpen className="w-6 h-6 text-purple-400" />
                     <div>
-                      <h3 className="text-lg font-mono font-bold">ACADEMIC_SUBJECTS</h3>
+                      <h3 className="text-lg font-mono font-bold">Academic Subjects</h3>
                       <p className="text-xs text-white/50">Add subjects, credits, difficulty, and scheduling priorities.</p>
                     </div>
                   </div>
-
+ 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Add subject form */}
                     <div className="bg-white/5 p-4 rounded-xl border border-white/5 space-y-3">
-                      <h4 className="text-xs font-mono text-purple-400 font-bold mb-2">ADD_SUBJECT_ENTRY</h4>
+                      <h4 className="text-xs font-mono text-purple-400 font-bold mb-2">Add Subject Details</h4>
                       <div>
-                        <label className="block text-[10px] font-mono text-white/50 mb-1">SUBJECT_NAME</label>
+                        <label className="block text-[10px] font-mono text-white/50 mb-1">Subject Name</label>
                         <input 
                           type="text" 
                           value={newSubName} 
@@ -409,7 +409,7 @@ export default function OnboardingPage() {
                         onClick={handleAddSubject}
                         className="w-full bg-purple-600 hover:bg-purple-500 text-white rounded-lg py-2 text-xs font-mono font-bold flex items-center justify-center gap-1.5 cursor-pointer mt-3"
                       >
-                        <Plus className="w-3.5 h-3.5" /> ADD_SUBJECT
+                        <Plus className="w-3.5 h-3.5" /> Add Subject
                       </button>
                     </div>
 
@@ -444,7 +444,7 @@ export default function OnboardingPage() {
                   <div className="flex items-center gap-3 border-b border-white/10 pb-4">
                     <UploadCloud className="w-6 h-6 text-purple-400" />
                     <div>
-                      <h3 className="text-lg font-mono font-bold">STUDY_MATERIALS_UPLOAD</h3>
+                      <h3 className="text-lg font-mono font-bold">Study Materials Upload</h3>
                       <p className="text-xs text-white/50">Upload syllabus notes, PDFs, or slides to associate resources with subjects.</p>
                     </div>
                   </div>
@@ -477,7 +477,7 @@ export default function OnboardingPage() {
                           <div className="flex gap-2">
                             <input 
                               type="text" 
-                              placeholder="Notes_Chap_01.pdf" 
+                              placeholder="Notes Chapter 01.pdf" 
                               value={mockFileName}
                               onChange={(e) => setMockFileName(e.target.value)}
                               className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-[10px] flex-1 focus:outline-none"
@@ -486,7 +486,7 @@ export default function OnboardingPage() {
                               onClick={() => handleMockUpload(sIdx)}
                               className="bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-mono font-bold px-3 py-1 rounded-lg cursor-pointer"
                             >
-                              MOCK_UPLOAD
+                              Mock Upload
                             </button>
                           </div>
                         </div>
@@ -502,17 +502,17 @@ export default function OnboardingPage() {
                   <div className="flex items-center gap-3 border-b border-white/10 pb-4">
                     <Dumbbell className="w-6 h-6 text-purple-400" />
                     <div>
-                      <h3 className="text-lg font-mono font-bold">EXTRA_CURRICULAR_ACTIVITIES</h3>
+                      <h3 className="text-lg font-mono font-bold">Extracurricular Activities</h3>
                       <p className="text-xs text-white/50">Register hobbies, gym, music, or physical routines to avoid study burnout.</p>
                     </div>
                   </div>
-
+ 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Add activity form */}
                     <div className="bg-white/5 p-4 rounded-xl border border-white/5 space-y-3">
-                      <h4 className="text-xs font-mono text-purple-400 font-bold mb-2">ADD_ACTIVITY_ENTRY</h4>
+                      <h4 className="text-xs font-mono text-purple-400 font-bold mb-2">Add Activity Details</h4>
                       <div>
-                        <label className="block text-[10px] font-mono text-white/50 mb-1">ACTIVITY_NAME</label>
+                        <label className="block text-[10px] font-mono text-white/50 mb-1">Activity Name</label>
                         <input 
                           type="text" 
                           value={newActName} 
@@ -523,7 +523,7 @@ export default function OnboardingPage() {
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-[10px] font-mono text-white/50 mb-1">DURATION (MINS)</label>
+                          <label className="block text-[10px] font-mono text-white/50 mb-1">Duration (mins)</label>
                           <input 
                             type="number" 
                             value={newActDuration} 
@@ -534,7 +534,7 @@ export default function OnboardingPage() {
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-mono text-white/50 mb-1">TIMING</label>
+                          <label className="block text-[10px] font-mono text-white/50 mb-1">Timing</label>
                           <select 
                             value={newActTiming} 
                             onChange={(e) => setNewActTiming(e.target.value as any)}
@@ -563,7 +563,7 @@ export default function OnboardingPage() {
                         onClick={handleAddActivity}
                         className="w-full bg-purple-600 hover:bg-purple-500 text-white rounded-lg py-2 text-xs font-mono font-bold flex items-center justify-center gap-1.5 cursor-pointer mt-2"
                       >
-                        <Plus className="w-3.5 h-3.5" /> ADD_ACTIVITY
+                        <Plus className="w-3.5 h-3.5" /> Add Activity
                       </button>
                     </div>
 
@@ -595,17 +595,17 @@ export default function OnboardingPage() {
                   <div className="flex items-center gap-3 border-b border-white/10 pb-4">
                     <Globe className="w-6 h-6 text-purple-400" />
                     <div>
-                      <h3 className="text-lg font-mono font-bold">FREQUENT_WEBSITES</h3>
+                      <h3 className="text-lg font-mono font-bold">Frequently Visited Websites</h3>
                       <p className="text-xs text-white/50">Register URLs and target daily focus goals for quick-access launchers.</p>
                     </div>
                   </div>
-
+ 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Form */}
                     <div className="bg-white/5 p-4 rounded-xl border border-white/5 space-y-3">
-                      <h4 className="text-xs font-mono text-purple-400 font-bold mb-2">ADD_WEBSITE_ENTRY</h4>
+                      <h4 className="text-xs font-mono text-purple-400 font-bold mb-2">Add Website Details</h4>
                       <div>
-                        <label className="block text-[10px] font-mono text-white/50 mb-1">PLATFORM_NAME</label>
+                        <label className="block text-[10px] font-mono text-white/50 mb-1">Website Name</label>
                         <input 
                           type="text" 
                           value={newWebName} 
@@ -640,7 +640,7 @@ export default function OnboardingPage() {
                         onClick={handleAddWebsite}
                         className="w-full bg-purple-600 hover:bg-purple-500 text-white rounded-lg py-2 text-xs font-mono font-bold flex items-center justify-center gap-1.5 cursor-pointer mt-2"
                       >
-                        <Plus className="w-3.5 h-3.5" /> ADD_LAUNCHER
+                        <Plus className="w-3.5 h-3.5" /> Add Launcher
                       </button>
                     </div>
 
@@ -671,17 +671,17 @@ export default function OnboardingPage() {
                   <div className="flex items-center gap-3 border-b border-white/10 pb-4">
                     <Award className="w-6 h-6 text-purple-400" />
                     <div>
-                      <h3 className="text-lg font-mono font-bold">ACTIVE_ONLINE_COURSES</h3>
+                      <h3 className="text-lg font-mono font-bold">Active Online Courses</h3>
                       <p className="text-xs text-white/50">Track Coursera, Udemy, or platform courses, progress, and goals.</p>
                     </div>
                   </div>
-
+ 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Add form */}
                     <div className="bg-white/5 p-4 rounded-xl border border-white/5 space-y-3">
-                      <h4 className="text-xs font-mono text-purple-400 font-bold mb-2">ADD_COURSE_ENTRY</h4>
+                      <h4 className="text-xs font-mono text-purple-400 font-bold mb-2">Add Course Details</h4>
                       <div>
-                        <label className="block text-[10px] font-mono text-white/50 mb-1">COURSE_NAME</label>
+                        <label className="block text-[10px] font-mono text-white/50 mb-1">Course Name</label>
                         <input 
                           type="text" 
                           value={newCourseName} 
@@ -702,7 +702,7 @@ export default function OnboardingPage() {
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-mono text-white/50 mb-1">PROGRESS %</label>
+                          <label className="block text-[10px] font-mono text-white/50 mb-1">Progress %</label>
                           <input 
                             type="number" 
                             value={newCourseProgress} 
@@ -715,7 +715,7 @@ export default function OnboardingPage() {
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-[10px] font-mono text-white/50 mb-1">GOAL (HOURS/WK)</label>
+                          <label className="block text-[10px] font-mono text-white/50 mb-1">Goal (Hours/Week)</label>
                           <input 
                             type="number" 
                             value={newCourseGoal} 
@@ -740,7 +740,7 @@ export default function OnboardingPage() {
                         onClick={handleAddCourse}
                         className="w-full bg-purple-600 hover:bg-purple-500 text-white rounded-lg py-2 text-xs font-mono font-bold flex items-center justify-center gap-1.5 cursor-pointer mt-2"
                       >
-                        <Plus className="w-3.5 h-3.5" /> ADD_COURSE
+                        <Plus className="w-3.5 h-3.5" /> Add Course
                       </button>
                     </div>
 
@@ -781,7 +781,7 @@ export default function OnboardingPage() {
                   </div>
                   
                   <div className="text-center max-w-md space-y-2">
-                    <h3 className="text-xl font-mono font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-emerald-400">OPTIMIZATION_READY</h3>
+                    <h3 className="text-xl font-mono font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-emerald-400">Setup Complete</h3>
                     <p className="text-xs text-white/60 leading-relaxed font-mono">
                       Our local scheduling engines are primed. Clicking save will organize your classes, distribute your {subjects.length} subjects based on credits, inject break intervals to avoid cognitive burnout, and construct your interactive timetable.
                     </p>
@@ -813,22 +813,22 @@ export default function OnboardingPage() {
                 step === 1 ? 'opacity-30 pointer-events-none' : ''
               }`}
             >
-              <ChevronLeft className="w-4 h-4" /> PREV_PHASE
+              <ChevronLeft className="w-4 h-4" /> Back
             </button>
-
+ 
             {step < totalSteps ? (
               <button
                 onClick={() => setStep(Math.min(totalSteps, step + 1))}
                 className="flex items-center gap-1 bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-white px-5 py-2 rounded-xl text-xs font-mono font-bold active:scale-95 transition cursor-pointer shadow-lg shadow-purple-500/10"
               >
-                NEXT_PHASE <ChevronRight className="w-4 h-4" />
+                Next <ChevronRight className="w-4 h-4" />
               </button>
             ) : (
               <button
                 onClick={handleSaveAndRedirect}
                 className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-emerald-500 hover:from-purple-500 hover:to-emerald-400 text-white px-6 py-2.5 rounded-xl text-xs font-mono font-bold active:scale-95 transition cursor-pointer shadow-lg shadow-purple-500/20"
               >
-                SAVE_ACADEMIC_PROFILE <ShieldCheck className="w-4 h-4" />
+                Complete Onboarding <ShieldCheck className="w-4 h-4" />
               </button>
             )}
           </div>

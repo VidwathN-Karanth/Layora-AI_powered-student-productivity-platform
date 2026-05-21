@@ -1,6 +1,6 @@
-# Aero Study Lab — AI-Powered Student Productivity App
+# Layora — AI-Powered Student Productivity App
 
-Aero Study Lab is a modern, full-stack student academic assistant featuring a premium dark futuristic glassmorphism UI. It combines custom weekly schedule optimizations, course calendars, resource vaults, task stopwatch trackers, and a persistent ChatGPT-style co-pilot.
+Layora is a modern, full-stack student academic assistant featuring a premium dark futuristic glassmorphism UI. It combines custom weekly schedule optimizations, course calendars, resource vaults, task stopwatch trackers, and a persistent ChatGPT-style co-pilot.
 
 ---
 
@@ -64,7 +64,7 @@ ANTIFrontend/
 
 ## ⚙️ Local Development Setup
 
-Follow these commands to run Aero Study Lab locally using your portable Node.js binaries:
+Follow these commands to run Layora locally using your portable Node.js binaries:
 
 1. **Prepend Node portable to PATH (PowerShell)**:
    ```powershell

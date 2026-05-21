@@ -63,7 +63,7 @@ export default function TasksPage() {
       {/* Top Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-4">
         <div>
-          <h2 className="text-xl font-mono font-bold tracking-wide">TASK_SYSTEM</h2>
+          <h2 className="text-xl font-mono font-bold tracking-wide">Task Manager</h2>
           <p className="text-xs text-white/40 font-mono mt-0.5">Track study milestones, execute live timers, and analyze core durations.</p>
         </div>
 
@@ -77,7 +77,7 @@ export default function TasksPage() {
           className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-white rounded-xl px-4 py-2.5 text-xs font-mono font-bold flex items-center gap-2 active:scale-95 transition cursor-pointer shadow-lg shadow-purple-500/10"
         >
           <PlusCircle className="w-4 h-4" />
-          CREATE_NEW_TASK
+          Create New Task
         </button>
       </div>
 
@@ -94,7 +94,7 @@ export default function TasksPage() {
                 </div>
                 <div>
                   <span className="text-[9px] font-mono bg-purple-950/50 text-purple-300 px-2 py-0.5 rounded border border-purple-800/30 font-bold uppercase">
-                    ACTIVE_FOCUS_SESSION_TICKING
+                    Focus Session Active
                   </span>
                   <h3 className="text-sm font-mono font-bold text-white mt-1">{tickingTask.title}</h3>
                   <p className="text-xs text-white/50 font-sans mt-0.5">{tickingTask.subjectName}</p>
@@ -110,7 +110,7 @@ export default function TasksPage() {
                     onClick={() => store.stopTaskTimer(true)}
                     className="bg-emerald-600 hover:bg-emerald-500 text-white p-2 rounded-xl text-xs font-mono font-bold cursor-pointer transition flex items-center gap-1.5"
                   >
-                    <Check className="w-4 h-4" /> COMPLETE
+                    <Check className="w-4 h-4" /> Complete
                   </button>
                   <button 
                     onClick={() => store.stopTaskTimer(false)}
@@ -134,7 +134,7 @@ export default function TasksPage() {
             activeTab === 'pending' ? 'text-purple-400' : 'text-white/40 hover:text-white'
           }`}
         >
-          PENDING_TASKS
+          Pending Tasks
           {activeTab === 'pending' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-purple-500"></div>}
         </button>
         <button
@@ -143,7 +143,7 @@ export default function TasksPage() {
             activeTab === 'completed' ? 'text-purple-400' : 'text-white/40 hover:text-white'
           }`}
         >
-          COMPLETED_TASKS
+          Completed Tasks
           {activeTab === 'completed' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-purple-500"></div>}
         </button>
         <button
@@ -152,7 +152,7 @@ export default function TasksPage() {
             activeTab === 'all' ? 'text-purple-400' : 'text-white/40 hover:text-white'
           }`}
         >
-          ALL_TASKS
+          All Tasks
           {activeTab === 'all' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-purple-500"></div>}
         </button>
       </div>
@@ -214,8 +214,8 @@ export default function TasksPage() {
 
                 {/* Footer Controls */}
                 <div className="flex justify-between items-center mt-5 pt-3 border-t border-white/5">
-                  <span className="text-[10px] font-mono text-white/30 uppercase">
-                    status: <span className={task.status === 'completed' ? 'text-emerald-400' : 'text-cyan-400'}>{task.status}</span>
+                  <span className="text-[10px] font-mono text-white/30">
+                    Status: <span className={`capitalize ${task.status === 'completed' ? 'text-emerald-400' : 'text-cyan-400'}`}>{task.status === 'in_progress' ? 'In Progress' : task.status}</span>
                   </span>
 
                   <div className="flex items-center gap-2">
@@ -229,7 +229,7 @@ export default function TasksPage() {
                         }`}
                       >
                         {isTicking ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                        {isTicking ? 'PAUSE_CLOCK' : 'START_CLOCK'}
+                        {isTicking ? 'Pause Clock' : 'Start Clock'}
                       </button>
                     )}
 
@@ -263,11 +263,11 @@ export default function TasksPage() {
               exit={{ scale: 0.95, opacity: 0 }}
               className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm glass-panel-neon p-6 rounded-2xl z-50 border border-purple-500/20"
             >
-              <h3 className="text-sm font-mono font-bold text-purple-300 border-b border-white/5 pb-2 mb-4">CREATE_ACADEMIC_MILESTONE</h3>
+              <h3 className="text-sm font-mono font-bold text-purple-300 border-b border-white/5 pb-2 mb-4">Create Academic Milestone</h3>
               
               <form onSubmit={handleCreateTask} className="space-y-4">
                 <div>
-                  <label className="block text-[10px] font-mono text-white/50 mb-1">MILESTONE_TITLE</label>
+                  <label className="block text-[10px] font-mono text-white/50 mb-1">Milestone Title</label>
                   <input
                     type="text"
                     required
@@ -279,7 +279,7 @@ export default function TasksPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-mono text-white/50 mb-1">ASSOCIATED_SUBJECT</label>
+                  <label className="block text-[10px] font-mono text-white/50 mb-1">Associated Subject</label>
                   {store.subjects.length === 0 ? (
                     <div className="text-[10px] text-red-400 font-mono py-1">
                       No subjects configured. Add subjects first in Settings.
@@ -301,7 +301,7 @@ export default function TasksPage() {
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] font-mono text-white/50 mb-1">DUE_DATE</label>
+                    <label className="block text-[10px] font-mono text-white/50 mb-1">Due Date</label>
                     <input
                       type="date"
                       value={newTaskDeadline}
@@ -310,7 +310,7 @@ export default function TasksPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-mono text-white/50 mb-1">EST_DURATION (MINS)</label>
+                    <label className="block text-[10px] font-mono text-white/50 mb-1">Est. Duration (Mins)</label>
                     <input
                       type="number"
                       value={newTaskEstimate}
@@ -328,14 +328,14 @@ export default function TasksPage() {
                     onClick={() => setShowAddTask(false)} 
                     className="flex-1 bg-white/5 border border-white/10 rounded-lg py-2 text-xs font-mono cursor-pointer"
                   >
-                    CANCEL
+                    Cancel
                   </button>
                   <button 
                     type="submit"
                     disabled={store.subjects.length === 0}
                     className="flex-1 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 rounded-lg py-2 text-xs font-mono font-bold cursor-pointer"
                   >
-                    INSERT
+                    Insert
                   </button>
                 </div>
               </form>

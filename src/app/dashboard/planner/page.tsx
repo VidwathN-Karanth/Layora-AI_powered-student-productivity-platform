@@ -143,7 +143,7 @@ export default function PlannerPage() {
       {/* Top Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-4">
         <div>
-          <h2 className="text-xl font-mono font-bold tracking-wide">WEEKLY_PLANNER</h2>
+          <h2 className="text-xl font-mono font-bold tracking-wide">Weekly Planner</h2>
           <p className="text-xs text-white/40 font-mono mt-0.5">Generate, arrange, and sync AI optimized study grids.</p>
         </div>
 
@@ -157,12 +157,12 @@ export default function PlannerPage() {
             {syncingCalendar ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin text-purple-400" />
-                SYNCING_CALENDAR...
+                Syncing Calendar...
               </>
             ) : (
               <>
                 <CalendarRange className="w-4 h-4 text-cyan-400" />
-                SYNC_TO_GOOGLE_CALENDAR
+                Sync to Google Calendar
               </>
             )}
           </button>
@@ -178,7 +178,7 @@ export default function PlannerPage() {
             ) : (
               <Sparkles className="w-4 h-4 text-white" />
             )}
-            GENERATE_AI_SCHEDULE
+            Generate AI Schedule
           </button>
         </div>
       </div>
@@ -221,12 +221,12 @@ export default function PlannerPage() {
         {/* Timetable schedule grid */}
         <div className="lg:col-span-2 space-y-3">
           <div className="flex justify-between items-center bg-white/2 p-3 rounded-xl border border-white/5">
-            <span className="text-[10px] font-mono text-white/50">SEQUENCE_TIMELINE ({activeDayBlocks.length} BLOCKS)</span>
+            <span className="text-[10px] font-mono text-white/50">Sequence Timeline ({activeDayBlocks.length} Blocks)</span>
             <button 
               onClick={() => setShowAddBlock(true)} 
               className="text-purple-400 hover:text-purple-300 text-xs font-mono flex items-center gap-1.5 cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5" /> ADD_CUSTOM_BLOCK
+              <Plus className="w-3.5 h-3.5" /> Add Custom Block
             </button>
           </div>
 
@@ -236,7 +236,7 @@ export default function PlannerPage() {
                 <AlertCircle className="w-10 h-10 text-white/20 mb-3" />
                 <h3 className="text-sm font-mono font-bold text-white/70">Planner is empty</h3>
                 <p className="text-xs text-white/40 max-w-sm mt-1">
-                  Click the **GENERATE_AI_SCHEDULE** button above to compile subjects and routines automatically using the local optimization engine.
+                  Click the **Generate AI Schedule** button above to compile subjects and routines automatically using the local optimization engine.
                 </p>
               </div>
             ) : activeDayBlocks.length === 0 ? (
@@ -295,7 +295,7 @@ export default function PlannerPage() {
         {/* Info panel / instructions */}
         <div className="space-y-4">
           <div className="glass-card rounded-2xl p-5 space-y-4">
-            <h4 className="text-xs font-mono font-bold text-purple-400 border-b border-white/5 pb-2">PLANNING_GUIDE</h4>
+            <h4 className="text-xs font-mono font-bold text-purple-400 border-b border-white/5 pb-2">Planning Guide</h4>
             
             <ul className="space-y-3 text-xs font-sans text-white/70">
               <li className="flex items-start gap-2">
@@ -326,11 +326,11 @@ export default function PlannerPage() {
               exit={{ scale: 0.95, opacity: 0 }}
               className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm glass-panel-neon p-6 rounded-2xl z-50 border border-purple-500/20"
             >
-              <h3 className="text-sm font-mono font-bold text-purple-300 border-b border-white/5 pb-2 mb-4">ADD_CUSTOM_TIMETABLE_BLOCK</h3>
+              <h3 className="text-sm font-mono font-bold text-purple-300 border-b border-white/5 pb-2 mb-4">Add Custom Timetable Block</h3>
               
               <div className="space-y-3">
                 <div>
-                  <label className="block text-[10px] font-mono text-white/50 mb-1">BLOCK_TITLE</label>
+                  <label className="block text-[10px] font-mono text-white/50 mb-1">Block Title</label>
                   <input
                     type="text"
                     value={newBlockTitle}
@@ -342,7 +342,7 @@ export default function PlannerPage() {
                 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] font-mono text-white/50 mb-1">START_TIME</label>
+                    <label className="block text-[10px] font-mono text-white/50 mb-1">Start Time</label>
                     <input
                       type="time"
                       value={newBlockStart}
@@ -351,7 +351,7 @@ export default function PlannerPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-mono text-white/50 mb-1">END_TIME</label>
+                    <label className="block text-[10px] font-mono text-white/50 mb-1">End Time</label>
                     <input
                       type="time"
                       value={newBlockEnd}
@@ -362,7 +362,7 @@ export default function PlannerPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-mono text-white/50 mb-1">BLOCK_TYPE</label>
+                  <label className="block text-[10px] font-mono text-white/50 mb-1">Block Type</label>
                   <select
                     value={newBlockType}
                     onChange={(e) => setNewBlockType(e.target.value as any)}
@@ -380,13 +380,13 @@ export default function PlannerPage() {
                     onClick={() => setShowAddBlock(false)} 
                     className="flex-1 bg-white/5 border border-white/10 rounded-lg py-2 text-xs font-mono cursor-pointer"
                   >
-                    CANCEL
+                    Cancel
                   </button>
                   <button 
                     onClick={handleAddCustomBlock} 
                     className="flex-1 bg-purple-600 hover:bg-purple-500 rounded-lg py-2 text-xs font-mono font-bold cursor-pointer"
                   >
-                    INSERT
+                    Insert
                   </button>
                 </div>
               </div>

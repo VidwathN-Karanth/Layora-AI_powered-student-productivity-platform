@@ -88,13 +88,13 @@ export default function LoginPage() {
       <div className="glow-orb w-[450px] h-[450px] bg-blue-900/20 bottom-[-150px] left-[-100px] animate-[pulse_8s_infinite_alternate]"></div>
 
       <div className="w-full max-w-md z-10">
-        {/* Aero Logo */}
+        {/* Layora Logo */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-14 h-14 rounded-xl bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center shadow-lg shadow-purple-500/20 mb-3 border border-white/10">
-            <span className="text-white font-mono font-black text-xl tracking-widest">A</span>
+            <span className="text-white font-mono font-black text-xl tracking-widest">L</span>
           </div>
           <h2 className="text-2xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400 font-mono">
-            AERO STUDY LAB
+            LAYORA
           </h2>
           <p className="text-xs text-purple-300/50 font-mono mt-1">Autonomous Student Productivity Suite</p>
         </div>
@@ -114,7 +114,7 @@ export default function LoginPage() {
                     activeTab === 'login' ? 'text-purple-400' : 'text-white/40 hover:text-white/70'
                   }`}
                 >
-                  LOGIN_SESSION
+                  Login
                   {activeTab === 'login' && (
                     <motion.div
                       layoutId="activeTabUnderline"
@@ -128,7 +128,7 @@ export default function LoginPage() {
                     activeTab === 'register' ? 'text-purple-400' : 'text-white/40 hover:text-white/70'
                   }`}
                 >
-                  CREATE_ACCOUNT
+                  Create Account
                   {activeTab === 'register' && (
                     <motion.div
                       layoutId="activeTabUnderline"
@@ -186,7 +186,7 @@ export default function LoginPage() {
                         onClick={() => { setForgotPassword(true); setError(''); }}
                         className="text-[10px] font-mono text-cyan-400 hover:underline"
                       >
-                        FORGOT_PASS?
+                        Forgot Password?
                       </button>
                     )}
                   </div>
@@ -211,7 +211,7 @@ export default function LoginPage() {
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   ) : (
                     <>
-                      {activeTab === 'login' ? 'INITIALIZE_LOGIN' : 'COMMENCE_REGISTRATION'}
+                      {activeTab === 'login' ? 'Login' : 'Register'}
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}
@@ -221,7 +221,7 @@ export default function LoginPage() {
               {/* Separator */}
               <div className="relative my-6 text-center">
                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/10"></div></div>
-                <span className="relative bg-[#0b0a14] px-3 text-[10px] font-mono text-white/40">OR_SECURE_OAUTH</span>
+                <span className="relative bg-[#0b0a14] px-3 text-[10px] font-mono text-white/40">Or continue with</span>
               </div>
 
               {/* OAuth Panel */}
@@ -234,7 +234,7 @@ export default function LoginPage() {
                   <svg className="w-4 h-4 text-red-400" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12.24 10.285V13.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.859-3.579-7.859-8s3.53-8 7.859-8c2.46 0 4.105 1.025 5.047 1.926l2.427-2.334C17.955 2.192 15.34 1 12.24 1 6.033 1 1 6.033 1 12.24s5.033 11.24 11.24 11.24c6.478 0 10.793-4.537 10.793-10.986 0-.746-.08-1.32-.176-1.886H12.24z"/>
                   </svg>
-                  GOOGLE
+                  Google
                 </button>
                 <button
                   onClick={handleGoogleLogin}
@@ -251,7 +251,7 @@ export default function LoginPage() {
           ) : (
             // Forgot Password Screen
             <div className="space-y-4">
-              <h3 className="text-lg font-mono font-semibold text-purple-400">RESET_ACCESS_KEY</h3>
+              <h3 className="text-lg font-mono font-semibold text-purple-400">Reset Access</h3>
               <p className="text-xs text-white/60">
                 {!resetSent 
                   ? 'Input your academic email. The AI dispatcher will compile a dynamic access override link.' 
@@ -277,7 +277,7 @@ export default function LoginPage() {
                     type="submit"
                     className="w-full bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-white rounded-xl py-2.5 text-sm font-mono font-bold flex items-center justify-center gap-2 cursor-pointer transition"
                   >
-                    DISPATCH_TOKEN
+                    Reset Password
                   </button>
                 </form>
               ) : (
@@ -291,7 +291,7 @@ export default function LoginPage() {
                 onClick={() => { setForgotPassword(false); setResetSent(false); }}
                 className="w-full bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl py-2 text-xs font-mono transition cursor-pointer text-center"
               >
-                RETURN_TO_LOGIN
+                Return to Login
               </button>
             </div>
           )}
@@ -328,7 +328,7 @@ export default function LoginPage() {
                   </svg>
                 </div>
                 <h3 className="text-lg font-mono font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">
-                  {googleLoading ? 'AUTHENTICATING...' : 'GOOGLE_SSO_SIMULATOR'}
+                  {googleLoading ? 'Authenticating...' : 'Google Sign In'}
                 </h3>
                 <p className="text-xs text-white/55 max-w-xs font-sans">
                   {googleLoading 
@@ -386,7 +386,7 @@ export default function LoginPage() {
                         onClick={() => setCustomGoogle(true)}
                         className="w-full text-center py-2.5 rounded-xl border border-dashed border-white/10 hover:border-purple-500/40 text-xs font-mono text-purple-400 hover:text-purple-300 transition cursor-pointer text-white"
                       >
-                        + USE ANOTHER GOOGLE ACCOUNT
+                        + Use another Google account
                       </button>
                     </div>
                   ) : (
@@ -436,13 +436,13 @@ export default function LoginPage() {
                           onClick={() => { setCustomGoogle(false); setError(''); }}
                           className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl py-2.5 text-xs font-mono transition text-white cursor-pointer"
                         >
-                          BACK
+                          Back
                         </button>
                         <button
                           type="submit"
                           className="flex-1 bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 text-white rounded-xl py-2.5 text-xs font-mono font-bold flex items-center justify-center gap-1 shadow-lg shadow-purple-500/10 cursor-pointer"
                         >
-                          PROCEED_SSO <ArrowRight className="w-3.5 h-3.5" />
+                          Continue <ArrowRight className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </form>
@@ -450,7 +450,7 @@ export default function LoginPage() {
                   
                   {/* Google disclaimer footer */}
                   <div className="text-[10px] text-white/30 text-center leading-normal font-sans pt-2 border-t border-white/5">
-                    To continue, Google will share your name, email address, language preference, and profile picture with Aero Study Lab.
+                    To continue, Google will share your name, email address, language preference, and profile picture with Layora.
                   </div>
                 </div>
               )}

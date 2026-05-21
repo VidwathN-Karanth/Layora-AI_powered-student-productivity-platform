@@ -33,13 +33,13 @@ export default function RootPage() {
           <div className="absolute inset-0 rounded-full border border-purple-500/30 animate-ping"></div>
           <div className="absolute inset-2 rounded-full border border-blue-500/50 animate-pulse"></div>
           <div className="absolute inset-4 rounded-full bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
-            <span className="text-white font-mono font-bold text-2xl tracking-tighter">Æ</span>
+            <span className="text-white font-mono font-bold text-2xl tracking-tighter">L</span>
           </div>
         </div>
         
         <div className="text-center">
           <h1 className="text-2xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400 font-mono">
-            AERO STUDY LAB
+            LAYORA
           </h1>
           <p className="text-xs text-purple-300/60 font-mono mt-1">
             Synchronizing academic core...

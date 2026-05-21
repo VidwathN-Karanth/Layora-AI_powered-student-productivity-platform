@@ -31,7 +31,7 @@ export default function AnalyticsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="border-b border-white/5 pb-4">
-        <h2 className="text-xl font-mono font-bold tracking-wide">PRODUCTIVITY_ANALYTICS</h2>
+        <h2 className="text-xl font-mono font-bold tracking-wide">Productivity Analytics</h2>
         <p className="text-xs text-white/40 font-mono mt-0.5">Visualize study hour distributions, active milestones, and AI recommendations.</p>
       </div>
 
@@ -42,7 +42,7 @@ export default function AnalyticsPage() {
             <Clock className="w-5 h-5 animate-pulse" />
           </div>
           <div>
-            <div className="text-[10px] font-mono text-white/50">TOTAL_FOCUS_TIME</div>
+            <div className="text-[10px] font-mono text-white/50">Total Focus Time</div>
             <div className="text-base font-mono font-bold">{user?.totalStudyHours || 0} Hours logged</div>
           </div>
         </div>
@@ -52,7 +52,7 @@ export default function AnalyticsPage() {
             <CheckSquare className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[10px] font-mono text-white/50">MILESTONES_RESOLVED</div>
+            <div className="text-[10px] font-mono text-white/50">Milestones Completed</div>
             <div className="text-base font-mono font-bold">{completedCount} complete • {pendingCount} active</div>
           </div>
         </div>
@@ -62,7 +62,7 @@ export default function AnalyticsPage() {
             <Flame className="w-5 h-5 text-pink-500 animate-bounce" />
           </div>
           <div>
-            <div className="text-[10px] font-mono text-white/50">ACTIVE_COMMITMENT_STREAK</div>
+            <div className="text-[10px] font-mono text-white/50">Active Commitment Streak</div>
             <div className="text-base font-mono font-bold">{user?.streakCount || 0} Daily Cycles</div>
           </div>
         </div>
@@ -73,7 +73,7 @@ export default function AnalyticsPage() {
         <div className="lg:col-span-2 space-y-6">
           <div className="glass-card rounded-2xl p-5 space-y-6">
             <div className="flex justify-between items-center border-b border-white/5 pb-2">
-              <h3 className="text-xs font-mono font-bold text-purple-400 tracking-wider">WEEKLY_FOCUS_DENSITY</h3>
+              <h3 className="text-xs font-mono font-bold text-purple-400 tracking-wider">Weekly Focus Density</h3>
               <span className="text-[9px] font-mono text-white/40">HOURS / DAY</span>
             </div>
 
@@ -105,7 +105,7 @@ export default function AnalyticsPage() {
           <div className="glass-panel-neon rounded-2xl p-5 border border-purple-500/20 space-y-4">
             <div className="flex items-center gap-2 border-b border-white/5 pb-2">
               <Sparkles className="w-4 h-4 text-purple-400" />
-              <h4 className="text-xs font-mono font-bold text-purple-300">WEEKLY_AI_INSIGHTS</h4>
+              <h4 className="text-xs font-mono font-bold text-purple-300">Weekly AI Insights</h4>
             </div>
 
             <div className="space-y-4 text-xs font-mono text-white/80 leading-relaxed">

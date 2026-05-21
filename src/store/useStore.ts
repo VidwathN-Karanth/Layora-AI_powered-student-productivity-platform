@@ -122,7 +122,7 @@ export const useStore = create<AppState>()(
       login: (email, name) => set({
         isAuthenticated: true,
         user: {
-          name: name || 'Aero Student',
+          name: name || 'Layora Student',
           email,
           streakCount: 5, // start with a motivational streak
           totalStudyHours: 12.5,
@@ -165,18 +165,18 @@ export const useStore = create<AppState>()(
         { id: 'sub-phy', name: 'Quantum Physics', code: 'PHY102', credits: 3, difficulty: 'Medium', priority: 'Medium' }
       ],
       addSubject: (subj) => set((state) => ({
-        subjects: [...state.subjects, { ...subj, id: `sub-${Date.now()}` }]
+        subjects: [...state.subjects, { ...subj, id: `sub-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` }]
       })),
       removeSubject: (id) => set((state) => ({
         subjects: state.subjects.filter((s) => s.id !== id)
       })),
       resources: {
         'sub-math': [
-          { id: 'res-1', name: 'Calculus_Limits_CheatSheet.pdf', url: '#', type: 'pdf' },
-          { id: 'res-2', name: 'Lecture_Notes_Differentiation.pptx', url: '#', type: 'ppt' }
+          { id: 'res-1', name: 'Calculus Limits CheatSheet.pdf', url: '#', type: 'pdf' },
+          { id: 'res-2', name: 'Lecture Notes Differentiation.pptx', url: '#', type: 'ppt' }
         ],
         'sub-cs': [
-          { id: 'res-3', name: 'Binary_Trees_Complete_Guide.pdf', url: '#', type: 'pdf' }
+          { id: 'res-3', name: 'Binary Trees Complete Guide.pdf', url: '#', type: 'pdf' }
         ]
       },
       uploadResource: (subjectId, res) => set((state) => {
@@ -184,7 +184,7 @@ export const useStore = create<AppState>()(
         return {
           resources: {
             ...state.resources,
-            [subjectId]: [...subResources, { ...res, id: `res-${Date.now()}` }]
+            [subjectId]: [...subResources, { ...res, id: `res-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` }]
           }
         };
       }),
@@ -195,7 +195,7 @@ export const useStore = create<AppState>()(
         { id: 'act-med', name: 'Meditation', duration: 15, preferredTimings: 'morning', priority: 'Medium' }
       ],
       addActivity: (act) => set((state) => ({
-        activities: [...state.activities, { ...act, id: `act-${Date.now()}` }]
+        activities: [...state.activities, { ...act, id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` }]
       })),
       removeActivity: (id) => set((state) => ({
         activities: state.activities.filter((a) => a.id !== id)
@@ -207,7 +207,7 @@ export const useStore = create<AppState>()(
         { id: 'site-gh', name: 'GitHub', url: 'https://github.com', timeSpentGoal: 30 }
       ],
       addWebsite: (site) => set((state) => ({
-        websites: [...state.websites, { ...site, id: `site-${Date.now()}` }]
+        websites: [...state.websites, { ...site, id: `site-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` }]
       })),
       removeWebsite: (id) => set((state) => ({
         websites: state.websites.filter((w) => w.id !== id)
@@ -219,7 +219,7 @@ export const useStore = create<AppState>()(
         { id: 'course-2', name: 'React Native for Beginners', platform: 'Udemy', progress: 40, weeklyGoal: 5, deadline: '2026-07-01' }
       ],
       addCourse: (course) => set((state) => ({
-        courses: [...state.courses, { ...course, id: `course-${Date.now()}` }]
+        courses: [...state.courses, { ...course, id: `course-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` }]
       })),
       updateCourseProgress: (id, progress) => set((state) => ({
         courses: state.courses.map((c) => c.id === id ? { ...c, progress } : c)
@@ -235,7 +235,7 @@ export const useStore = create<AppState>()(
         { id: 'task-3', subjectId: 'sub-phy', subjectName: 'Quantum Physics', title: 'Review Photoelectric Effect Lab Report', deadline: '2026-05-28', estimatedMinutes: 60, actualMinutesSpent: 60, status: 'completed' }
       ],
       addTask: (task) => set((state) => ({
-        tasks: [...state.tasks, { ...task, id: `task-${Date.now()}`, actualMinutesSpent: 0, status: 'pending' }]
+        tasks: [...state.tasks, { ...task, id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`, actualMinutesSpent: 0, status: 'pending' }]
       })),
       removeTask: (id) => set((state) => ({
         tasks: state.tasks.filter((t) => t.id !== id)
@@ -348,7 +348,7 @@ export const useStore = create<AppState>()(
         chatHistory: [
           ...state.chatHistory,
           {
-            id: `msg-${Date.now()}`,
+            id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
             role,
             content,
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -362,7 +362,7 @@ export const useStore = create<AppState>()(
       })
     }),
     {
-      name: 'aero-productivity-store',
+      name: 'layora-productivity-store',
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,

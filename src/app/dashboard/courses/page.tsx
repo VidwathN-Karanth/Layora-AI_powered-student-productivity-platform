@@ -46,7 +46,7 @@ export default function CoursesPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-4">
         <div>
-          <h2 className="text-xl font-mono font-bold tracking-wide">ACTIVE_COURSES</h2>
+          <h2 className="text-xl font-mono font-bold tracking-wide">Active Courses</h2>
           <p className="text-xs text-white/40 font-mono mt-0.5">Manage external platforms, bootcamps, and certification milestones.</p>
         </div>
 
@@ -55,7 +55,7 @@ export default function CoursesPage() {
           className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-white rounded-xl px-4 py-2.5 text-xs font-mono font-bold flex items-center gap-2 active:scale-95 transition cursor-pointer shadow-lg shadow-purple-500/10"
         >
           <PlusCircle className="w-4 h-4" />
-          ADD_ONLINE_COURSE
+          Add Online Course
         </button>
       </div>
 
@@ -91,7 +91,7 @@ export default function CoursesPage() {
               {/* Slider Controller */}
               <div className="space-y-1.5 pt-2">
                 <div className="flex justify-between text-[10px] font-mono text-white/50">
-                  <span>PROGRESS_METER</span>
+                  <span>Progress Meter</span>
                   <span className="text-cyan-400 font-bold">{course.progress}%</span>
                 </div>
                 
@@ -125,11 +125,11 @@ export default function CoursesPage() {
               exit={{ scale: 0.95, opacity: 0 }}
               className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm glass-panel-neon p-6 rounded-2xl z-50 border border-purple-500/20"
             >
-              <h3 className="text-sm font-mono font-bold text-purple-300 border-b border-white/5 pb-2 mb-4">LOG_ONLINE_COURSE</h3>
+              <h3 className="text-sm font-mono font-bold text-purple-300 border-b border-white/5 pb-2 mb-4">Log Online Course</h3>
               
               <form onSubmit={handleCreateCourse} className="space-y-4">
                 <div>
-                  <label className="block text-[10px] font-mono text-white/50 mb-1">COURSE_TITLE</label>
+                  <label className="block text-[10px] font-mono text-white/50 mb-1">Course Title</label>
                   <input
                     type="text"
                     required
@@ -141,7 +141,7 @@ export default function CoursesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-mono text-white/50 mb-1">PLATFORM_OR_ACADEMY</label>
+                  <label className="block text-[10px] font-mono text-white/50 mb-1">Platform / Academy</label>
                   <input
                     type="text"
                     value={platform}
@@ -153,7 +153,7 @@ export default function CoursesPage() {
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] font-mono text-white/50 mb-1">INITIAL_PROGRESS %</label>
+                    <label className="block text-[10px] font-mono text-white/50 mb-1">Initial Progress %</label>
                     <input
                       type="number"
                       min={0}
@@ -164,7 +164,7 @@ export default function CoursesPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-mono text-white/50 mb-1">WEEKLY_GOAL (HRS)</label>
+                    <label className="block text-[10px] font-mono text-white/50 mb-1">Weekly Goal (Hours)</label>
                     <input
                       type="number"
                       min={1}
@@ -177,7 +177,7 @@ export default function CoursesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-mono text-white/50 mb-1">DEADLINE</label>
+                  <label className="block text-[10px] font-mono text-white/50 mb-1">Deadline</label>
                   <input
                     type="date"
                     value={deadline}
@@ -192,13 +192,13 @@ export default function CoursesPage() {
                     onClick={() => setShowAddCourse(false)} 
                     className="flex-1 bg-white/5 border border-white/10 rounded-lg py-2 text-xs font-mono cursor-pointer"
                   >
-                    CANCEL
+                    Cancel
                   </button>
                   <button 
                     type="submit"
                     className="flex-1 bg-purple-600 hover:bg-purple-500 rounded-lg py-2 text-xs font-mono font-bold cursor-pointer"
                   >
-                    LOG_COURSE
+                    Log Course
                   </button>
                 </div>
               </form>
