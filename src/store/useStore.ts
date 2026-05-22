@@ -64,6 +64,8 @@ interface AppState {
   removeSubject: (id: string) => void;
   resources: { [subjectId: string]: { id: string; name: string; url: string; type: string }[] };
   uploadResource: (subjectId: string, resource: { name: string; url: string; type: string }) => void;
+  removeResource: (subjectId: string, resourceId: string) => void;
+
 
   // Extracurriculars & Sites
   activities: Activity[];
@@ -189,6 +191,16 @@ export const useStore = create<AppState>()(
           }
         };
       }),
+      removeResource: (subjectId, resourceId) => set((state) => {
+        const subResources = state.resources[subjectId] || [];
+        return {
+          resources: {
+            ...state.resources,
+            [subjectId]: subResources.filter((r) => r.id !== resourceId)
+          }
+        };
+      }),
+
 
       // Extra activities
       activities: [

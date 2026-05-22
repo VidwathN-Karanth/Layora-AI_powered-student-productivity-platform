@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore, ChatMessage } from '@/store/useStore';
-import { sendAIChatMessage } from '@/lib/aiService';
+import { sendAIChatMessage, resolveScheduleOverlaps } from '@/lib/aiService';
 import { 
   LayoutDashboard, CalendarRange, BookMarked, CheckSquare, Calendar, 
   FolderLock, BarChart3, Settings, UserCheck, LogOut, ChevronLeft, 
@@ -46,7 +46,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => clearInterval(interval);
   }, []);
 
-  // Global Task Timer Ticking Sync
   useEffect(() => {
     if (store.activeTaskId) {
       const interval = setInterval(() => {
@@ -55,6 +54,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       return () => clearInterval(interval);
     }
   }, [store.activeTaskId]);
+
+  // Auto-resolve any timetable overlap conflicts on store hydration/change
+  useEffect(() => {
+    if (store.timetable && store.timetable.length > 0) {
+      const fixedTimetable = resolveScheduleOverlaps(store.timetable);
+      if (JSON.stringify(fixedTimetable) !== JSON.stringify(store.timetable)) {
+        store.setTimetable(fixedTimetable);
+      }
+    }
+  }, [store.timetable]);
 
   // Chat message input and scrolling
   const [messageText, setMessageText] = useState('');

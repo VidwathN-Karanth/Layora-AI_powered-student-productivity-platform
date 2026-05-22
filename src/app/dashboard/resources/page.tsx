@@ -13,25 +13,60 @@ export default function ResourcesPage() {
   const subjects = store.subjects;
   const resources = store.resources;
 
+  // UI state
+  const [activeTab, setActiveTab] = useState<'upload' | 'subject'>('upload');
+
+  // Form states - Upload Resource
   const [activeSubjectId, setActiveSubjectId] = useState(subjects[0]?.id || '');
   const [fileName, setFileName] = useState('');
   const [fileType, setFileType] = useState('pdf');
 
+  // Form states - Add Subject
+  const [subName, setSubName] = useState('');
+  const [subCode, setSubCode] = useState('');
+  const [subCredits, setSubCredits] = useState(3);
+  const [subDifficulty, setSubDifficulty] = useState<'Easy' | 'Medium' | 'Hard'>('Medium');
+  const [subPriority, setSubPriority] = useState<'Low' | 'Medium' | 'High'>('Medium');
+
   const handleUpload = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fileName || !activeSubjectId) return;
+    const targetSubjectId = activeSubjectId || subjects[0]?.id;
+    if (!fileName || !targetSubjectId) return;
 
     const formattedName = fileName.endsWith(`.${fileType}`) 
       ? fileName 
       : `${fileName}.${fileType}`;
 
-    store.uploadResource(activeSubjectId, {
+    store.uploadResource(targetSubjectId, {
       name: formattedName,
       url: '#',
       type: fileType
     });
 
     setFileName('');
+  };
+
+  const handleAddSubject = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subName) return;
+
+    store.addSubject({
+      name: subName,
+      code: subCode || 'SUB101',
+      credits: subCredits,
+      difficulty: subDifficulty,
+      priority: subPriority
+    });
+
+    // Reset form
+    setSubName('');
+    setSubCode('');
+    setSubCredits(3);
+    setSubDifficulty('Medium');
+    setSubPriority('Medium');
+
+    // Switch back to upload tab
+    setActiveTab('upload');
   };
 
   return (
@@ -43,63 +78,174 @@ export default function ResourcesPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* --- LEFT COLUMN: UPLOAD CONTROLLER --- */}
+        {/* --- LEFT COLUMN: UPLOAD / SUBJECT CONTROLLER --- */}
         <div className="space-y-4">
           <div className="glass-card rounded-2xl p-5 space-y-4">
-            <h3 className="text-xs font-mono font-bold text-purple-400 border-b border-white/5 pb-2">Upload Resource</h3>
             
-            {subjects.length === 0 ? (
-              <p className="text-xs text-red-400 font-mono">No subjects available. Add subjects in Settings to upload resources.</p>
+            {/* Tabs */}
+            <div className="flex gap-2 p-1 bg-white/5 border border-white/10 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setActiveTab('upload')}
+                className={`flex-1 py-2 text-xs font-mono font-bold rounded-lg flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  activeTab === 'upload'
+                    ? 'bg-purple-600/25 text-purple-300 border border-purple-500/30'
+                    : 'text-white/60 hover:text-white hover:bg-white/5 border border-transparent'
+                }`}
+              >
+                <UploadCloud className="w-3.5 h-3.5" />
+                Upload Material
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('subject')}
+                className={`flex-1 py-2 text-xs font-mono font-bold rounded-lg flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                  activeTab === 'subject'
+                    ? 'bg-purple-600/25 text-purple-300 border border-purple-500/30'
+                    : 'text-white/60 hover:text-white hover:bg-white/5 border border-transparent'
+                }`}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add Subject
+              </button>
+            </div>
+
+            {activeTab === 'upload' ? (
+              <>
+                <h3 className="text-xs font-mono font-bold text-purple-400 border-b border-white/5 pb-2">Upload Resource</h3>
+                
+                {subjects.length === 0 ? (
+                  <p className="text-xs text-red-400 font-mono">No subjects available. Add a subject using the tab above to get started.</p>
+                ) : (
+                  <form onSubmit={handleUpload} className="space-y-4">
+                    <div>
+                      <label className="block text-[10px] font-mono text-white/50 mb-1">Target Subject</label>
+                      <select
+                        value={activeSubjectId || subjects[0]?.id || ''}
+                        onChange={(e) => setActiveSubjectId(e.target.value)}
+                        className="w-full bg-white/10 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-purple-200 focus:outline-none focus:border-purple-500/50"
+                      >
+                        {subjects.map((sub) => (
+                          <option key={sub.id} value={sub.id}>
+                            {sub.name} ({sub.code})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-mono text-white/50 mb-1">Document Name</label>
+                      <input
+                        type="text"
+                        required
+                        value={fileName}
+                        onChange={(e) => setFileName(e.target.value)}
+                        placeholder="Calculus Cheat Sheet"
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500/50"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-mono text-white/50 mb-1">File Format</label>
+                      <select
+                        value={fileType}
+                        onChange={(e) => setFileType(e.target.value)}
+                        className="w-full bg-white/10 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-purple-200 focus:outline-none focus:border-purple-500/50"
+                      >
+                        <option value="pdf">Adobe PDF (.pdf)</option>
+                        <option value="ppt">PowerPoint PPT (.pptx)</option>
+                        <option value="doc">Word Doc (.docx)</option>
+                        <option value="txt">Text File (.txt)</option>
+                      </select>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-white rounded-lg py-2.5 text-xs font-mono font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <UploadCloud className="w-4 h-4" /> Upload File
+                    </button>
+                  </form>
+                )}
+              </>
             ) : (
-              <form onSubmit={handleUpload} className="space-y-4">
-                <div>
-                  <label className="block text-[10px] font-mono text-white/50 mb-1">Target Subject</label>
-                  <select
-                    value={activeSubjectId}
-                    onChange={(e) => setActiveSubjectId(e.target.value)}
-                    className="w-full bg-white/10 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-purple-200"
+              <>
+                <h3 className="text-xs font-mono font-bold text-purple-400 border-b border-white/5 pb-2">Add New Subject</h3>
+                
+                <form onSubmit={handleAddSubject} className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-mono text-white/50 mb-1">Subject Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={subName}
+                      onChange={(e) => setSubName(e.target.value)}
+                      placeholder="Introduction to Physics"
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500/50"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-mono text-white/50 mb-1">Subject Code</label>
+                      <input
+                        type="text"
+                        required
+                        value={subCode}
+                        onChange={(e) => setSubCode(e.target.value)}
+                        placeholder="PHY101"
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-mono text-white/50 mb-1">Credits</label>
+                      <input
+                        type="number"
+                        required
+                        min={1}
+                        max={6}
+                        value={subCredits}
+                        onChange={(e) => setSubCredits(parseInt(e.target.value) || 3)}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500/50"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-mono text-white/50 mb-1">Difficulty</label>
+                      <select
+                        value={subDifficulty}
+                        onChange={(e) => setSubDifficulty(e.target.value as any)}
+                        className="w-full bg-white/10 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-purple-200 focus:outline-none focus:border-purple-500/50"
+                      >
+                        <option value="Easy">Easy</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Hard">Hard</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-mono text-white/50 mb-1">Priority</label>
+                      <select
+                        value={subPriority}
+                        onChange={(e) => setSubPriority(e.target.value as any)}
+                        className="w-full bg-white/10 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-purple-200 focus:outline-none focus:border-purple-500/50"
+                      >
+                        <option value="Low">Low</option>
+                        <option value="Medium">Medium</option>
+                        <option value="High">High</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-white rounded-lg py-2.5 text-xs font-mono font-bold flex items-center justify-center gap-1.5 cursor-pointer"
                   >
-                    {subjects.map((sub) => (
-                      <option key={sub.id} value={sub.id}>
-                        {sub.name} ({sub.code})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-mono text-white/50 mb-1">Document Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={fileName}
-                    onChange={(e) => setFileName(e.target.value)}
-                    placeholder="Calculus Cheat Sheet"
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-mono text-white/50 mb-1">File Format</label>
-                  <select
-                    value={fileType}
-                    onChange={(e) => setFileType(e.target.value)}
-                    className="w-full bg-white/10 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-purple-200"
-                  >
-                    <option value="pdf">Adobe PDF (.pdf)</option>
-                    <option value="ppt">PowerPoint PPT (.pptx)</option>
-                    <option value="doc">Word Doc (.docx)</option>
-                    <option value="txt">Text File (.txt)</option>
-                  </select>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-white rounded-lg py-2.5 text-xs font-mono font-bold flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <UploadCloud className="w-4 h-4" /> Upload File
-                </button>
-              </form>
+                    <Plus className="w-4 h-4" /> Create Subject
+                  </button>
+                </form>
+              </>
             )}
           </div>
         </div>
@@ -126,7 +272,21 @@ export default function ResourcesPage() {
                         <span className="font-mono font-bold text-xs text-purple-200">{sub.name}</span>
                         <span className="text-[9px] font-mono bg-purple-950/40 text-purple-300 px-1.5 py-0.5 rounded border border-purple-800/30">{sub.code}</span>
                       </div>
-                      <span className="text-[10px] font-mono text-white/40">{files.length} documents indexed</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] font-mono text-white/40">{files.length} documents indexed</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (confirm(`Are you sure you want to delete "${sub.name}"? All associated files will be deleted.`)) {
+                              store.removeSubject(sub.id);
+                            }
+                          }}
+                          className="p-1 hover:bg-red-950/40 border border-transparent hover:border-red-500/20 rounded-lg text-white/40 hover:text-red-400 transition cursor-pointer"
+                          title="Delete subject"
+                        >
+                          <Trash className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -145,14 +305,28 @@ export default function ResourcesPage() {
                               <span className="text-[9px] font-mono text-white/30 uppercase">{file.type} format</span>
                             </div>
 
-                            <a 
-                              href="#" 
-                              onClick={(e) => e.preventDefault()}
-                              className="p-1 hover:bg-white/10 rounded-lg text-white/40 hover:text-white transition"
-                              title="Download resource"
-                            >
-                              <Download className="w-3.5 h-3.5" />
-                            </a>
+                            <div className="flex gap-1 shrink-0">
+                              <a 
+                                href="#" 
+                                onClick={(e) => e.preventDefault()}
+                                className="p-1 hover:bg-white/10 rounded-lg text-white/40 hover:text-white transition"
+                                title="Download resource"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                              </a>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (confirm(`Are you sure you want to delete the file "${file.name}"?`)) {
+                                    store.removeResource(sub.id, file.id);
+                                  }
+                                }}
+                                className="p-1 hover:bg-red-950/40 rounded-lg text-white/40 hover:text-red-400 transition cursor-pointer"
+                                title="Delete resource"
+                              >
+                                <Trash className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
                         ))
                       )}
