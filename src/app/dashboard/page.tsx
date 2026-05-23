@@ -3,7 +3,7 @@
 import { useStore } from '@/store/useStore';
 import { motion } from 'framer-motion';
 import { 
-  Flame, BookOpen, Clock, CheckSquare, Sparkles, Globe, 
+  Flame, BookOpen, Clock, CheckSquare, Globe, 
   ExternalLink, ChevronRight, Award, AlertCircle 
 } from 'lucide-react';
 import Link from 'next/link';
@@ -29,22 +29,7 @@ export default function DashboardHome() {
     .filter((b) => b.day === todayNum)
     .sort((a, b) => a.start.localeCompare(b.start));
 
-  // Custom AI recommendations
-  const getAIRecommendations = () => {
-    if (pendingTasks > 3) {
-      return {
-        title: 'Task Overload Detected',
-        body: 'You currently have several pending tasks. Focus on completing "MATH201 Integration Sheet" first, as it has high priority credits. Avoid taking new courses this week.',
-        type: 'warning'
-      };
-    }
-    return {
-      title: 'Optimal Balance Achieved',
-      body: 'Your weekly load is perfectly proportioned. Your daily streak is active! Maintain this schedule to solidify memory retention.',
-      type: 'success'
-    };
-  };
-  const recommendation = getAIRecommendations();
+
 
   return (
     <div className="space-y-6">
@@ -113,25 +98,7 @@ export default function DashboardHome() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* --- LEFT COLUMNS: DAILY AGENDA & RECOMMENDATIONS --- */}
         <div className="lg:col-span-2 space-y-6">
-          {/* AI Recommendation banner */}
-          <div className="glass-panel-neon rounded-2xl p-5 border border-purple-500/20 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-5">
-              <Sparkles className="w-24 h-24 text-purple-400" />
-            </div>
-            <div className="flex items-start gap-4">
-              <div className="w-9 h-9 rounded-lg bg-purple-950/40 border border-purple-500/40 flex items-center justify-center text-purple-400 shrink-0">
-                <Sparkles className="w-4 h-4 animate-spin-slow" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-xs font-mono font-black text-purple-300 uppercase tracking-widest flex items-center gap-1.5">
-                  AI Recommendation: {recommendation.title}
-                </h3>
-                <p className="text-xs text-white/70 leading-relaxed font-sans mt-1">
-                  {recommendation.body}
-                </p>
-              </div>
-            </div>
-          </div>
+
 
           {/* Daily Schedule Timeline */}
           <div className="glass-card rounded-2xl p-5 space-y-4">

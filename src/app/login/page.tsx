@@ -10,6 +10,8 @@ import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient';
 export default function LoginPage() {
   const router = useRouter();
   const loginUser = useStore((state) => state.login);
+  const loginWithCredentials = useStore((state) => state.loginWithCredentials);
+  const registerUser = useStore((state) => state.registerUser);
   const resetStore = useStore((state) => state.resetStore);
   
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
@@ -41,8 +43,29 @@ export default function LoginPage() {
 
     // Simulate database network timing
     setTimeout(() => {
-      loginUser(email, activeTab === 'register' ? name : email.split('@')[0]);
-      router.push('/dashboard');
+      if (activeTab === 'register') {
+        const res = registerUser(email, name, password);
+        if (res.success) {
+          const loginRes = loginWithCredentials(email, password);
+          if (loginRes.success) {
+            router.push('/dashboard');
+          } else {
+            setError(loginRes.error || 'Auto-login failed.');
+            setLoading(false);
+          }
+        } else {
+          setError(res.error || 'Registration failed.');
+          setLoading(false);
+        }
+      } else {
+        const loginRes = loginWithCredentials(email, password);
+        if (loginRes.success) {
+          router.push('/dashboard');
+        } else {
+          setError(loginRes.error || 'Login failed.');
+          setLoading(false);
+        }
+      }
     }, 1500);
   };
 
