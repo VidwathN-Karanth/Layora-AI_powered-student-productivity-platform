@@ -35,6 +35,13 @@ export default function ResourcesPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (file.size > 4.5 * 1024 * 1024) {
+      alert("File is too large! Vercel's free tier restricts uploads to 4.5MB per file. Please choose a smaller file.");
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      setFileData(null);
+      return;
+    }
+
     const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
     const ext = file.name.split('.').pop()?.toLowerCase() || 'pdf';
     
@@ -64,7 +71,15 @@ export default function ResourcesPage() {
         body: formData,
       });
 
-      const data = await response.json();
+      let data;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        // Vercel edge errors or 502 bad gateways often return HTML or plain text
+        const textError = await response.text();
+        throw new Error(response.status === 413 ? "File is too large for Vercel." : `Server error: ${textError.substring(0, 60)}...`);
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'Upload failed');
