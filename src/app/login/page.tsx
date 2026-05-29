@@ -57,7 +57,10 @@ export default function LoginPage() {
                 footerActionText: "text-white/60 font-sans text-xs",
                 footerActionLink: "text-cyber-blue hover:text-white font-mono text-xs transition-colors",
                 identityPreviewText: "text-white",
-                identityPreviewEditButtonIcon: "text-cyber-blue"
+                identityPreviewEditButtonIcon: "text-cyber-blue",
+                watermark: "hidden !important opacity-0",
+                footerBottom: "hidden !important opacity-0",
+                internal: "hidden !important opacity-0"
               }
             }}
           />

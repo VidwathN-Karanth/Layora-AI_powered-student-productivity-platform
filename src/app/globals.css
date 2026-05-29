@@ -212,20 +212,25 @@ h1, h2, h3, h4, h5, h6 {
   cursor: grabbing;
 }
 
-/* Hide Clerk Development Mode Badge and Watermark */
-.cl-internal-1hp5nqm, 
-.cl-internal-b3al6g, 
-.cl-internal-1dauvpw,
-.cl-internal-753j2c,
-.cl-internal-19trmz7 {
+/* Hide Clerk Development Mode Badge and Watermark - ULTRA AGGRESSIVE */
+div[class*="cl-internal"] > div > a[href*="clerk"],
+div[class*="cl-internal"] a[href*="clerk"],
+.cl-watermark,
+.cl-logoBox,
+a[href*="clerk.dev"],
+a[href*="clerk.com"],
+div[class*="cl-internal-"]:last-of-type:not(:first-of-type) {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Specifically target the orange striped dev mode container */
+.cl-card > div:last-child {
+  display: none !important;
+}
+.cl-footer > div:last-child {
   display: none !important;
 }
 
-.cl-footer > div:not(.cl-footerAction) {
-  display: none !important;
-}
-
-div[class*="cl-internal-"][style*="position: fixed"],
-div[class*="cl-internal-"][style*="position:fixed"] {
-  display: none !important;
-}
