@@ -389,7 +389,7 @@ export default function OnboardingModal() {
                           <select 
                             value={newSubDiff} 
                             onChange={(e) => setNewSubDiff(e.target.value as any)}
-                            className="w-full bg-[#0d0d16] border border-white/10 rounded-lg px-2 py-1 text-xs text-white"
+                            className="w-full bg-surface-container-low border border-white/10 rounded-lg px-2 py-1 text-xs text-white"
                           >
                             <option value="Easy">Easy</option>
                             <option value="Medium">Medium</option>
@@ -401,7 +401,7 @@ export default function OnboardingModal() {
                           <select 
                             value={newSubPriority} 
                             onChange={(e) => setNewSubPriority(e.target.value as any)}
-                            className="w-full bg-[#0d0d16] border border-white/10 rounded-lg px-2 py-1 text-xs text-white"
+                            className="w-full bg-surface-container-low border border-white/10 rounded-lg px-2 py-1 text-xs text-white"
                           >
                             <option value="Low">Low</option>
                             <option value="Medium">Medium</option>
@@ -543,7 +543,7 @@ export default function OnboardingModal() {
                           <select 
                             value={newActTiming} 
                             onChange={(e) => setNewActTiming(e.target.value as any)}
-                            className="w-full bg-[#0d0d16] border border-white/10 rounded-lg px-2 py-1 text-xs text-white"
+                            className="w-full bg-surface-container-low border border-white/10 rounded-lg px-2 py-1 text-xs text-white"
                           >
                             <option value="morning">Morning</option>
                             <option value="afternoon">Afternoon</option>
@@ -556,7 +556,7 @@ export default function OnboardingModal() {
                         <select 
                           value={newActPriority} 
                           onChange={(e) => setNewActPriority(e.target.value as any)}
-                          className="w-full bg-[#0d0d16] border border-white/10 rounded-lg px-2 py-1 text-xs text-white"
+                          className="w-full bg-surface-container-low border border-white/10 rounded-lg px-2 py-1 text-xs text-white"
                         >
                           <option value="Low">Low</option>
                           <option value="Medium">Medium</option>

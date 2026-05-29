@@ -22,7 +22,7 @@ export default function RootPage() {
   }, [isAuthenticated, router]);
 
   return (
-    <main className="min-h-screen bg-[#030307] flex flex-col items-center justify-center relative overflow-hidden cyber-grid">
+    <main className="min-h-screen bg-background flex flex-col items-center justify-center relative overflow-hidden cyber-grid">
       {/* Background glow orbs */}
       <div className="glow-orb w-[300px] h-[300px] bg-purple-600 top-1/4 left-1/4"></div>
       <div className="glow-orb w-[300px] h-[300px] bg-blue-600 bottom-1/4 right-1/4"></div>

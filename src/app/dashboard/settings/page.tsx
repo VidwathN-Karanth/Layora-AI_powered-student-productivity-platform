@@ -11,9 +11,6 @@ import {
 export default function SettingsPage() {
   const store = useStore();
 
-  // API Key visibility state
-  const [showKeys, setShowKeys] = useState<{ [key: string]: boolean }>({});
-  
   // Local profile states
   const [name, setName] = useState(store.user?.name || '');
   const [wakeTime, setWakeTime] = useState(store.user?.wakeTime || '06:00');
@@ -21,18 +18,7 @@ export default function SettingsPage() {
   const [collegeStart, setCollegeStart] = useState(store.user?.collegeStart || '09:00');
   const [collegeEnd, setCollegeEnd] = useState(store.user?.collegeEnd || '16:00');
 
-  // Local key inputs
-  const [openaiKey, setOpenaiKey] = useState(store.apiKeys.openai || '');
-  const [geminiKey, setGeminiKey] = useState(store.apiKeys.gemini || '');
-  const [claudeKey, setClaudeKey] = useState(store.apiKeys.claude || '');
-  const [grokKey, setGrokKey] = useState(store.apiKeys.grok || '');
-
-  const [savingKeys, setSavingKeys] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-
-  const toggleShowKey = (provider: string) => {
-    setShowKeys({ ...showKeys, [provider]: !showKeys[provider] });
-  };
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,24 +31,6 @@ export default function SettingsPage() {
     });
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 2000);
-  };
-
-  const handleSaveKeys = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSavingKeys(true);
-    
-    store.setApiKeys({
-      openai: openaiKey,
-      gemini: geminiKey,
-      claude: claudeKey,
-      grok: grokKey
-    });
-
-    setTimeout(() => {
-      setSavingKeys(false);
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 2000);
-    }, 1000);
   };
 
   const handleSystemReset = () => {
@@ -84,7 +52,7 @@ export default function SettingsPage() {
       {/* Top Header */}
       <div className="border-b border-white/5 pb-4">
         <h2 className="text-xl font-mono font-bold tracking-wide">System Settings</h2>
-        <p className="text-xs text-white/40 font-mono mt-0.5">Customize UI configurations, sync calendars, and manage AI API bindings.</p>
+        <p className="text-xs text-white/40 font-mono mt-0.5">Customize UI configurations and sync academic calendars.</p>
       </div>
 
       {saveSuccess && (
@@ -164,114 +132,6 @@ export default function SettingsPage() {
           </form>
         </div>
 
-        {/* --- PANEL 2: MODULAR AI API KEYS --- */}
-        <div className="glass-card rounded-2xl p-5 space-y-4">
-          <div className="flex items-center gap-2.5 border-b border-white/5 pb-2">
-            <Key className="w-4 h-4 text-purple-400" />
-            <h3 className="text-xs font-mono font-bold tracking-wider text-purple-400 font-bold">Modular AI API Keys</h3>
-          </div>
-
-          <form onSubmit={handleSaveKeys} className="space-y-4">
-            <p className="text-[10px] text-white/50 font-mono leading-relaxed">
-              Input custom model credentials to bypass default engines. Keys are encrypted & stored in client localStorage.
-            </p>
-
-            <div className="space-y-3">
-              {/* OpenAI Key */}
-              <div>
-                <label className="block text-[9px] font-mono text-white/50 mb-1">OpenAI API Key</label>
-                <div className="relative">
-                  <input
-                    type={showKeys.openai ? 'text' : 'password'}
-                    value={openaiKey}
-                    onChange={(e) => setOpenaiKey(e.target.value)}
-                    placeholder="sk-proj-..."
-                    className="w-full bg-white/5 border border-white/10 rounded-lg py-1.5 pl-3 pr-10 text-xs text-white focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => toggleShowKey('openai')}
-                    className="absolute right-2 top-2 text-white/40 hover:text-white"
-                  >
-                    {showKeys.openai ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Gemini Key */}
-              <div>
-                <label className="block text-[9px] font-mono text-white/50 mb-1">Gemini API Key</label>
-                <div className="relative">
-                  <input
-                    type={showKeys.gemini ? 'text' : 'password'}
-                    value={geminiKey}
-                    onChange={(e) => setGeminiKey(e.target.value)}
-                    placeholder="AIzaSy..."
-                    className="w-full bg-white/5 border border-white/10 rounded-lg py-1.5 pl-3 pr-10 text-xs text-white focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => toggleShowKey('gemini')}
-                    className="absolute right-2 top-2 text-white/40 hover:text-white"
-                  >
-                    {showKeys.gemini ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Claude Key */}
-              <div>
-                <label className="block text-[9px] font-mono text-white/50 mb-1">Claude API Key</label>
-                <div className="relative">
-                  <input
-                    type={showKeys.claude ? 'text' : 'password'}
-                    value={claudeKey}
-                    onChange={(e) => setClaudeKey(e.target.value)}
-                    placeholder="sk-ant-..."
-                    className="w-full bg-white/5 border border-white/10 rounded-lg py-1.5 pl-3 pr-10 text-xs text-white focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => toggleShowKey('claude')}
-                    className="absolute right-2 top-2 text-white/40 hover:text-white"
-                  >
-                    {showKeys.claude ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Grok Key */}
-              <div>
-                <label className="block text-[9px] font-mono text-white/50 mb-1">Grok API Key</label>
-                <div className="relative">
-                  <input
-                    type={showKeys.grok ? 'text' : 'password'}
-                    value={grokKey}
-                    onChange={(e) => setGrokKey(e.target.value)}
-                    placeholder="xai-..."
-                    className="w-full bg-white/5 border border-white/10 rounded-lg py-1.5 pl-3 pr-10 text-xs text-white focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => toggleShowKey('grok')}
-                    className="absolute right-2 top-2 text-white/40 hover:text-white"
-                  >
-                    {showKeys.grok ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={savingKeys}
-              className="bg-purple-600 hover:bg-purple-500 text-white rounded-lg px-4 py-2 text-xs font-mono font-bold transition cursor-pointer flex items-center gap-1.5"
-            >
-              {savingKeys ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
-              Save API Keys
-            </button>
-          </form>
-        </div>
 
         {/* --- PANEL 3: VISUAL THEMING --- */}
         <div className="glass-card rounded-2xl p-5 space-y-4">

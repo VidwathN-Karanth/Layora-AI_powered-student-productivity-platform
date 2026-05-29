@@ -63,8 +63,8 @@ export default function TasksPage() {
       {/* Top Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-4">
         <div>
-          <h2 className="text-xl font-mono font-bold tracking-wide">Task Manager</h2>
-          <p className="text-xs text-white/40 font-mono mt-0.5">Track study milestones, execute live timers, and analyze core durations.</p>
+          <h2 className="text-xl font-geist font-bold tracking-tight">Task Manager</h2>
+          <p className="text-xs text-white/40 font-mono mt-0.5 uppercase tracking-widest">Track study milestones, execute live timers, and analyze core durations.</p>
         </div>
 
         <button
@@ -74,9 +74,9 @@ export default function TasksPage() {
             }
             setShowAddTask(true);
           }}
-          className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-white rounded-xl px-4 py-2.5 text-xs font-mono font-bold flex items-center gap-2 active:scale-95 transition cursor-pointer shadow-lg shadow-purple-500/10"
+          className="btn-neon px-4 py-2.5 text-xs flex items-center gap-2 active:scale-95 transition cursor-pointer"
         >
-          <PlusCircle className="w-4 h-4" />
+          <PlusCircle className="w-4 h-4" strokeWidth={1.5} />
           Create New Task
         </button>
       </div>
@@ -90,13 +90,13 @@ export default function TasksPage() {
             <div className="glass-panel-neon rounded-2xl p-5 border border-purple-500/30 flex flex-col md:flex-row justify-between items-center gap-4 animate-pulse-glow">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-purple-950/40 border border-purple-500/40 flex items-center justify-center text-purple-400">
-                  <Clock className="w-6 h-6 animate-pulse" />
+                  <Clock className="w-6 h-6 animate-pulse" strokeWidth={1.5} />
                 </div>
                 <div>
                   <span className="text-[9px] font-mono bg-purple-950/50 text-purple-300 px-2 py-0.5 rounded border border-purple-800/30 font-bold uppercase">
                     Focus Session Active
                   </span>
-                  <h3 className="text-sm font-mono font-bold text-white mt-1">{tickingTask.title}</h3>
+                  <h3 className="text-sm font-geist font-bold text-white mt-1">{tickingTask.title}</h3>
                   <p className="text-xs text-white/50 font-sans mt-0.5">{tickingTask.subjectName}</p>
                 </div>
               </div>
@@ -108,16 +108,16 @@ export default function TasksPage() {
                 <div className="flex gap-2">
                   <button 
                     onClick={() => store.stopTaskTimer(true)}
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white p-2 rounded-xl text-xs font-mono font-bold cursor-pointer transition flex items-center gap-1.5"
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-xl text-xs font-mono font-bold cursor-pointer transition flex items-center gap-1.5"
                   >
-                    <Check className="w-4 h-4" /> Complete
+                    <Check className="w-4 h-4" strokeWidth={1.5} /> Complete
                   </button>
                   <button 
                     onClick={() => store.stopTaskTimer(false)}
                     className="bg-white/5 border border-white/10 text-white/70 p-2 rounded-xl text-xs font-mono cursor-pointer hover:bg-white/10"
                     title="Pause timer"
                   >
-                    <Pause className="w-4 h-4" />
+                    <Pause className="w-4 h-4" strokeWidth={1.5} />
                   </button>
                 </div>
               </div>
@@ -182,7 +182,7 @@ export default function TasksPage() {
                     <span className="text-[10px] font-mono bg-purple-950/40 text-purple-300 px-2 py-0.5 rounded border border-purple-800/30">
                       {task.subjectName}
                     </span>
-                    <h3 className="font-mono font-bold text-sm text-white/90 mt-2">{task.title}</h3>
+                    <h3 className="font-geist font-bold text-sm text-white/90 mt-2">{task.title}</h3>
                   </div>
 
                   <button 
@@ -190,22 +190,22 @@ export default function TasksPage() {
                     className="p-1 hover:bg-red-950/40 text-white/20 hover:text-red-400 rounded-lg transition"
                     title="Delete milestone"
                   >
-                    <Trash className="w-3.5 h-3.5" />
+                    <Trash className="w-3.5 h-3.5" strokeWidth={1.5} />
                   </button>
                 </div>
 
                 {/* Estimation & deadlines progress */}
                 <div className="mt-4 space-y-2">
                   <div className="flex justify-between items-center text-[10px] font-mono text-white/40">
-                    <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5 text-purple-400" /> Due: {task.deadline}</span>
+                    <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5 text-purple-400" strokeWidth={1.5} /> Due: {task.deadline}</span>
                     <span>Spent: {task.actualMinutesSpent} / {task.estimatedMinutes} mins</span>
                   </div>
 
                   {/* Progress Indicator Slider */}
-                  <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden relative">
+                  <div className="progress-track">
                     <div 
-                      className={`h-full rounded-full transition-all duration-300 ${
-                        task.status === 'completed' ? 'bg-emerald-500' : 'bg-purple-500'
+                      className={`progress-fill ${
+                        task.status === 'completed' ? '!bg-emerald-500' : ''
                       }`}
                       style={{ width: `${task.status === 'completed' ? 100 : progressRatio}%` }}
                     ></div>
@@ -225,10 +225,10 @@ export default function TasksPage() {
                         className={`px-3 py-1.5 rounded-xl text-[10px] font-mono font-bold flex items-center gap-1 transition cursor-pointer ${
                           isTicking 
                             ? 'bg-red-600/30 border border-red-500/40 text-red-200' 
-                            : 'bg-cyan-950/30 hover:bg-cyan-950/50 border border-cyan-500/30 text-cyan-200'
+                            : 'bg-cyan-950/30 hover:bg-cyan-950/55 border border-cyan-500/30 text-cyan-200'
                         }`}
                       >
-                        {isTicking ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                        {isTicking ? <Pause className="w-3.5 h-3.5" strokeWidth={1.5} /> : <Play className="w-3.5 h-3.5" strokeWidth={1.5} />}
                         {isTicking ? 'Pause Clock' : 'Start Clock'}
                       </button>
                     )}
@@ -242,7 +242,7 @@ export default function TasksPage() {
                       }`}
                       title={task.status === 'completed' ? 'Mark Pending' : 'Mark Completed'}
                     >
-                      <Check className="w-3.5 h-3.5" />
+                      <Check className="w-3.5 h-3.5" strokeWidth={1.5} />
                     </button>
                   </div>
                 </div>
@@ -263,7 +263,7 @@ export default function TasksPage() {
               exit={{ scale: 0.95, opacity: 0 }}
               className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm glass-panel-neon p-6 rounded-2xl z-50 border border-purple-500/20"
             >
-              <h3 className="text-sm font-mono font-bold text-purple-300 border-b border-white/5 pb-2 mb-4">Create Academic Milestone</h3>
+              <h3 className="text-sm font-geist font-bold text-purple-300 border-b border-white/5 pb-2 mb-4">Create Academic Milestone</h3>
               
               <form onSubmit={handleCreateTask} className="space-y-4">
                 <div>
@@ -274,7 +274,7 @@ export default function TasksPage() {
                     value={newTaskTitle}
                     onChange={(e) => setNewTaskTitle(e.target.value)}
                     placeholder="E.g., Complete calculus integration exercises"
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500"
+                    className="w-full input-hud"
                   />
                 </div>
 
@@ -333,7 +333,7 @@ export default function TasksPage() {
                   <button 
                     type="submit"
                     disabled={store.subjects.length === 0}
-                    className="flex-1 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 rounded-lg py-2 text-xs font-mono font-bold cursor-pointer"
+                    className="flex-1 btn-neon py-2 text-xs cursor-pointer disabled:opacity-40"
                   >
                     Insert
                   </button>

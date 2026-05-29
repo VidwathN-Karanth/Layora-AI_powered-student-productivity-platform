@@ -1,25 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateLocalWeeklySchedule } from '@/lib/aiService';
 
+const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
+
 export async function POST(req: NextRequest) {
+  let routine: any = null;
+  let subjects: any = [];
+  let activities: any = [];
+  let courses: any = [];
+
   try {
-    const { keys, routine, subjects, activities, courses } = await req.json();
+    const body = await req.json();
+    routine = body.routine;
+    subjects = body.subjects;
+    activities = body.activities;
+    courses = body.courses;
 
-    // Default provider for planner is gemini or openai
-    const provider = keys?.openai ? 'openai' : (keys?.gemini ? 'gemini' : 'local');
-    const activeKey = keys?.[provider] || process.env[provider.toUpperCase() + '_API_KEY'];
-
-    if (!activeKey || provider === 'local') {
-      // Execute local optimizer instantly
-      const localSchedule = generateLocalWeeklySchedule(routine, subjects, activities, courses);
-      return NextResponse.json({ schedule: localSchedule });
-    }
 
     const promptText = `
       You are an expert student productivity schedule planner. Generate a balanced weekly study schedule in JSON format based on the following student configuration:
       Wake time: ${routine.wakeTime}
       Sleep time: ${routine.sleepTime}
-      College class hours: ${routine.collegeTimings.start} to ${routine.collegeTimings.end} (Monday - Friday)
+      College class hours: ${routine.collegeTimings?.start} to ${routine.collegeTimings?.end} (Monday - Friday)
       Subjects (allocate weekly study sessions depending on credits & difficulty): ${JSON.stringify(subjects)}
       Extracurricular Activities: ${JSON.stringify(activities)}
       Active Online Courses: ${JSON.stringify(courses)}
@@ -43,59 +45,46 @@ export async function POST(req: NextRequest) {
       }
     `;
 
-    if (provider === 'gemini') {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${activeKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: promptText }] }],
-            generationConfig: { responseMimeType: 'application/json' }
-          }),
-        }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        const rawJsonText = data.candidates[0].content.parts[0].text;
-        const parsed = JSON.parse(rawJsonText);
-        if (parsed.schedule) {
-          return NextResponse.json({ schedule: parsed.schedule });
-        }
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-8b-instant',
+        response_format: { type: 'json_object' },
+        messages: [
+
+          { role: 'system', content: 'You plan optimized weekly study timetables in JSON format. Always return valid JSON containing the schedule array.' },
+          { role: 'user', content: promptText }
+        ],
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const parsed = JSON.parse(data.choices[0].message.content);
+      if (parsed.schedule) {
+        return NextResponse.json({ schedule: parsed.schedule });
       }
+    } else {
+      const errText = await response.text();
+      console.error('Groq planner API call failed:', errText);
     }
 
-    if (provider === 'openai') {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${activeKey}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          response_format: { type: 'json_object' },
-          messages: [
-            { role: 'system', content: 'You plan optimized weekly study timetables in JSON format.' },
-            { role: 'user', content: promptText }
-          ],
-        }),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const parsed = JSON.parse(data.choices[0].message.content);
-        if (parsed.schedule) {
-          return NextResponse.json({ schedule: parsed.schedule });
-        }
-      }
-    }
-
-    // Default fallback to local scheduler
+    // Default fallback to local scheduler if API fails
     const fallbackSchedule = generateLocalWeeklySchedule(routine, subjects, activities, courses);
     return NextResponse.json({ schedule: fallbackSchedule });
 
   } catch (error: any) {
-    // Graceful error fallback
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('Error generating AI schedule:', error);
+    // Graceful error fallback to local scheduler
+    try {
+      const fallbackSchedule = generateLocalWeeklySchedule(routine, subjects, activities, courses);
+      return NextResponse.json({ schedule: fallbackSchedule });
+    } catch (innerError) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
   }
 }

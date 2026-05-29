@@ -432,14 +432,16 @@ export async function sendAIChatMessage(
   message: string,
   history: { role: 'user' | 'assistant'; content: string }[],
   provider: 'gemini' | 'openai' | 'claude' | 'grok',
-  keys: AIKeys
+  keys: AIKeys,
+  context?: any
 ): Promise<string> {
   try {
     const response = await fetch('/api/ai/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, history, provider, keys }),
+      body: JSON.stringify({ message, history, provider, keys, ...context }),
     });
+
 
     if (response.ok) {
       const data = await response.json();

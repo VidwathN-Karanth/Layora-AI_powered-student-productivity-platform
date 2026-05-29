@@ -106,7 +106,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#030307] text-[#f3f4f6] flex items-center justify-center relative overflow-hidden p-4 cyber-grid">
+    <main className="min-h-screen bg-background text-[#f3f4f6] flex items-center justify-center relative overflow-hidden p-4 cyber-grid">
       {/* Glow Orbs */}
       <div className="glow-orb w-[400px] h-[400px] bg-purple-900/20 top-[-100px] right-[-50px] animate-[pulse_6s_infinite_alternate]"></div>
       <div className="glow-orb w-[450px] h-[450px] bg-blue-900/20 bottom-[-150px] left-[-100px] animate-[pulse_8s_infinite_alternate]"></div>
@@ -245,7 +245,7 @@ export default function LoginPage() {
               {/* Separator */}
               <div className="relative my-6 text-center">
                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/10"></div></div>
-                <span className="relative bg-[#0b0a14] px-3 text-[10px] font-mono text-white/40">Or continue with</span>
+                <span className="relative bg-background px-3 text-[10px] font-mono text-white/40">Or continue with</span>
               </div>
 
               {/* OAuth Panel */}
@@ -355,7 +355,7 @@ export default function LoginPage() {
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.95, y: 15, opacity: 0 }}
               transition={{ duration: 0.25, ease: 'easeOut' }}
-              className="relative w-full max-w-md bg-[#07070c] border border-purple-500/30 rounded-2xl p-6 md:p-8 overflow-hidden shadow-2xl shadow-purple-500/10 z-10 glass-panel-neon space-y-6"
+              className="relative w-full max-w-md bg-surface-container-lowest border border-purple-500/30 rounded-2xl p-6 md:p-8 overflow-hidden shadow-2xl shadow-purple-500/10 z-10 glass-panel-neon space-y-6"
             >
               {/* Glowing Line */}
               <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-purple-500 via-cyan-400 to-blue-500"></div>

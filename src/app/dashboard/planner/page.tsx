@@ -143,8 +143,8 @@ export default function PlannerPage() {
       {/* Top Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-4">
         <div>
-          <h2 className="text-xl font-mono font-bold tracking-wide">Weekly Planner</h2>
-          <p className="text-xs text-white/40 font-mono mt-0.5">Generate, arrange, and sync AI optimized study grids.</p>
+          <h2 className="text-xl font-geist font-bold tracking-tight">Weekly Planner</h2>
+          <p className="text-xs text-white/40 font-mono mt-0.5 uppercase tracking-widest">Generate, arrange, and sync AI optimized study grids.</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -156,12 +156,12 @@ export default function PlannerPage() {
           >
             {syncingCalendar ? (
               <>
-                <RefreshCw className="w-4 h-4 animate-spin text-purple-400" />
+                <RefreshCw className="w-4 h-4 animate-spin text-purple-400" strokeWidth={1.5} />
                 Syncing Calendar...
               </>
             ) : (
               <>
-                <CalendarRange className="w-4 h-4 text-cyan-400" />
+                <CalendarRange className="w-4 h-4 text-cyan-400" strokeWidth={1.5} />
                 Sync to Google Calendar
               </>
             )}
@@ -171,12 +171,12 @@ export default function PlannerPage() {
           <button
             onClick={handleGenerateAI}
             disabled={loadingSchedule}
-            className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-white rounded-xl px-4 py-2.5 text-xs font-mono font-bold flex items-center gap-2 active:scale-95 transition cursor-pointer shadow-lg shadow-purple-500/20"
+            className="btn-neon px-4 py-2.5 text-xs flex items-center gap-2 active:scale-95 transition cursor-pointer"
           >
             {loadingSchedule ? (
-              <RefreshCw className="w-4 h-4 animate-spin" />
+              <RefreshCw className="w-4 h-4 animate-spin text-black" strokeWidth={1.5} />
             ) : (
-              <Sparkles className="w-4 h-4 text-white" />
+              <Sparkles className="w-4 h-4 text-black" strokeWidth={1.5} />
             )}
             Generate AI Schedule
           </button>
@@ -192,7 +192,7 @@ export default function PlannerPage() {
             exit={{ opacity: 0, y: -10 }}
             className="bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 p-4 rounded-2xl text-xs font-mono flex items-center gap-2"
           >
-            <Check className="w-4 h-4" />
+            <Check className="w-4 h-4" strokeWidth={1.5} />
             SUCCESS: Exported {store.timetable.length} schedule events & deadlines directly to Google Calendar account!
           </motion.div>
         )}
@@ -226,21 +226,21 @@ export default function PlannerPage() {
               onClick={() => setShowAddBlock(true)} 
               className="text-purple-400 hover:text-purple-300 text-xs font-mono flex items-center gap-1.5 cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5" /> Add Custom Block
+              <Plus className="w-3.5 h-3.5" strokeWidth={1.5} /> Add Custom Block
             </button>
           </div>
 
           <div className="space-y-3 min-h-[300px]">
             {store.timetable.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-white/10 rounded-2xl p-6">
-                <AlertCircle className="w-10 h-10 text-white/20 mb-3" />
-                <h3 className="text-sm font-mono font-bold text-white/70">Planner is empty</h3>
+                <AlertCircle className="w-10 h-10 text-white/20 mb-3" strokeWidth={1.5} />
+                <h3 className="text-sm font-geist font-bold text-white/70">Planner is empty</h3>
                 <p className="text-xs text-white/40 max-w-sm mt-1">
                   Click the **Generate AI Schedule** button above to compile subjects and routines automatically using the local optimization engine.
                 </p>
               </div>
             ) : activeDayBlocks.length === 0 ? (
-              <div className="text-center text-xs text-white/30 py-20">
+              <div className="text-center text-xs text-white/30 py-20 font-mono">
                 No blocks logged for this day.
               </div>
             ) : (
@@ -283,7 +283,7 @@ export default function PlannerPage() {
                       className="p-1.5 hover:bg-red-950/40 text-white/30 hover:text-red-400 rounded-lg transition"
                       title="Delete block"
                     >
-                      <Trash className="w-4 h-4" />
+                      <Trash className="w-4 h-4" strokeWidth={1.5} />
                     </button>
                   </div>
                 </div>
@@ -295,19 +295,19 @@ export default function PlannerPage() {
         {/* Info panel / instructions */}
         <div className="space-y-4">
           <div className="glass-card rounded-2xl p-5 space-y-4">
-            <h4 className="text-xs font-mono font-bold text-purple-400 border-b border-white/5 pb-2">Planning Guide</h4>
+            <h4 className="text-xs font-geist font-bold text-purple-400 border-b border-white/5 pb-2 uppercase">Planning Guide</h4>
             
             <ul className="space-y-3 text-xs font-sans text-white/70">
               <li className="flex items-start gap-2">
-                <span className="text-purple-400 font-mono">01.</span>
+                <span className="text-purple-400 font-mono font-bold">01.</span>
                 <span>The **AI Planner** parses subject credits and difficulty, scheduling more blocks for hard tasks.</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-purple-400 font-mono">02.</span>
+                <span className="text-purple-400 font-mono font-bold">02.</span>
                 <span>It allocates mandatory college hours, gyms, chess practice, and schedules power rest breaks automatically.</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-purple-400 font-mono">03.</span>
+                <span className="text-purple-400 font-mono font-bold">03.</span>
                 <span>Sync to Google Calendar exports study slots so you receive mobile calendar push notifications.</span>
               </li>
             </ul>
@@ -326,7 +326,7 @@ export default function PlannerPage() {
               exit={{ scale: 0.95, opacity: 0 }}
               className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm glass-panel-neon p-6 rounded-2xl z-50 border border-purple-500/20"
             >
-              <h3 className="text-sm font-mono font-bold text-purple-300 border-b border-white/5 pb-2 mb-4">Add Custom Timetable Block</h3>
+              <h3 className="text-sm font-geist font-bold text-purple-300 border-b border-white/5 pb-2 mb-4">Add Custom Timetable Block</h3>
               
               <div className="space-y-3">
                 <div>
@@ -336,7 +336,7 @@ export default function PlannerPage() {
                     value={newBlockTitle}
                     onChange={(e) => setNewBlockTitle(e.target.value)}
                     placeholder="E.g., Self-Study Mathematics"
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none"
+                    className="w-full input-hud"
                   />
                 </div>
                 
@@ -347,7 +347,7 @@ export default function PlannerPage() {
                       type="time"
                       value={newBlockStart}
                       onChange={(e) => setNewBlockStart(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-white"
+                      className="w-full input-hud"
                     />
                   </div>
                   <div>
@@ -356,7 +356,7 @@ export default function PlannerPage() {
                       type="time"
                       value={newBlockEnd}
                       onChange={(e) => setNewBlockEnd(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-white"
+                      className="w-full input-hud"
                     />
                   </div>
                 </div>
@@ -384,7 +384,7 @@ export default function PlannerPage() {
                   </button>
                   <button 
                     onClick={handleAddCustomBlock} 
-                    className="flex-1 bg-purple-600 hover:bg-purple-500 rounded-lg py-2 text-xs font-mono font-bold cursor-pointer"
+                    className="flex-1 btn-neon py-2 text-xs cursor-pointer"
                   >
                     Insert
                   </button>
@@ -397,3 +397,5 @@ export default function PlannerPage() {
     </div>
   );
 }
+
+

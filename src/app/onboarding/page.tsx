@@ -189,7 +189,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#030307] text-[#f3f4f6] flex flex-col items-center justify-center p-4 md:p-8 cyber-grid">
+    <main className="min-h-screen bg-background text-[#f3f4f6] flex flex-col items-center justify-center p-4 md:p-8 cyber-grid">
       {/* Glow Orbs */}
       <div className="glow-orb w-[400px] h-[400px] bg-purple-900/10 top-1/4 left-10"></div>
       <div className="glow-orb w-[400px] h-[400px] bg-blue-900/10 bottom-10 right-10"></div>
