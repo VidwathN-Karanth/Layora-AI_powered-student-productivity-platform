@@ -227,9 +227,6 @@ div[class*="cl-internal-"]:last-of-type:not(:first-of-type) {
 }
 
 /* Specifically target the orange striped dev mode container */
-.cl-card > div:last-child {
-  display: none !important;
-}
 .cl-footer > div:last-child {
   display: none !important;
 }

@@ -59,8 +59,7 @@ export default function LoginPage() {
                 identityPreviewText: "text-white",
                 identityPreviewEditButtonIcon: "text-cyber-blue",
                 watermark: "hidden !important opacity-0",
-                footerBottom: "hidden !important opacity-0",
-                internal: "hidden !important opacity-0"
+                footerBottom: "hidden !important opacity-0"
               }
             }}
           />
