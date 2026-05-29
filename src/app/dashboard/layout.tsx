@@ -443,12 +443,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Chatbot trigger */}
             <button 
               onClick={() => setChatOpen(!chatOpen)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition cursor-pointer ${
-                chatOpen ? 'bg-cyber-blue/20 border-cyber-blue text-cyber-blue' : 'bg-white/5 border-white/10 text-white/50 hover:text-white'
+              className={`flex items-center justify-center rounded-full border transition cursor-pointer ${
+                chatOpen ? 'bg-cyber-blue/20 border-cyber-blue text-cyber-blue w-8 h-8 p-0' : 'gap-2 px-3 py-1.5 bg-white/5 border-white/10 text-white/50 hover:text-white'
               }`}
+              title={chatOpen ? "Close Panel" : "Open Chatbot"}
             >
-              <MessageCircle className="w-4 h-4" strokeWidth={1.5} />
-              <span className="font-mono text-[11px] font-bold uppercase tracking-wider">{chatOpen ? 'Close Chat' : 'Chatbot'}</span>
+              {chatOpen ? (
+                <ChevronRight className="w-4 h-4" strokeWidth={2} />
+              ) : (
+                <>
+                  <MessageCircle className="w-4 h-4" strokeWidth={1.5} />
+                  <span className="font-mono text-[11px] font-bold uppercase tracking-wider">Chatbot</span>
+                </>
+              )}
             </button>
           </div>
         </header>
