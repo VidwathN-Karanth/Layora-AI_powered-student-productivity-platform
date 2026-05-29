@@ -65,18 +65,33 @@ export default function PlannerPage() {
     setLoadingSchedule(false);
   };
 
-  const handleGoogleSync = () => {
+  const handleGoogleSync = async () => {
     setSyncingCalendar(true);
     setSyncSuccess(false);
 
-    setTimeout(() => {
-      setSyncingCalendar(false);
+    try {
+      const res = await fetch('/api/calendar/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ blocks: activeDayBlocks, activeDay })
+      });
+
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || 'Sync failed');
+      }
+
       setSyncSuccess(true);
       store.setCalendarSynced(true);
       
       // Auto-hide success modal
-      setTimeout(() => setSyncSuccess(false), 3000);
-    }, 2000);
+      setTimeout(() => setSyncSuccess(false), 4000);
+    } catch (err: any) {
+      alert(`Calendar Sync Error: ${err.message}`);
+    } finally {
+      setSyncingCalendar(false);
+    }
   };
 
   const handleAddCustomBlock = () => {
