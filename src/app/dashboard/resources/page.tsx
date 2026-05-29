@@ -35,13 +35,6 @@ export default function ResourcesPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 4.5 * 1024 * 1024) {
-      alert("File is too large! Vercel's free tier restricts uploads to 4.5MB per file. Please choose a smaller file.");
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      setFileData(null);
-      return;
-    }
-
     const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
     const ext = file.name.split('.').pop()?.toLowerCase() || 'pdf';
     
@@ -63,31 +56,58 @@ export default function ResourcesPage() {
     setIsUploading(true);
     
     try {
-      const formData = new FormData();
-      formData.append('file', fileData);
+      // 1. Fetch OAuth Token from our Next.js Server (Bypasses Vercel Payload Limits)
+      const tokenRes = await fetch('/api/drive/token');
+      const tokenData = await tokenRes.json();
+      
+      if (!tokenRes.ok || !tokenData.token) {
+        throw new Error(tokenData.error || 'Failed to retrieve Drive access token. Please reconnect Google in settings.');
+      }
+      
+      const token = tokenData.token;
 
-      const response = await fetch('/api/drive/upload', {
+      // 2. Upload file content directly to Google Drive
+      const arrayBuffer = await fileData.arrayBuffer();
+      
+      const uploadRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=media', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': fileData.type || 'application/octet-stream',
+          'Content-Length': arrayBuffer.byteLength.toString()
+        },
+        body: arrayBuffer
       });
 
-      let data;
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        data = await response.json();
-      } else {
-        // Vercel edge errors or 502 bad gateways often return HTML or plain text
-        const textError = await response.text();
-        throw new Error(response.status === 413 ? "File is too large for Vercel." : `Server error: ${textError.substring(0, 60)}...`);
+      if (!uploadRes.ok) {
+        const errText = await uploadRes.text();
+        throw new Error(`Google Drive Upload Error: ${errText.substring(0, 50)}...`);
       }
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Upload failed');
+      const uploadedFile = await uploadRes.json();
+      const fileId = uploadedFile.id;
+
+      // 3. Update metadata to set correct filename
+      const patchRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,webViewLink`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: fileName || fileData.name
+        })
+      });
+
+      if (!patchRes.ok) {
+        throw new Error('File uploaded but failed to set filename.');
       }
+
+      const finalFile = await patchRes.json();
 
       store.uploadResource(targetSubjectId, {
-        name: data.name || fileName,
-        url: data.url,
+        name: fileName || fileData.name,
+        url: finalFile.webViewLink,
         type: fileType
       });
       
