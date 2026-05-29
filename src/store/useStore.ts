@@ -142,6 +142,7 @@ interface AppState {
   addChatMessage: (role: 'user' | 'assistant', content: string) => void;
   clearChat: () => void;
   resetStore: () => void;
+  setFullState: (state: Partial<AppState>) => void;
 }
 
 const DEFAULT_SUBJECTS: Subject[] = [
@@ -689,7 +690,8 @@ export const useStore = create<AppState>()(
             { id: 'msg-welcome', role: 'assistant', content: 'Welcome to your AI Academic Dashboard! I am your student co-pilot. I can help analyze your weekly load, suggest breaks, or resolve complex study questions. Let me know how I can assist you today.', timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
           ]
         });
-      }
+      },
+      setFullState: (newState) => set((state) => ({ ...state, ...newState }))
     }),
     {
       name: 'layora-productivity-store',
