@@ -66,32 +66,7 @@ export default function PlannerPage() {
   };
 
   const handleGoogleSync = async () => {
-    setSyncingCalendar(true);
-    setSyncSuccess(false);
-
-    try {
-      const res = await fetch('/api/calendar/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ blocks: activeDayBlocks, activeDay })
-      });
-
-      const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.error || 'Sync failed');
-      }
-
-      setSyncSuccess(true);
-      store.setCalendarSynced(true);
-      
-      // Auto-hide success modal
-      setTimeout(() => setSyncSuccess(false), 4000);
-    } catch (err: any) {
-      alert(`Calendar Sync Error: ${err.message}`);
-    } finally {
-      setSyncingCalendar(false);
-    }
+    alert("Google Calendar Sync is currently disabled for public use to avoid Google OAuth security warnings.");
   };
 
   const handleAddCustomBlock = () => {
