@@ -212,19 +212,7 @@ h1, h2, h3, h4, h5, h6 {
   cursor: grabbing;
 }
 
-/* Hide Clerk Development Mode Badge and Watermark - ULTRA AGGRESSIVE */
-div[class*="cl-internal"] > div > a[href*="clerk"],
-div[class*="cl-internal"] a[href*="clerk"],
-.cl-watermark,
-.cl-logoBox,
-a[href*="clerk.dev"],
-a[href*="clerk.com"],
-div[class*="cl-internal-"]:last-of-type:not(:first-of-type) {
-  display: none !important;
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
+/* No more aggressive Clerk hiding - it breaks the form */
 
 /* Specifically target the orange striped dev mode container */
 .cl-footer > div:last-child {
