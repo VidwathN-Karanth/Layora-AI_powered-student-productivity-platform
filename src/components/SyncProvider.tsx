@@ -18,7 +18,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
     const loadState = async () => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await supabase!
           .from('user_states')
           .select('state')
           .eq('user_id', user.id)
@@ -68,7 +68,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             calendarSynced, is24HourFormat, chatHistory
           };
 
-          await supabase.from('user_states').upsert({
+          await supabase!.from('user_states').upsert({
             user_id: user.id,
             state: stateToSave,
             updated_at: new Date().toISOString()
