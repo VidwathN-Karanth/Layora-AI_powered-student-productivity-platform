@@ -134,6 +134,8 @@ interface AppState {
   setSelectedModel: (model: 'groq' | 'openai' | 'claude' | 'grok') => void;
   calendarSynced: boolean;
   setCalendarSynced: (synced: boolean) => void;
+  is24HourFormat: boolean;
+  setIs24HourFormat: (val: boolean) => void;
 
   // Chat
   chatHistory: ChatMessage[];
@@ -637,6 +639,8 @@ export const useStore = create<AppState>()(
       setSelectedModel: (model) => set({ selectedModel: model }),
       calendarSynced: false,
       setCalendarSynced: (synced) => set({ calendarSynced: synced }),
+      is24HourFormat: false,
+      setIs24HourFormat: (val) => set({ is24HourFormat: val }),
 
       // Chat history
       chatHistory: [
@@ -680,6 +684,7 @@ export const useStore = create<AppState>()(
           apiKeys: {},
           selectedModel: 'groq',
           calendarSynced: false,
+          is24HourFormat: false,
           chatHistory: [
             { id: 'msg-welcome', role: 'assistant', content: 'Welcome to your AI Academic Dashboard! I am your student co-pilot. I can help analyze your weekly load, suggest breaks, or resolve complex study questions. Let me know how I can assist you today.', timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
           ]
@@ -703,6 +708,7 @@ export const useStore = create<AppState>()(
         apiKeys: state.apiKeys,
         selectedModel: state.selectedModel,
         calendarSynced: state.calendarSynced,
+        is24HourFormat: state.is24HourFormat,
         chatHistory: state.chatHistory
       }),
     }

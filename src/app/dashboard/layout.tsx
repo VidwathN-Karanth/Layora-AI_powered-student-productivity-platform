@@ -48,12 +48,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     const updateTime = () => {
       const d = new Date();
-      setTimeStr(d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }));
+      setTimeStr(d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: !store.is24HourFormat }));
     };
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [store.is24HourFormat]);
 
   useEffect(() => {
     if (store.activeTaskId) {
@@ -321,15 +321,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <span className="w-6 h-6 rounded bg-primary flex items-center justify-center text-on-surface text-[10px]">L</span> LAYORA
                 </motion.span>
               ) : (
-                <motion.span 
+                <motion.div 
                   key="short-logo" 
                   initial={{ opacity: 0 }} 
                   animate={{ opacity: 1 }} 
                   exit={{ opacity: 0 }}
-                  className="font-mono font-black text-base text-primary w-full text-center"
+                  className="flex flex-col items-center justify-center w-full gap-2 cursor-pointer"
+                  onClick={() => setChatOpen(!chatOpen)}
+                  title="Open Chatbot"
                 >
-                  L
-                </motion.span>
+                  <span className="font-mono font-black text-base text-primary w-full text-center">
+                    L
+                  </span>
+                  <span className="text-[8px] font-mono font-bold text-cyber-blue uppercase text-center bg-cyber-blue/10 px-1 py-0.5 rounded border border-cyber-blue/30 w-full whitespace-nowrap overflow-hidden">
+                    Chatbot
+                  </span>
+                </motion.div>
               )}
             </AnimatePresence>
 
@@ -418,22 +425,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
 
 
-            {/* Live digital clock */}
-            <div className="flex items-center gap-1.5 border border-white/10 bg-white/5 px-3 py-1 rounded-full text-xs font-mono">
-              <Clock className="w-3.5 h-3.5 text-cyber-blue animate-spin-slow" strokeWidth={1.5} />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 font-bold font-mono">
+            {/* Live digital clock with 12/24 toggle */}
+            <div className="flex items-center gap-2 border border-white/10 bg-white/5 px-4 py-1.5 rounded-full font-mono">
+              <Clock className="w-4 h-4 text-cyber-blue animate-spin-slow" strokeWidth={1.5} />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 font-black font-mono text-xl tracking-wider min-w-[110px] text-center">
                 {timeStr || '00:00:00'}
               </span>
+              <button 
+                onClick={() => store.setIs24HourFormat(!store.is24HourFormat)}
+                className="ml-1 text-[9px] font-bold uppercase bg-white/10 hover:bg-white/20 text-cyber-blue px-1.5 py-0.5 rounded cursor-pointer transition border border-white/10"
+                title="Toggle 12h/24h Format"
+              >
+                {store.is24HourFormat ? '24H' : '12H'}
+              </button>
             </div>
 
             {/* Chatbot trigger */}
             <button 
               onClick={() => setChatOpen(!chatOpen)}
-              className={`p-1.5 rounded-full border transition cursor-pointer ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition cursor-pointer ${
                 chatOpen ? 'bg-cyber-blue/20 border-cyber-blue text-cyber-blue' : 'bg-white/5 border-white/10 text-white/50 hover:text-white'
               }`}
             >
               <MessageCircle className="w-4 h-4" strokeWidth={1.5} />
+              <span className="font-mono text-[11px] font-bold uppercase tracking-wider">{chatOpen ? 'Close Chat' : 'Chatbot'}</span>
             </button>
           </div>
         </header>
