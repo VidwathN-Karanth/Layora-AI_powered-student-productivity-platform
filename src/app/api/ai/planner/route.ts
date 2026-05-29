@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
             "end": "HH:MM",
             "title": "Study: [Subject Name] or [Activity Name] or [Break Title]",
             "type": "class" | "study" | "extracurricular" | "break",
-            "color": "border-l-4 border-purple-500 bg-purple-950/20 text-purple-200" (use cyan for class, purple for study, pink for extracurricular, emerald for break),
+            "color": "border-l-4 border-primary bg-primary-fixed text-on-surface" (use cyan for class, purple for study, pink for extracurricular, emerald for break),
             "subjectCode": "optional course code",
             "details": "quick context/tip for student"
           }

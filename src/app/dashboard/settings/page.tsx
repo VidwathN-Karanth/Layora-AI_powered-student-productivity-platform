@@ -41,7 +41,7 @@ export default function SettingsPage() {
   };
 
   const themeAccents = [
-    { name: 'purple', label: 'Neon Purple', color: 'bg-purple-600 border-purple-400' },
+    { name: 'purple', label: 'Neon Purple', color: 'bg-primary border-purple-400' },
     { name: 'blue', label: 'Cyber Blue', color: 'bg-blue-600 border-blue-400' },
     { name: 'pink', label: 'Tokyo Pink', color: 'bg-pink-600 border-pink-400' },
     { name: 'emerald', label: 'Matrix Emerald', color: 'bg-emerald-600 border-emerald-400' }
@@ -50,9 +50,9 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div className="border-b border-white/5 pb-4">
+      <div className="border-b border-outline-variant pb-4">
         <h2 className="text-xl font-mono font-bold tracking-wide">System Settings</h2>
-        <p className="text-xs text-white/40 font-mono mt-0.5">Customize UI configurations and sync academic calendars.</p>
+        <p className="text-xs text-outline font-mono mt-0.5">Customize UI configurations and sync academic calendars.</p>
       </div>
 
       {saveSuccess && (
@@ -65,67 +65,67 @@ export default function SettingsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* --- PANEL 1: ACCOUNT PROFILE & CYCLES --- */}
         <div className="glass-card rounded-2xl p-5 space-y-4">
-          <div className="flex items-center gap-2.5 border-b border-white/5 pb-2">
-            <User className="w-4 h-4 text-purple-400" />
-            <h3 className="text-xs font-mono font-bold tracking-wider text-purple-400">Academic Rhythm Profile</h3>
+          <div className="flex items-center gap-2.5 border-b border-outline-variant pb-2">
+            <User className="w-4 h-4 text-primary" />
+            <h3 className="text-xs font-mono font-bold tracking-wider text-primary">Academic Rhythm Profile</h3>
           </div>
 
           <form onSubmit={handleSaveProfile} className="space-y-4">
             <div>
-              <label className="block text-[10px] font-mono text-white/50 mb-1">Username / Alias</label>
+              <label className="block text-[10px] font-mono text-outline mb-1">Username / Alias</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500"
+                className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[10px] font-mono text-white/50 mb-1">Wake Cycle</label>
+                <label className="block text-[10px] font-mono text-outline mb-1">Wake Cycle</label>
                 <input
                   type="time"
                   value={wakeTime}
                   onChange={(e) => setWakeTime(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-xs text-white"
+                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-2 py-1 text-xs text-on-surface"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-mono text-white/50 mb-1">Sleep Cycle</label>
+                <label className="block text-[10px] font-mono text-outline mb-1">Sleep Cycle</label>
                 <input
                   type="time"
                   value={sleepTime}
                   onChange={(e) => setSleepTime(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-xs text-white"
+                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-2 py-1 text-xs text-on-surface"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[10px] font-mono text-white/50 mb-1">College Start</label>
+                <label className="block text-[10px] font-mono text-outline mb-1">College Start</label>
                 <input
                   type="time"
                   value={collegeStart}
                   onChange={(e) => setCollegeStart(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-xs text-white"
+                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-2 py-1 text-xs text-on-surface"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-mono text-white/50 mb-1">College End</label>
+                <label className="block text-[10px] font-mono text-outline mb-1">College End</label>
                 <input
                   type="time"
                   value={collegeEnd}
                   onChange={(e) => setCollegeEnd(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-xs text-white"
+                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-2 py-1 text-xs text-on-surface"
                 />
               </div>
             </div>
 
             <button
               type="submit"
-              className="bg-purple-600 hover:bg-purple-500 text-white rounded-lg px-4 py-2 text-xs font-mono font-bold transition cursor-pointer"
+              className="bg-primary hover:bg-primary-container text-on-surface rounded-lg px-4 py-2 text-xs font-mono font-bold transition cursor-pointer"
             >
               Save Rhythm Cycles
             </button>
@@ -135,13 +135,13 @@ export default function SettingsPage() {
 
         {/* --- PANEL 3: VISUAL THEMING --- */}
         <div className="glass-card rounded-2xl p-5 space-y-4">
-          <div className="flex items-center gap-2.5 border-b border-white/5 pb-2">
-            <Sparkles className="w-4 h-4 text-purple-400" />
-            <h3 className="text-xs font-mono font-bold tracking-wider text-purple-400">Interface Theming</h3>
+          <div className="flex items-center gap-2.5 border-b border-outline-variant pb-2">
+            <Sparkles className="w-4 h-4 text-primary" />
+            <h3 className="text-xs font-mono font-bold tracking-wider text-primary">Interface Theming</h3>
           </div>
 
           <div className="space-y-4">
-            <p className="text-[10px] text-white/50 font-mono">
+            <p className="text-[10px] text-outline font-mono">
               Toggle global neon themes to adjust border highlights and glowing overlays.
             </p>
 
@@ -154,8 +154,8 @@ export default function SettingsPage() {
                     onClick={() => store.setThemeAccent(acc.name as any)}
                     className={`flex items-center gap-3 p-3 rounded-xl border text-xs font-mono transition text-left cursor-pointer ${
                       active 
-                        ? 'border-purple-500 bg-purple-950/20 text-white font-bold' 
-                        : 'border-white/5 bg-white/2 text-white/60 hover:bg-white/5 hover:text-white'
+                        ? 'border-primary bg-primary-fixed text-on-surface font-bold' 
+                        : 'border-outline-variant bg-white/2 text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
                     }`}
                   >
                     <span className={`w-3.5 h-3.5 rounded-full border ${acc.color} shrink-0`}></span>
@@ -169,30 +169,30 @@ export default function SettingsPage() {
 
         {/* --- PANEL 4: CALENDAR INTEGRATIONS --- */}
         <div className="glass-card rounded-2xl p-5 space-y-4">
-          <div className="flex items-center gap-2.5 border-b border-white/5 pb-2">
-            <Calendar className="w-4 h-4 text-purple-400" />
-            <h3 className="text-xs font-mono font-bold tracking-wider text-purple-400">Calendar OAuth Integration</h3>
+          <div className="flex items-center gap-2.5 border-b border-outline-variant pb-2">
+            <Calendar className="w-4 h-4 text-primary" />
+            <h3 className="text-xs font-mono font-bold tracking-wider text-primary">Calendar OAuth Integration</h3>
           </div>
 
           <div className="space-y-4">
-            <p className="text-[10px] text-white/50 font-mono leading-relaxed">
+            <p className="text-[10px] text-outline font-mono leading-relaxed">
               Establish synchronization pathways with Google Calendar services. Auto-export allows agenda revisions in real-time.
             </p>
 
-            <div className="bg-white/5 border border-white/5 rounded-xl p-4 flex items-center justify-between">
+            <div className="bg-surface-container border border-outline-variant rounded-xl p-4 flex items-center justify-between">
               <div>
-                <span className="text-xs font-mono font-bold text-white block">Google OAuth Token</span>
-                <span className="text-[9px] font-mono text-white/40">Status: {store.calendarSynced ? 'Active Sync' : 'Inactive'}</span>
+                <span className="text-xs font-mono font-bold text-on-surface block">Google OAuth Token</span>
+                <span className="text-[9px] font-mono text-outline">Status: {store.calendarSynced ? 'Active Sync' : 'Inactive'}</span>
               </div>
 
               {store.calendarSynced ? (
-                <div className="flex items-center gap-1.5 text-xs font-mono text-emerald-400 bg-emerald-950/30 border border-emerald-500/20 rounded-full px-3 py-1">
+                <div className="flex items-center gap-1.5 text-xs font-mono text-emerald-600 bg-emerald-950/30 border border-emerald-500/20 rounded-full px-3 py-1">
                   <ShieldCheck className="w-3.5 h-3.5" /> AUTHORIZED
                 </div>
               ) : (
                 <button
                   onClick={() => { store.setCalendarSynced(true); setSaveSuccess(true); setTimeout(() => setSaveSuccess(false), 2000); }}
-                  className="bg-cyan-900/30 border border-cyan-500/30 text-cyan-200 text-[10px] font-mono font-bold px-3 py-1.5 rounded-lg hover:bg-cyan-900/50 transition cursor-pointer"
+                  className="bg-cyan-900/30 border border-secondary text-on-surface text-[10px] font-mono font-bold px-3 py-1.5 rounded-lg hover:bg-cyan-900/50 transition cursor-pointer"
                 >
                   Authorize OAuth
                 </button>
@@ -203,19 +203,19 @@ export default function SettingsPage() {
 
         {/* --- PANEL 5: DANGER ZONE (SYSTEM RESET) --- */}
         <div className="glass-card rounded-2xl p-5 space-y-4 border border-rose-500/20 bg-rose-950/5">
-          <div className="flex items-center gap-2.5 border-b border-white/5 pb-2">
+          <div className="flex items-center gap-2.5 border-b border-outline-variant pb-2">
             <AlertTriangle className="w-4 h-4 text-rose-500" />
             <h3 className="text-xs font-mono font-bold tracking-wider text-rose-500 uppercase">Danger Zone: Data Erasure</h3>
           </div>
 
           <div className="space-y-4">
-            <p className="text-[10px] text-white/50 font-mono leading-relaxed">
+            <p className="text-[10px] text-outline font-mono leading-relaxed">
               Permanently clear your student registration details, timetable rhythm, tasks, and custom AI configurations. All local caches will be wiped. This action is irreversible.
             </p>
 
             <button
               onClick={handleSystemReset}
-              className="w-full bg-rose-600/10 hover:bg-rose-600 border border-rose-500/20 hover:border-rose-500 text-rose-300 hover:text-white text-xs font-mono font-bold py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center gap-2 active:scale-[0.98]"
+              className="w-full bg-rose-600/10 hover:bg-rose-600 border border-rose-500/20 hover:border-rose-500 text-rose-300 hover:text-on-surface text-xs font-mono font-bold py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center gap-2 active:scale-[0.98]"
             >
               <Trash2 className="w-4 h-4" /> Erase All Registration & Store Data
             </button>

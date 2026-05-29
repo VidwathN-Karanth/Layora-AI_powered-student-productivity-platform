@@ -13,30 +13,40 @@ export async function POST(req: NextRequest) {
       currentRoutine 
     } = await req.json();
 
-    const systemPrompt = `You are an elite academic co-pilot for college students. Answer with markdown formatting.
+    const systemPrompt = `You are the central Academic Planning Engine for the student's Layora dashboard. You have direct control over their tasks and timetable.
 
-You have the capability to directly manage the student's tasks and weekly timetable. Here is their current configuration:
-- Active subjects: ${JSON.stringify(currentSubjects || [])}
-- Active tasks: ${JSON.stringify(currentTasks || [])}
-- Routine constraints: ${JSON.stringify(currentRoutine || {})}
-- Current timetable schedule: ${JSON.stringify(currentSchedule || [])}
+Here is the student's complete academic context:
+- Subjects (with credits, priority, and difficulty): ${JSON.stringify(currentSubjects || [])}
+- Active Tasks (with deadlines and completion status): ${JSON.stringify(currentTasks || [])}
+- Routine constraints (wake, sleep, college times): ${JSON.stringify(currentRoutine || {})}
+- Current Timetable: ${JSON.stringify(currentSchedule || [])}
 
-If the student asks you to add a task, schedule something new, or optimize the timetable based on priorities:
-1. To create the new task card, append at the end:
-   [CREATE_TASK:{"title":"Task Title","deadline":"YYYY-MM-DD","estimatedMinutes":60}]
-   
-2. To reschedule or insert this task as a study block in between others (shifting/editing the times accordingly):
-   Rearrange the current timetable schedule array, inserting a new study block for this task, adjusting start/end times of other study blocks or breaks if needed. Keep fixed classes and activities as they are.
-   Then append the entire updated schedule block array at the end of your response inside this command:
-   [REPLACE_TIMETABLE:[{"id":"block-id","day":1,"start":"HH:MM","end":"HH:MM","title":"Block Title","type":"study","color":"border-l-4 border-purple-500 bg-purple-950/20 text-purple-200","details":"details"},...]]
-   
-   Ensure that the colors match:
-   - class: border-l-4 border-cyan-500 bg-cyan-950/20 text-cyan-200
-   - study: border-l-4 border-purple-500 bg-purple-950/20 text-purple-200
-   - extracurricular: border-l-4 border-pink-500 bg-pink-950/20 text-pink-200
-   - break: border-l-4 border-emerald-500 bg-emerald-950/20 text-emerald-200
+You must ALWAYS respond with a valid JSON object matching this schema:
+{
+  "reply": "Your markdown-formatted conversational response to the student.",
+  "actions": [
+    // Array of action objects to execute based on the user's request. Leave empty if no action is needed.
+  ]
+}
 
-Ensure the JSON within the commands is on a single line and has no newlines. You can output multiple command tags if needed.`;
+Supported Actions:
+1. ADD_TASK
+   {"action": "ADD_TASK", "data": {"title": "Task Title", "deadline": "YYYY-MM-DD", "estimatedMinutes": 60, "subjectId": "sub-id"}}
+2. UPDATE_TASK
+   {"action": "UPDATE_TASK", "data": {"taskId": "...", "title": "...", "estimatedMinutes": 90}}
+3. REMOVE_TASK
+   {"action": "REMOVE_TASK", "data": {"taskId": "..."}}
+4. COMPLETE_TASK
+   {"action": "COMPLETE_TASK", "data": {"taskId": "..."}}
+5. CREATE_STUDY_BLOCK
+   {"action": "CREATE_STUDY_BLOCK", "data": {"day": 1, "start": "14:00", "end": "15:00", "title": "Study Block", "type": "study"}}
+6. REBALANCE_SCHEDULE
+   {"action": "REBALANCE_SCHEDULE", "data": {}}
+
+Rules:
+- When a user asks to add, remove, complete, or edit a task, ALWAYS output the corresponding action.
+- When the schedule needs to be optimized or rebalanced due to a change, output REBALANCE_SCHEDULE.
+- Your response MUST be parseable JSON. Do not include markdown \`\`\`json wrappers. Just output the raw JSON object.`;
 
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -46,6 +56,7 @@ Ensure the JSON within the commands is on a single line and has no newlines. You
       },
       body: JSON.stringify({
         model: 'llama-3.1-8b-instant',
+        response_format: { type: "json_object" },
         messages: [
           { role: 'system', content: systemPrompt },
           ...history.map((h: any) => ({ 
@@ -64,7 +75,7 @@ Ensure the JSON within the commands is on a single line and has no newlines. You
       const errText = await groqRes.text();
       console.error('Groq API call failed:', errText);
       return NextResponse.json({ 
-        reply: 'I received your message, but the remote Groq service returned an error. Please try again later.' 
+        reply: JSON.stringify({ reply: 'Remote Groq service error.', actions: [] })
       });
     }
 

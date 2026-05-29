@@ -19,6 +19,7 @@ export interface Task {
   estimatedMinutes: number;
   actualMinutesSpent: number;
   status: 'pending' | 'in_progress' | 'completed';
+  completedAt?: string;
 }
 
 export interface ChatMessage {
@@ -109,6 +110,7 @@ interface AppState {
   tasks: Task[];
   addTask: (task: Omit<Task, 'id' | 'actualMinutesSpent' | 'status'>) => void;
   removeTask: (id: string) => void;
+  updateTask: (id: string, updatedFields: Partial<Task>) => void;
   toggleTaskStatus: (id: string) => void;
   activeTaskId: string | null;
   activeTimerStart: number | null; // Timestamp in ms
@@ -128,8 +130,8 @@ interface AppState {
   setThemeAccent: (theme: 'purple' | 'blue' | 'pink' | 'emerald') => void;
   apiKeys: AIKeys;
   setApiKeys: (keys: Partial<AIKeys>) => void;
-  selectedModel: 'gemini' | 'openai' | 'claude' | 'grok';
-  setSelectedModel: (model: 'gemini' | 'openai' | 'claude' | 'grok') => void;
+  selectedModel: 'groq' | 'openai' | 'claude' | 'grok';
+  setSelectedModel: (model: 'groq' | 'openai' | 'claude' | 'grok') => void;
   calendarSynced: boolean;
   setCalendarSynced: (synced: boolean) => void;
 
@@ -529,11 +531,18 @@ export const useStore = create<AppState>()(
       removeTask: (id) => set((state) => ({
         tasks: state.tasks.filter((t) => t.id !== id)
       })),
+      updateTask: (id, updatedFields) => set((state) => ({
+        tasks: state.tasks.map((t) => t.id === id ? { ...t, ...updatedFields } : t)
+      })),
       toggleTaskStatus: (id) => set((state) => ({
         tasks: state.tasks.map((t) => {
           if (t.id === id) {
             const nextStatus = t.status === 'completed' ? 'pending' : 'completed';
-            return { ...t, status: nextStatus };
+            return { 
+              ...t, 
+              status: nextStatus,
+              completedAt: nextStatus === 'completed' ? new Date().toISOString() : undefined
+            };
           }
           return t;
         })
@@ -624,7 +633,7 @@ export const useStore = create<AppState>()(
       setApiKeys: (keys) => set((state) => ({
         apiKeys: { ...state.apiKeys, ...keys }
       })),
-      selectedModel: 'gemini',
+      selectedModel: 'groq',
       setSelectedModel: (model) => set({ selectedModel: model }),
       calendarSynced: false,
       setCalendarSynced: (synced) => set({ calendarSynced: synced }),
@@ -669,7 +678,7 @@ export const useStore = create<AppState>()(
           activeTimerElapsed: 0,
           themeAccent: 'purple',
           apiKeys: {},
-          selectedModel: 'gemini',
+          selectedModel: 'groq',
           calendarSynced: false,
           chatHistory: [
             { id: 'msg-welcome', role: 'assistant', content: 'Welcome to your AI Academic Dashboard! I am your student co-pilot. I can help analyze your weekly load, suggest breaks, or resolve complex study questions. Let me know how I can assist you today.', timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }

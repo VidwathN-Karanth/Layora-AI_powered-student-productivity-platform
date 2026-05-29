@@ -192,11 +192,11 @@ export default function CommandPalette() {
       {/* Help tooltip on top navigation */}
       <button 
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 hover:border-purple-500/30 bg-white/5 hover:bg-purple-950/20 text-xs font-mono text-white/50 hover:text-white transition cursor-pointer"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-outline-variant hover:border-primary bg-surface-container hover:bg-primary-fixed text-xs font-mono text-outline hover:text-on-surface transition cursor-pointer"
         title="Open Command Center (Ctrl+K)"
       >
         <Command className="w-3.5 h-3.5" />
-        <span className="hidden lg:inline text-[10px] uppercase font-bold tracking-widest text-purple-400">Ctrl+K</span>
+        <span className="hidden lg:inline text-[10px] uppercase font-bold tracking-widest text-primary">Ctrl+K</span>
       </button>
 
       <AnimatePresence>
@@ -207,7 +207,7 @@ export default function CommandPalette() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/80 backdrop-blur-md"
+              className="fixed inset-0 bg-black/30 backdrop-blur-md"
               onClick={() => setIsOpen(false)}
             />
 
@@ -217,14 +217,14 @@ export default function CommandPalette() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.97, y: -10 }}
               transition={{ duration: 0.18, ease: 'easeOut' }}
-              className="relative w-full max-w-lg bg-surface-container-lowest/90 border border-white/20 rounded-xl shadow-2xl overflow-hidden backdrop-blur-2xl flex flex-col max-h-[50vh] z-10"
+              className="relative w-full max-w-lg bg-surface-container-lowest/90 border border-outline rounded-xl shadow-2xl overflow-hidden backdrop-blur-2xl flex flex-col max-h-[50vh] z-10"
             >
               {/* Glowing Top line */}
               <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-cyan-400 to-purple-500 opacity-60"></div>
  
               {/* Search Bar Input */}
-              <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/10 shrink-0">
-                <Search className="w-4 h-4 text-cyan-400 shrink-0" />
+              <div className="flex items-center gap-3 px-4 py-3.5 border-b border-outline-variant shrink-0">
+                <Search className="w-4 h-4 text-secondary shrink-0" />
                 <input
                   ref={inputRef}
                   type="text"
@@ -235,15 +235,15 @@ export default function CommandPalette() {
                     setSelectedIndex(0);
                   }}
                   onKeyDown={handleKeyDown}
-                  className="bg-transparent border-0 focus:outline-none w-full text-sm text-white placeholder-white/35 font-mono"
+                  className="bg-transparent border-0 focus:outline-none w-full text-sm text-on-surface placeholder-white/35 font-mono"
                 />
-                <span className="text-[10px] font-mono text-white/30 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded uppercase">ESC</span>
+                <span className="text-[10px] font-mono text-outline-variant bg-surface-container border border-outline-variant px-1.5 py-0.5 rounded uppercase">ESC</span>
               </div>
  
               {/* Items Listing */}
               <div className="flex-1 overflow-y-auto p-2 space-y-2">
                 {filteredItems.length === 0 ? (
-                  <div className="text-center font-mono text-xs text-white/30 py-10">
+                  <div className="text-center font-mono text-xs text-outline-variant py-10">
                     No matching HUD command coordinates found.
                   </div>
                 ) : (
@@ -260,24 +260,24 @@ export default function CommandPalette() {
                         }}
                         className={`w-full flex items-center gap-3.5 p-3 rounded-lg text-left transition ${
                           isSelected 
-                            ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/5 border border-cyan-500/30 text-white' 
-                            : 'border border-transparent text-white/60 hover:text-white'
+                            ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/5 border border-secondary text-on-surface' 
+                            : 'border border-transparent text-on-surface-variant hover:text-on-surface'
                         }`}
                       >
                         <div className={`w-8 h-8 rounded-md flex items-center justify-center transition shrink-0 ${
-                          isSelected ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20' : 'bg-white/5 text-purple-400'
+                          isSelected ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20' : 'bg-surface-container text-primary'
                         }`}>
                           <Icon className="w-4 h-4" strokeWidth={1.5} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-mono font-bold">{item.title}</span>
-                            <span className="text-[9px] font-mono uppercase tracking-widest text-white/30">{item.category}</span>
+                            <span className="text-[9px] font-mono uppercase tracking-widest text-outline-variant">{item.category}</span>
                           </div>
-                          <p className="text-[10px] font-sans text-white/40 truncate mt-0.5">{item.subtitle}</p>
+                          <p className="text-[10px] font-sans text-outline truncate mt-0.5">{item.subtitle}</p>
                         </div>
                         {isSelected && (
-                          <ArrowUpRight className="w-3.5 h-3.5 text-cyan-400 shrink-0 animate-pulse" />
+                          <ArrowUpRight className="w-3.5 h-3.5 text-secondary shrink-0 animate-pulse" />
                         )}
                       </button>
                     );
@@ -286,7 +286,7 @@ export default function CommandPalette() {
               </div>
  
               {/* Keyboard Instruction Footer */}
-              <div className="p-3 border-t border-white/5 bg-surface-container-lowest flex justify-between items-center text-[9px] font-mono text-white/30 shrink-0">
+              <div className="p-3 border-t border-outline-variant bg-surface-container-lowest flex justify-between items-center text-[9px] font-mono text-outline-variant shrink-0">
                 <div className="flex gap-2">
                   <span>↑↓ Navigate</span>
                   <span>↵ Select</span>

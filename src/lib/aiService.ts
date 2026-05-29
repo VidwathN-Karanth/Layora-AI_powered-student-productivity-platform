@@ -1,8 +1,8 @@
 // AI Integration & Planner Logic Service
 
 export interface AIKeys {
+  groq?: string;
   openai?: string;
-  gemini?: string;
   claude?: string;
   grok?: string;
 }
@@ -123,8 +123,8 @@ export function generateLocalWeeklySchedule(
 
   // Colors for matching elements
   const colors = {
-    class: 'border-l-4 border-cyan-500 bg-cyan-950/20 text-cyan-200',
-    study: 'border-l-4 border-purple-500 bg-purple-950/20 text-purple-200',
+    class: 'border-l-4 border-secondary bg-secondary-fixed text-on-surface',
+    study: 'border-l-4 border-primary bg-primary-fixed text-on-surface',
     extracurricular: 'border-l-4 border-pink-500 bg-pink-950/20 text-pink-200',
     break: 'border-l-4 border-emerald-500 bg-emerald-950/20 text-emerald-200',
   };
@@ -431,7 +431,7 @@ export async function generateAISchedule(
 export async function sendAIChatMessage(
   message: string,
   history: { role: 'user' | 'assistant'; content: string }[],
-  provider: 'gemini' | 'openai' | 'claude' | 'grok',
+  provider: 'groq' | 'openai' | 'claude' | 'grok',
   keys: AIKeys,
   context?: any
 ): Promise<string> {

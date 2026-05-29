@@ -185,36 +185,36 @@ export default function OnboardingModal() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Blurred Backdrop */}
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-md"></div>
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-md"></div>
 
       {/* Modal Container */}
-      <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col glass-panel-neon border border-purple-500/30 rounded-2xl overflow-hidden shadow-2xl shadow-purple-500/5 z-10">
+      <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col glass-panel-neon border border-primary rounded-2xl overflow-hidden shadow-2xl shadow-purple-500/5 z-10">
         
         {/* Dynamic Glowing Border Line */}
         <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-purple-500 via-cyan-400 to-blue-500"></div>
 
         {/* Modal Header */}
-        <div className="flex items-center justify-between p-5 border-b border-white/5 bg-white/2">
+        <div className="flex items-center justify-between p-5 border-b border-outline-variant bg-white/2">
           <div className="flex items-center gap-2.5">
-            <span className="w-2.5 h-2.5 rounded bg-purple-500 animate-pulse"></span>
-            <span className="font-mono text-xs font-bold tracking-wider text-purple-300">Initialize Academic Profile</span>
+            <span className="w-2.5 h-2.5 rounded bg-primary-container animate-pulse"></span>
+            <span className="font-mono text-xs font-bold tracking-wider text-primary">Initialize Academic Profile</span>
           </div>
           
           <div className="flex items-center gap-4">
-            <span className="text-[10px] font-mono text-cyan-400 border border-cyan-500/20 bg-cyan-950/20 px-2.5 py-0.5 rounded-full">
+            <span className="text-[10px] font-mono text-secondary border border-secondary bg-secondary-fixed px-2.5 py-0.5 rounded-full">
               Step 0{step} of 0{totalSteps}
             </span>
           </div>
         </div>
 
         {/* Notice alert */}
-        <div className="bg-purple-950/25 border-b border-purple-900/30 px-5 py-2.5 flex items-center gap-2.5 text-[11px] text-purple-200/80 font-mono">
-          <Info className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+        <div className="bg-primary-fixed border-b border-primary px-5 py-2.5 flex items-center gap-2.5 text-[11px] text-on-surface/80 font-mono">
+          <Info className="w-3.5 h-3.5 text-primary shrink-0" />
           <span>Please complete these details to construct your interactive dashboard and custom AI timetable.</span>
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full h-[2px] bg-white/5">
+        <div className="w-full h-[2px] bg-surface-container">
           <div 
             className="h-full bg-gradient-to-r from-purple-500 to-cyan-400 transition-all duration-300"
             style={{ width: `${(step / totalSteps) * 100}%` }}
@@ -234,11 +234,11 @@ export default function OnboardingModal() {
               {/* STEP 1: ROUTINE SETUP */}
               {step === 1 && (
                 <div className="space-y-6">
-                  <div className="flex items-center gap-3 border-b border-white/5 pb-3">
-                    <Clock className="w-5 h-5 text-purple-400" />
+                  <div className="flex items-center gap-3 border-b border-outline-variant pb-3">
+                    <Clock className="w-5 h-5 text-primary" />
                     <div>
-                      <h3 className="text-sm font-mono font-bold text-white">Routine Setup</h3>
-                      <p className="text-[10px] text-white/50">Determine sleep windows, mandatory lecture schedules, and study blocks.</p>
+                      <h3 className="text-sm font-mono font-bold text-on-surface">Routine Setup</h3>
+                      <p className="text-[10px] text-outline">Determine sleep windows, mandatory lecture schedules, and study blocks.</p>
                     </div>
                   </div>
 
@@ -246,21 +246,21 @@ export default function OnboardingModal() {
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-[10px] font-mono text-purple-300/70 mb-1.5 uppercase">Wake Time</label>
+                          <label className="block text-[10px] font-mono text-primary/70 mb-1.5 uppercase">Wake Time</label>
                           <input 
                             type="time" 
                             value={wakeTime}
                             onChange={(e) => setWakeTime(e.target.value)}
-                            className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-center w-full focus:outline-none focus:border-purple-500 text-white"
+                            className="bg-surface-container border border-outline-variant rounded-xl px-3 py-2 text-xs text-center w-full focus:outline-none focus:border-primary text-on-surface"
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-mono text-purple-300/70 mb-1.5 uppercase">Sleep Time</label>
+                          <label className="block text-[10px] font-mono text-primary/70 mb-1.5 uppercase">Sleep Time</label>
                           <input 
                             type="time" 
                             value={sleepTime}
                             onChange={(e) => setSleepTime(e.target.value)}
-                            className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-center w-full focus:outline-none focus:border-purple-500 text-white"
+                            className="bg-surface-container border border-outline-variant rounded-xl px-3 py-2 text-xs text-center w-full focus:outline-none focus:border-primary text-on-surface"
                           />
                         </div>
                       </div>
@@ -272,7 +272,7 @@ export default function OnboardingModal() {
                             type="time" 
                             value={collegeStart}
                             onChange={(e) => setCollegeStart(e.target.value)}
-                            className="bg-white/5 border border-cyan-500/20 rounded-xl px-3 py-2 text-xs text-center w-full focus:outline-none focus:border-cyan-500 text-white"
+                            className="bg-surface-container border border-secondary rounded-xl px-3 py-2 text-xs text-center w-full focus:outline-none focus:border-secondary text-on-surface"
                           />
                         </div>
                         <div>
@@ -281,21 +281,21 @@ export default function OnboardingModal() {
                             type="time" 
                             value={collegeEnd}
                             onChange={(e) => setCollegeEnd(e.target.value)}
-                            className="bg-white/5 border border-cyan-500/20 rounded-xl px-3 py-2 text-xs text-center w-full focus:outline-none focus:border-cyan-500 text-white"
+                            className="bg-surface-container border border-secondary rounded-xl px-3 py-2 text-xs text-center w-full focus:outline-none focus:border-secondary text-on-surface"
                           />
                         </div>
                       </div>
                     </div>
 
-                    <div className="space-y-4 border-t md:border-t-0 md:border-l border-white/10 pt-4 md:pt-0 md:pl-6">
-                      <label className="block text-[10px] font-mono text-purple-300/70 mb-1 uppercase">Free Work & Study Slots</label>
+                    <div className="space-y-4 border-t md:border-t-0 md:border-l border-outline-variant pt-4 md:pt-0 md:pl-6">
+                      <label className="block text-[10px] font-mono text-primary/70 mb-1 uppercase">Free Work & Study Slots</label>
                       
                       <div className="space-y-1.5 max-h-[120px] overflow-y-auto pr-1">
                         {freeBlocks.map((b) => (
-                          <div key={b.id} className="flex justify-between items-center bg-white/5 border border-white/5 rounded-xl px-3 py-1.5 text-[11px]">
-                            <span className="font-mono text-purple-200">{b.label || 'Study Block'}</span>
+                          <div key={b.id} className="flex justify-between items-center bg-surface-container border border-outline-variant rounded-xl px-3 py-1.5 text-[11px]">
+                            <span className="font-mono text-on-surface">{b.label || 'Study Block'}</span>
                             <div className="flex items-center gap-3">
-                              <span className="font-mono text-white/50">{b.start} - {b.end}</span>
+                              <span className="font-mono text-outline">{b.start} - {b.end}</span>
                               <button onClick={() => handleRemoveFreeBlock(b.id)} className="text-red-400 hover:text-red-300">
                                 <Trash className="w-3 h-3" />
                               </button>
@@ -304,28 +304,28 @@ export default function OnboardingModal() {
                         ))}
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2 items-end bg-white/5 p-3 rounded-xl border border-white/5">
+                      <div className="grid grid-cols-3 gap-2 items-end bg-surface-container p-3 rounded-xl border border-outline-variant">
                         <div className="col-span-3">
                           <input 
                             type="text" 
                             placeholder="Study slot label" 
                             value={newFreeLabel}
                             onChange={(e) => setNewFreeLabel(e.target.value)}
-                            className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-xs w-full mb-1 text-white placeholder-white/30"
+                            className="bg-surface-container border border-outline-variant rounded-lg px-2 py-1 text-xs w-full mb-1 text-on-surface placeholder-white/30"
                           />
                         </div>
                         <div>
-                          <span className="text-[9px] font-mono text-white/40 block mb-0.5">Start</span>
-                          <input type="time" value={newFreeStart} onChange={(e) => setNewFreeStart(e.target.value)} className="bg-white/10 border border-white/10 rounded px-1.5 py-0.5 text-xs w-full text-white" />
+                          <span className="text-[9px] font-mono text-outline block mb-0.5">Start</span>
+                          <input type="time" value={newFreeStart} onChange={(e) => setNewFreeStart(e.target.value)} className="bg-surface-container-high border border-outline-variant rounded px-1.5 py-0.5 text-xs w-full text-on-surface" />
                         </div>
                         <div>
-                          <span className="text-[9px] font-mono text-white/40 block mb-0.5">End</span>
-                          <input type="time" value={newFreeEnd} onChange={(e) => setNewFreeEnd(e.target.value)} className="bg-white/10 border border-white/10 rounded px-1.5 py-0.5 text-xs w-full text-white" />
+                          <span className="text-[9px] font-mono text-outline block mb-0.5">End</span>
+                          <input type="time" value={newFreeEnd} onChange={(e) => setNewFreeEnd(e.target.value)} className="bg-surface-container-high border border-outline-variant rounded px-1.5 py-0.5 text-xs w-full text-on-surface" />
                         </div>
                         <button 
                           type="button" 
                           onClick={handleAddFreeBlock} 
-                          className="bg-purple-600 hover:bg-purple-500 rounded p-1.5 flex items-center justify-center cursor-pointer text-white"
+                          className="bg-primary hover:bg-primary-container rounded p-1.5 flex items-center justify-center cursor-pointer text-on-surface"
                         >
                           <Plus className="w-4 h-4" />
                         </button>
@@ -338,58 +338,58 @@ export default function OnboardingModal() {
               {/* STEP 2: SUBJECTS & CREDITS */}
               {step === 2 && (
                 <div className="space-y-6">
-                  <div className="flex items-center gap-3 border-b border-white/5 pb-3">
-                    <BookOpen className="w-5 h-5 text-purple-400" />
+                  <div className="flex items-center gap-3 border-b border-outline-variant pb-3">
+                    <BookOpen className="w-5 h-5 text-primary" />
                     <div>
-                      <h3 className="text-sm font-mono font-bold text-white">Academic Subjects</h3>
-                      <p className="text-[10px] text-white/50">Add subjects, credits, difficulty, and scheduling priorities.</p>
+                      <h3 className="text-sm font-mono font-bold text-on-surface">Academic Subjects</h3>
+                      <p className="text-[10px] text-outline">Add subjects, credits, difficulty, and scheduling priorities.</p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Add subject form */}
-                    <div className="bg-white/5 p-4 rounded-xl border border-white/5 space-y-3">
-                      <h4 className="text-[10px] font-mono text-purple-400 font-bold mb-1">Add Subject</h4>
+                    <div className="bg-surface-container p-4 rounded-xl border border-outline-variant space-y-3">
+                      <h4 className="text-[10px] font-mono text-primary font-bold mb-1">Add Subject</h4>
                       <div>
-                        <label className="block text-[9px] font-mono text-white/50 mb-0.5">Subject Name</label>
+                        <label className="block text-[9px] font-mono text-outline mb-0.5">Subject Name</label>
                         <input 
                           type="text" 
                           value={newSubName} 
                           onChange={(e) => setNewSubName(e.target.value)}
                           placeholder="Introduction to Calculus"
-                          className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500"
+                          className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-[9px] font-mono text-white/50 mb-0.5">Code</label>
+                          <label className="block text-[9px] font-mono text-outline mb-0.5">Code</label>
                           <input 
                             type="text" 
                             value={newSubCode} 
                             onChange={(e) => setNewSubCode(e.target.value)}
                             placeholder="MATH101"
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500"
+                            className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                           />
                         </div>
                         <div>
-                          <label className="block text-[9px] font-mono text-white/50 mb-0.5">Credits</label>
+                          <label className="block text-[9px] font-mono text-outline mb-0.5">Credits</label>
                           <input 
                             type="number" 
                             value={newSubCredits} 
                             onChange={(e) => setNewSubCredits(parseInt(e.target.value) || 3)}
                             min={1} 
                             max={6}
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-center text-white"
+                            className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-center text-on-surface"
                           />
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-[9px] font-mono text-white/50 mb-0.5">Difficulty</label>
+                          <label className="block text-[9px] font-mono text-outline mb-0.5">Difficulty</label>
                           <select 
                             value={newSubDiff} 
                             onChange={(e) => setNewSubDiff(e.target.value as any)}
-                            className="w-full bg-surface-container-low border border-white/10 rounded-lg px-2 py-1 text-xs text-white"
+                            className="w-full bg-surface-container-low border border-outline-variant rounded-lg px-2 py-1 text-xs text-on-surface"
                           >
                             <option value="Easy">Easy</option>
                             <option value="Medium">Medium</option>
@@ -397,11 +397,11 @@ export default function OnboardingModal() {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-[9px] font-mono text-white/50 mb-0.5">Priority</label>
+                          <label className="block text-[9px] font-mono text-outline mb-0.5">Priority</label>
                           <select 
                             value={newSubPriority} 
                             onChange={(e) => setNewSubPriority(e.target.value as any)}
-                            className="w-full bg-surface-container-low border border-white/10 rounded-lg px-2 py-1 text-xs text-white"
+                            className="w-full bg-surface-container-low border border-outline-variant rounded-lg px-2 py-1 text-xs text-on-surface"
                           >
                             <option value="Low">Low</option>
                             <option value="Medium">Medium</option>
@@ -412,7 +412,7 @@ export default function OnboardingModal() {
                       <button 
                         type="button" 
                         onClick={handleAddSubject}
-                        className="w-full bg-purple-600 hover:bg-purple-500 text-white rounded-lg py-1.5 text-xs font-mono font-bold flex items-center justify-center gap-1 cursor-pointer mt-2"
+                        className="w-full bg-primary hover:bg-primary-container text-on-surface rounded-lg py-1.5 text-xs font-mono font-bold flex items-center justify-center gap-1 cursor-pointer mt-2"
                       >
                         <Plus className="w-3.5 h-3.5" /> Add Subject
                       </button>
@@ -421,15 +421,15 @@ export default function OnboardingModal() {
                     {/* Subjects Listing Table */}
                     <div className="md:col-span-2 space-y-2 max-h-[220px] overflow-y-auto pr-1">
                       {subjects.map((sub, index) => (
-                        <div key={index} className="flex items-center justify-between bg-white/5 border border-white/5 rounded-xl p-3">
+                        <div key={index} className="flex items-center justify-between bg-surface-container border border-outline-variant rounded-xl p-3">
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="font-mono font-bold text-xs text-purple-200">{sub.name}</span>
-                              <span className="text-[9px] font-mono bg-purple-950/40 text-purple-300 px-2 py-0.5 rounded border border-purple-800/30">{sub.code}</span>
+                              <span className="font-mono font-bold text-xs text-on-surface">{sub.name}</span>
+                              <span className="text-[9px] font-mono bg-primary-fixed text-primary px-2 py-0.5 rounded border border-primary">{sub.code}</span>
                             </div>
-                            <div className="flex gap-4 text-[9px] text-white/50 mt-1 font-mono">
+                            <div className="flex gap-4 text-[9px] text-outline mt-1 font-mono">
                               <span>Credits: {sub.credits}</span>
-                              <span>Diff: <span className={sub.difficulty === 'Hard' ? 'text-red-400' : 'text-emerald-400'}>{sub.difficulty}</span></span>
+                              <span>Diff: <span className={sub.difficulty === 'Hard' ? 'text-red-400' : 'text-emerald-600'}>{sub.difficulty}</span></span>
                               <span>Priority: {sub.priority}</span>
                             </div>
                           </div>
@@ -446,11 +446,11 @@ export default function OnboardingModal() {
               {/* STEP 3: STUDY MATERIALS UPLOAD */}
               {step === 3 && (
                 <div className="space-y-6">
-                  <div className="flex items-center gap-3 border-b border-white/5 pb-3">
-                    <UploadCloud className="w-5 h-5 text-purple-400" />
+                  <div className="flex items-center gap-3 border-b border-outline-variant pb-3">
+                    <UploadCloud className="w-5 h-5 text-primary" />
                     <div>
-                      <h3 className="text-sm font-mono font-bold text-white">Upload Study Materials</h3>
-                      <p className="text-[10px] text-white/50">Upload syllabus notes, PDFs, or slides to associate resources with subjects.</p>
+                      <h3 className="text-sm font-mono font-bold text-on-surface">Upload Study Materials</h3>
+                      <p className="text-[10px] text-outline">Upload syllabus notes, PDFs, or slides to associate resources with subjects.</p>
                     </div>
                   </div>
 
@@ -458,21 +458,21 @@ export default function OnboardingModal() {
                     {subjects.map((sub, sIdx) => {
                       const files = uploadedFiles[sIdx] || [];
                       return (
-                        <div key={sIdx} className="bg-white/5 p-4 rounded-xl border border-white/5 space-y-2">
-                          <div className="flex justify-between items-center border-b border-white/5 pb-1">
-                            <span className="font-mono font-bold text-xs text-purple-300">{sub.name}</span>
-                            <span className="text-[9px] font-mono text-white/40">{sub.code}</span>
+                        <div key={sIdx} className="bg-surface-container p-4 rounded-xl border border-outline-variant space-y-2">
+                          <div className="flex justify-between items-center border-b border-outline-variant pb-1">
+                            <span className="font-mono font-bold text-xs text-primary">{sub.name}</span>
+                            <span className="text-[9px] font-mono text-outline">{sub.code}</span>
                           </div>
 
                           {/* File list */}
                           <div className="space-y-1 min-h-[40px]">
                             {files.length === 0 ? (
-                              <p className="text-[9px] text-white/30 font-mono py-2 text-center">No reference files uploaded yet</p>
+                              <p className="text-[9px] text-outline-variant font-mono py-2 text-center">No reference files uploaded yet</p>
                             ) : (
                               files.map((f, fIdx) => (
-                                <div key={fIdx} className="flex items-center gap-2 bg-white/5 px-2 py-1 rounded-lg text-[9px] font-mono border border-white/5">
-                                  <File className="w-3 h-3 text-cyan-400 shrink-0" />
-                                  <span className="truncate text-white/70 flex-1">{f.name}</span>
+                                <div key={fIdx} className="flex items-center gap-2 bg-surface-container px-2 py-1 rounded-lg text-[9px] font-mono border border-outline-variant">
+                                  <File className="w-3 h-3 text-secondary shrink-0" />
+                                  <span className="truncate text-on-surface/70 flex-1">{f.name}</span>
                                 </div>
                               ))
                             )}
@@ -485,11 +485,11 @@ export default function OnboardingModal() {
                               placeholder="Notes Chapter 1.pdf" 
                               value={mockFileName}
                               onChange={(e) => setMockFileName(e.target.value)}
-                              className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-[9px] flex-1 focus:outline-none text-white placeholder-white/30"
+                              className="bg-surface-container border border-outline-variant rounded-lg px-2 py-1 text-[9px] flex-1 focus:outline-none text-on-surface placeholder-white/30"
                             />
                             <button 
                               onClick={() => handleMockUpload(sIdx)}
-                              className="bg-purple-600 hover:bg-purple-500 text-white text-[9px] font-mono font-bold px-2.5 py-1 rounded-lg cursor-pointer"
+                              className="bg-primary hover:bg-primary-container text-on-surface text-[9px] font-mono font-bold px-2.5 py-1 rounded-lg cursor-pointer"
                             >
                               Mock Upload
                             </button>
@@ -504,46 +504,46 @@ export default function OnboardingModal() {
               {/* STEP 4: EXTRA ACTIVITIES */}
               {step === 4 && (
                 <div className="space-y-6">
-                  <div className="flex items-center gap-3 border-b border-white/5 pb-3">
-                    <Dumbbell className="w-5 h-5 text-purple-400" />
+                  <div className="flex items-center gap-3 border-b border-outline-variant pb-3">
+                    <Dumbbell className="w-5 h-5 text-primary" />
                     <div>
-                      <h3 className="text-sm font-mono font-bold text-white">Extracurricular Activities</h3>
-                      <p className="text-[10px] text-white/50">Register hobbies, gym, music, or physical routines to avoid study burnout.</p>
+                      <h3 className="text-sm font-mono font-bold text-on-surface">Extracurricular Activities</h3>
+                      <p className="text-[10px] text-outline">Register hobbies, gym, music, or physical routines to avoid study burnout.</p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Add activity form */}
-                    <div className="bg-white/5 p-4 rounded-xl border border-white/5 space-y-3">
-                      <h4 className="text-[10px] font-mono text-purple-400 font-bold mb-1">Add Activity</h4>
+                    <div className="bg-surface-container p-4 rounded-xl border border-outline-variant space-y-3">
+                      <h4 className="text-[10px] font-mono text-primary font-bold mb-1">Add Activity</h4>
                       <div>
-                        <label className="block text-[9px] font-mono text-white/50 mb-0.5">Activity Name</label>
+                        <label className="block text-[9px] font-mono text-outline mb-0.5">Activity Name</label>
                         <input 
                           type="text" 
                           value={newActName} 
                           onChange={(e) => setNewActName(e.target.value)}
                           placeholder="Gym, Chess..."
-                          className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500"
+                          className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-[9px] font-mono text-white/50 mb-0.5">Duration (mins)</label>
+                          <label className="block text-[9px] font-mono text-outline mb-0.5">Duration (mins)</label>
                           <input 
                             type="number" 
                             value={newActDuration} 
                             onChange={(e) => setNewActDuration(parseInt(e.target.value) || 30)}
                             min={10} 
                             max={180}
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-center text-white"
+                            className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-center text-on-surface"
                           />
                         </div>
                         <div>
-                          <label className="block text-[9px] font-mono text-white/50 mb-0.5">Timing</label>
+                          <label className="block text-[9px] font-mono text-outline mb-0.5">Timing</label>
                           <select 
                             value={newActTiming} 
                             onChange={(e) => setNewActTiming(e.target.value as any)}
-                            className="w-full bg-surface-container-low border border-white/10 rounded-lg px-2 py-1 text-xs text-white"
+                            className="w-full bg-surface-container-low border border-outline-variant rounded-lg px-2 py-1 text-xs text-on-surface"
                           >
                             <option value="morning">Morning</option>
                             <option value="afternoon">Afternoon</option>
@@ -552,11 +552,11 @@ export default function OnboardingModal() {
                         </div>
                       </div>
                       <div>
-                        <label className="block text-[9px] font-mono text-white/50 mb-0.5">Priority</label>
+                        <label className="block text-[9px] font-mono text-outline mb-0.5">Priority</label>
                         <select 
                           value={newActPriority} 
                           onChange={(e) => setNewActPriority(e.target.value as any)}
-                          className="w-full bg-surface-container-low border border-white/10 rounded-lg px-2 py-1 text-xs text-white"
+                          className="w-full bg-surface-container-low border border-outline-variant rounded-lg px-2 py-1 text-xs text-on-surface"
                         >
                           <option value="Low">Low</option>
                           <option value="Medium">Medium</option>
@@ -566,7 +566,7 @@ export default function OnboardingModal() {
                       <button 
                         type="button" 
                         onClick={handleAddActivity}
-                        className="w-full bg-purple-600 hover:bg-purple-500 text-white rounded-lg py-1.5 text-xs font-mono font-bold flex items-center justify-center gap-1 cursor-pointer mt-1"
+                        className="w-full bg-primary hover:bg-primary-container text-on-surface rounded-lg py-1.5 text-xs font-mono font-bold flex items-center justify-center gap-1 cursor-pointer mt-1"
                       >
                         <Plus className="w-3.5 h-3.5" /> Add Activity
                       </button>
@@ -575,10 +575,10 @@ export default function OnboardingModal() {
                     {/* Listing */}
                     <div className="md:col-span-2 space-y-2 max-h-[220px] overflow-y-auto pr-1">
                       {activities.map((act, index) => (
-                        <div key={index} className="flex items-center justify-between bg-white/5 border border-white/5 rounded-xl p-3">
+                        <div key={index} className="flex items-center justify-between bg-surface-container border border-outline-variant rounded-xl p-3">
                           <div>
-                            <span className="font-mono font-bold text-xs text-purple-200">{act.name}</span>
-                            <div className="flex gap-4 text-[9px] text-white/50 mt-1 font-mono">
+                            <span className="font-mono font-bold text-xs text-on-surface">{act.name}</span>
+                            <div className="flex gap-4 text-[9px] text-outline mt-1 font-mono">
                               <span>Duration: {act.duration} mins</span>
                               <span>Preferred: {act.preferredTimings}</span>
                               <span>Priority: {act.priority}</span>
@@ -597,53 +597,53 @@ export default function OnboardingModal() {
               {/* STEP 5: WEBSITES GOALS */}
               {step === 5 && (
                 <div className="space-y-6">
-                  <div className="flex items-center gap-3 border-b border-white/5 pb-3">
-                    <Globe className="w-5 h-5 text-purple-400" />
+                  <div className="flex items-center gap-3 border-b border-outline-variant pb-3">
+                    <Globe className="w-5 h-5 text-primary" />
                     <div>
-                      <h3 className="text-sm font-mono font-bold text-white">Frequent Websites</h3>
-                      <p className="text-[10px] text-white/50">Register URLs and target daily focus goals for quick-access launchers.</p>
+                      <h3 className="text-sm font-mono font-bold text-on-surface">Frequent Websites</h3>
+                      <p className="text-[10px] text-outline">Register URLs and target daily focus goals for quick-access launchers.</p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Form */}
-                    <div className="bg-white/5 p-4 rounded-xl border border-white/5 space-y-3">
-                      <h4 className="text-[10px] font-mono text-purple-400 font-bold mb-1">Add Website</h4>
+                    <div className="bg-surface-container p-4 rounded-xl border border-outline-variant space-y-3">
+                      <h4 className="text-[10px] font-mono text-primary font-bold mb-1">Add Website</h4>
                       <div>
-                        <label className="block text-[9px] font-mono text-white/50 mb-0.5">Platform Name</label>
+                        <label className="block text-[9px] font-mono text-outline mb-0.5">Platform Name</label>
                         <input 
                           type="text" 
                           value={newWebName} 
                           onChange={(e) => setNewWebName(e.target.value)}
                           placeholder="LeetCode, GitHub"
-                          className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500"
+                          className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                         />
                       </div>
                       <div>
-                        <label className="block text-[9px] font-mono text-white/50 mb-0.5">URL</label>
+                        <label className="block text-[9px] font-mono text-outline mb-0.5">URL</label>
                         <input 
                           type="url" 
                           value={newWebUrl} 
                           onChange={(e) => setNewWebUrl(e.target.value)}
                           placeholder="https://leetcode.com"
-                          className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500"
+                          className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                         />
                       </div>
                       <div>
-                        <label className="block text-[9px] font-mono text-white/50 mb-0.5">Daily Focus (mins)</label>
+                        <label className="block text-[9px] font-mono text-outline mb-0.5">Daily Focus (mins)</label>
                         <input 
                           type="number" 
                           value={newWebGoal} 
                           onChange={(e) => setNewWebGoal(parseInt(e.target.value) || 30)}
                           min={5} 
                           max={240}
-                          className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-center text-white"
+                          className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-center text-on-surface"
                         />
                       </div>
                       <button 
                         type="button" 
                         onClick={handleAddWebsite}
-                        className="w-full bg-purple-600 hover:bg-purple-500 text-white rounded-lg py-1.5 text-xs font-mono font-bold flex items-center justify-center gap-1 cursor-pointer mt-1"
+                        className="w-full bg-primary hover:bg-primary-container text-on-surface rounded-lg py-1.5 text-xs font-mono font-bold flex items-center justify-center gap-1 cursor-pointer mt-1"
                       >
                         <Plus className="w-3.5 h-3.5" /> Add Website
                       </button>
@@ -652,10 +652,10 @@ export default function OnboardingModal() {
                     {/* Listing */}
                     <div className="md:col-span-2 space-y-2 max-h-[220px] overflow-y-auto pr-1">
                       {websites.map((site, index) => (
-                        <div key={index} className="flex items-center justify-between bg-white/5 border border-white/5 rounded-xl p-3">
+                        <div key={index} className="flex items-center justify-between bg-surface-container border border-outline-variant rounded-xl p-3">
                           <div>
-                            <span className="font-mono font-bold text-xs text-purple-200">{site.name}</span>
-                            <div className="flex gap-4 text-[9px] text-white/50 mt-1 font-mono">
+                            <span className="font-mono font-bold text-xs text-on-surface">{site.name}</span>
+                            <div className="flex gap-4 text-[9px] text-outline mt-1 font-mono">
                               <span className="truncate max-w-[150px] block">{site.url}</span>
                               <span>Goal: {site.timeSpentGoal} mins/day</span>
                             </div>
@@ -673,77 +673,77 @@ export default function OnboardingModal() {
               {/* STEP 6: ACTIVE COURSES */}
               {step === 6 && (
                 <div className="space-y-6">
-                  <div className="flex items-center gap-3 border-b border-white/5 pb-3">
-                    <Award className="w-5 h-5 text-purple-400" />
+                  <div className="flex items-center gap-3 border-b border-outline-variant pb-3">
+                    <Award className="w-5 h-5 text-primary" />
                     <div>
-                      <h3 className="text-sm font-mono font-bold text-white">Active Online Courses</h3>
-                      <p className="text-[10px] text-white/50">Track Coursera, Udemy, or platform courses, progress, and goals.</p>
+                      <h3 className="text-sm font-mono font-bold text-on-surface">Active Online Courses</h3>
+                      <p className="text-[10px] text-outline">Track Coursera, Udemy, or platform courses, progress, and goals.</p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Add form */}
-                    <div className="bg-white/5 p-4 rounded-xl border border-white/5 space-y-3">
-                      <h4 className="text-[10px] font-mono text-purple-400 font-bold mb-1">Add Course</h4>
+                    <div className="bg-surface-container p-4 rounded-xl border border-outline-variant space-y-3">
+                      <h4 className="text-[10px] font-mono text-primary font-bold mb-1">Add Course</h4>
                       <div>
-                        <label className="block text-[9px] font-mono text-white/50 mb-0.5">Course Name</label>
+                        <label className="block text-[9px] font-mono text-outline mb-0.5">Course Name</label>
                         <input 
                           type="text" 
                           value={newCourseName} 
                           onChange={(e) => setNewCourseName(e.target.value)}
                           placeholder="Next.js 15 Web Apps"
-                          className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500"
+                          className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-[9px] font-mono text-white/50 mb-0.5">Platform</label>
+                          <label className="block text-[9px] font-mono text-outline mb-0.5">Platform</label>
                           <input 
                             type="text" 
                             value={newCoursePlatform} 
                             onChange={(e) => setNewCoursePlatform(e.target.value)}
                             placeholder="Udemy"
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                            className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface"
                           />
                         </div>
                         <div>
-                          <label className="block text-[9px] font-mono text-white/50 mb-0.5">Progress %</label>
+                          <label className="block text-[9px] font-mono text-outline mb-0.5">Progress %</label>
                           <input 
                             type="number" 
                             value={newCourseProgress} 
                             onChange={(e) => setNewCourseProgress(parseInt(e.target.value) || 0)}
                             min={0} 
                             max={100}
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-center text-white"
+                            className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-center text-on-surface"
                           />
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-[9px] font-mono text-white/50 mb-0.5">Goal (hrs/wk)</label>
+                          <label className="block text-[9px] font-mono text-outline mb-0.5">Goal (hrs/wk)</label>
                           <input 
                             type="number" 
                             value={newCourseGoal} 
                             onChange={(e) => setNewCourseGoal(parseInt(e.target.value) || 2)}
                             min={1} 
                             max={40}
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-center text-white"
+                            className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-center text-on-surface"
                           />
                         </div>
                         <div>
-                          <label className="block text-[9px] font-mono text-white/50 mb-0.5">Deadline</label>
+                          <label className="block text-[9px] font-mono text-outline mb-0.5">Deadline</label>
                           <input 
                             type="date" 
                             value={newCourseDeadline} 
                             onChange={(e) => setNewCourseDeadline(e.target.value)}
-                            className="bg-white/5 border border-white/10 rounded-lg px-1.5 py-1 text-xs w-full text-white"
+                            className="bg-surface-container border border-outline-variant rounded-lg px-1.5 py-1 text-xs w-full text-on-surface"
                           />
                         </div>
                       </div>
                       <button 
                         type="button" 
                         onClick={handleAddCourse}
-                        className="w-full bg-purple-600 hover:bg-purple-500 text-white rounded-lg py-1.5 text-xs font-mono font-bold flex items-center justify-center gap-1 cursor-pointer mt-1"
+                        className="w-full bg-primary hover:bg-primary-container text-on-surface rounded-lg py-1.5 text-xs font-mono font-bold flex items-center justify-center gap-1 cursor-pointer mt-1"
                       >
                         <Plus className="w-3.5 h-3.5" /> Add Course
                       </button>
@@ -752,19 +752,19 @@ export default function OnboardingModal() {
                     {/* Listing */}
                     <div className="md:col-span-2 space-y-2 max-h-[220px] overflow-y-auto pr-1">
                       {courses.map((c, index) => (
-                        <div key={index} className="flex items-center justify-between bg-white/5 border border-white/5 rounded-xl p-3">
+                        <div key={index} className="flex items-center justify-between bg-surface-container border border-outline-variant rounded-xl p-3">
                           <div className="flex-1 mr-4">
-                            <span className="font-mono font-bold text-xs text-purple-200">{c.name}</span>
-                            <div className="flex gap-4 text-[9px] text-white/50 mt-1 font-mono">
+                            <span className="font-mono font-bold text-xs text-on-surface">{c.name}</span>
+                            <div className="flex gap-4 text-[9px] text-outline mt-1 font-mono">
                               <span>Platform: {c.platform}</span>
                               <span>Weekly Target: {c.weeklyGoal}h</span>
                             </div>
-                            <div className="w-full bg-white/5 h-1 rounded-full overflow-hidden mt-1.5">
+                            <div className="w-full bg-surface-container h-1 rounded-full overflow-hidden mt-1.5">
                               <div className="bg-cyan-500 h-full" style={{ width: `${c.progress}%` }}></div>
                             </div>
                           </div>
                           <div className="flex items-center gap-3">
-                            <span className="text-[10px] font-mono font-bold text-cyan-400">{c.progress}%</span>
+                            <span className="text-[10px] font-mono font-bold text-secondary">{c.progress}%</span>
                             <button onClick={() => handleRemoveCourse(index)} className="text-red-400 hover:text-red-300 p-1">
                               <Trash className="w-3.5 h-3.5" />
                             </button>
@@ -779,27 +779,27 @@ export default function OnboardingModal() {
               {/* STEP 7: SAVE CONFIG & READY */}
               {step === 7 && (
                 <div className="space-y-6 flex flex-col items-center justify-center py-4">
-                  <div className="w-14 h-14 rounded-full bg-emerald-950/40 border border-emerald-500/40 flex items-center justify-center text-emerald-400 animate-pulse mb-1">
+                  <div className="w-14 h-14 rounded-full bg-emerald-950/40 border border-emerald-500/40 flex items-center justify-center text-emerald-600 animate-pulse mb-1">
                     <CheckCircle className="w-8 h-8" />
                   </div>
                   
                   <div className="text-center max-w-md space-y-1">
                     <h3 className="text-lg font-mono font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-emerald-400">Setup Ready</h3>
-                    <p className="text-[11px] text-white/60 leading-relaxed font-mono">
+                    <p className="text-[11px] text-on-surface-variant leading-relaxed font-mono">
                       Click save to write changes, configure your weekly classes, distribute your {subjects.length} subjects, and set up your study timetable.
                     </p>
                   </div>
 
                   {/* Summary Box */}
-                  <div className="w-full max-w-md bg-white/5 rounded-xl border border-white/5 p-4 grid grid-cols-2 gap-2 text-[10px] font-mono">
-                    <div className="text-white/50">Wake/Sleep cycles:</div>
-                    <div className="text-right text-purple-300">{wakeTime} - {sleepTime}</div>
-                    <div className="text-white/50">Subjects loaded:</div>
-                    <div className="text-right text-purple-300">{subjects.length} modules</div>
-                    <div className="text-white/50">Extra activities:</div>
-                    <div className="text-right text-purple-300">{activities.length} entries</div>
-                    <div className="text-white/50">Quick-Access Sites:</div>
-                    <div className="text-right text-purple-300">{websites.length} launchers</div>
+                  <div className="w-full max-w-md bg-surface-container rounded-xl border border-outline-variant p-4 grid grid-cols-2 gap-2 text-[10px] font-mono">
+                    <div className="text-outline">Wake/Sleep cycles:</div>
+                    <div className="text-right text-primary">{wakeTime} - {sleepTime}</div>
+                    <div className="text-outline">Subjects loaded:</div>
+                    <div className="text-right text-primary">{subjects.length} modules</div>
+                    <div className="text-outline">Extra activities:</div>
+                    <div className="text-right text-primary">{activities.length} entries</div>
+                    <div className="text-outline">Quick-Access Sites:</div>
+                    <div className="text-right text-primary">{websites.length} launchers</div>
                   </div>
                 </div>
               )}
@@ -808,11 +808,11 @@ export default function OnboardingModal() {
         </div>
 
         {/* Modal Footer Controls */}
-        <div className="flex justify-between items-center p-5 border-t border-white/5 bg-white/2">
+        <div className="flex justify-between items-center p-5 border-t border-outline-variant bg-white/2">
           <button
             onClick={() => setStep(Math.max(1, step - 1))}
             disabled={step === 1}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-mono border border-white/10 bg-white/5 hover:bg-white/10 active:scale-95 transition cursor-pointer text-white ${
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-mono border border-outline-variant bg-surface-container hover:bg-surface-container-high active:scale-95 transition cursor-pointer text-on-surface ${
               step === 1 ? 'opacity-30 pointer-events-none' : ''
             }`}
           >
@@ -822,14 +822,14 @@ export default function OnboardingModal() {
           {step < totalSteps ? (
             <button
               onClick={() => setStep(Math.min(totalSteps, step + 1))}
-              className="flex items-center gap-1 bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-white px-5 py-2 rounded-xl text-xs font-mono font-bold active:scale-95 transition cursor-pointer shadow-lg shadow-purple-500/10"
+              className="flex items-center gap-1 bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-on-surface px-5 py-2 rounded-xl text-xs font-mono font-bold active:scale-95 transition cursor-pointer shadow-lg shadow-purple-500/10"
             >
               Next <ChevronRight className="w-4 h-4" />
             </button>
           ) : (
             <button
               onClick={handleSave}
-              className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-emerald-500 hover:from-purple-500 hover:to-emerald-400 text-white px-6 py-2.5 rounded-xl text-xs font-mono font-bold active:scale-95 transition cursor-pointer shadow-lg shadow-purple-500/20"
+              className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-emerald-500 hover:from-purple-500 hover:to-emerald-400 text-on-surface px-6 py-2.5 rounded-xl text-xs font-mono font-bold active:scale-95 transition cursor-pointer shadow-lg shadow-purple-500/20"
             >
               Finish <CheckCircle className="w-4 h-4" />
             </button>
