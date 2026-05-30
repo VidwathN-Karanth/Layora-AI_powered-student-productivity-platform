@@ -253,29 +253,64 @@ export default function DashboardHome() {
           <h3 className="text-sm font-geist font-bold text-cyber-blue uppercase text-glow-cyan">Proactive Academic Engine</h3>
         </div>
         
-        {loadingRecs ? (
-          <div className="flex items-center gap-3 text-white/50 font-mono text-xs">
-            <span className="w-2 h-2 bg-cyber-blue rounded-full animate-ping"></span>
-            Analyzing workload telemetry...
-          </div>
-        ) : aiRecs ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
-              <span className="text-[10px] font-mono text-white/50 uppercase">Next Best Task</span>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Column 1: Next Best Task */}
+          <div className="bg-white/5 rounded-xl p-3 border border-white/10 min-h-[80px] flex flex-col justify-center">
+            <span className="text-[10px] font-mono text-white/50 uppercase">Next Best Task</span>
+            {loadingRecs ? (
+              <div className="flex items-center gap-2 text-white/45 font-mono text-xs mt-1">
+                <span className="w-1.5 h-1.5 bg-cyber-blue rounded-full animate-ping"></span>
+                Analyzing...
+              </div>
+            ) : aiRecs ? (
               <p className="font-bold text-white text-sm mt-1">{aiRecs.nextBestTask}</p>
-            </div>
-            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
-              <span className="text-[10px] font-mono text-white/50 uppercase">Focus Priority</span>
-              <p className="font-bold text-cyber-purple text-sm mt-1 text-glow-purple">{aiRecs.urgentSubject} ({aiRecs.recommendedDuration} mins)</p>
-            </div>
-            <div className="bg-amber-500/10 rounded-xl p-3 border border-amber-500/30">
-              <span className="text-[10px] font-mono text-amber-400 uppercase flex items-center gap-1"><AlertCircle className="w-3 h-3"/> System Warning</span>
-              <p className="font-semibold text-amber-100 text-xs mt-1 leading-tight">{aiRecs.workloadWarning}</p>
-            </div>
+            ) : (
+              <p className="text-xs text-white/45 font-mono mt-1">No active tasks</p>
+            )}
           </div>
-        ) : (
-          <div className="text-xs text-white/50 font-mono">No telemetry data available. Load subjects to begin tracking.</div>
-        )}
+
+          {/* Column 2: Focus Priority */}
+          <div className="bg-white/5 rounded-xl p-3 border border-white/10 min-h-[80px] flex flex-col justify-center">
+            <span className="text-[10px] font-mono text-white/50 uppercase">Focus Priority</span>
+            {loadingRecs ? (
+              <div className="flex items-center gap-2 text-white/45 font-mono text-xs mt-1">
+                <span className="w-1.5 h-1.5 bg-cyber-blue rounded-full animate-ping"></span>
+                Evaluating...
+              </div>
+            ) : aiRecs ? (
+              <p className="font-bold text-cyber-purple text-sm mt-1 text-glow-purple">
+                {aiRecs.urgentSubject} ({aiRecs.recommendedDuration} mins)
+              </p>
+            ) : (
+              <p className="text-xs text-white/45 font-mono mt-1">Load subjects to evaluate</p>
+            )}
+          </div>
+
+          {/* Column 3: Quick Launchers */}
+          <div className="bg-white/5 rounded-xl p-3 border border-white/10 min-h-[80px] flex flex-col justify-center">
+            <span className="text-[10px] font-mono text-cyber-blue uppercase flex items-center gap-1">
+              <Globe className="w-3 h-3" /> Quick Launchers
+            </span>
+            {websites.length === 0 ? (
+              <p className="text-[10px] text-white/40 font-mono mt-1">No launchers configured</p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                {websites.map((site) => (
+                  <a
+                    key={site.id}
+                    href={site.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-white/5 hover:bg-cyber-blue/10 border border-white/10 hover:border-cyber-blue/50 rounded-lg px-2 py-1 flex items-center gap-1 transition text-[10px] font-mono text-white"
+                  >
+                    <span className="truncate max-w-[65px]">{site.name}</span>
+                    <ExternalLink className="w-2.5 h-2.5 text-white/30 shrink-0" />
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -389,34 +424,7 @@ export default function DashboardHome() {
                 ))
               )}
             </div>
-          </div>
-
-          {/* Quick Access Launchers */}
-          <div className="glass-card rounded-2xl p-5 space-y-4">
-            <h3 className="text-xs font-geist font-bold tracking-wider text-cyber-blue border-b border-white/10 pb-2 uppercase text-glow-cyan">Quick Launchers</h3>
-            
-            <div className="grid grid-cols-2 gap-2">
-              {websites.map((site) => (
-                <a
-                  key={site.id}
-                  href={site.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-white/5 hover:bg-cyber-blue/10 border border-white/10 hover:border-cyber-blue/50 rounded-xl p-3 flex flex-col justify-between h-20 transition group cursor-pointer"
-                >
-                  <Globe className="w-4 h-4 text-cyber-blue group-hover:animate-pulse" strokeWidth={1.5} />
-                  <div className="flex justify-between items-end mt-2">
-                    <div>
-                      <span className="text-xs font-mono font-bold text-white group-hover:text-cyber-blue truncate max-w-[80px] block transition">{site.name}</span>
-                      <span className="text-[9px] font-mono text-white/50">{site.timeSpentGoal} min goal</span>
-                    </div>
-                    <ExternalLink className="w-3 h-3 text-white/30 group-hover:text-white transition" strokeWidth={1.5} />
-                  </div>
-                </a>
-              ))}
-            </div>
-          </div>
-        </div>
+          </div>        </div>
       </div>
     </div>
   );
