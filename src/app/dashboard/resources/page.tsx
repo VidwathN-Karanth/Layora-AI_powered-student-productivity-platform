@@ -2,6 +2,9 @@
 
 import React, { useState } from 'react';
 import { useStore } from '@/store/useStore';
+import { useUser } from '@clerk/nextjs';
+import { storage } from '@/lib/firebaseClient';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { 
   FolderLock, UploadCloud, File, BookOpen, Plus, 
   Trash, Download, FileText, ExternalLink 
@@ -9,6 +12,7 @@ import {
 
 export default function ResourcesPage() {
   const store = useStore();
+  const { user } = useUser();
 
   const subjects = store.subjects;
   const resources = store.resources;
@@ -53,61 +57,30 @@ export default function ResourcesPage() {
       return;
     }
 
+    const activeStorage = storage;
+    if (!activeStorage) {
+      alert("Firebase Storage is not configured. Please set up your Firebase project.");
+      return;
+    }
+
     setIsUploading(true);
     
     try {
-      // 1. Fetch OAuth Token from our Next.js Server (Bypasses Vercel Payload Limits)
-      const tokenRes = await fetch('/api/drive/token');
-      const tokenData = await tokenRes.json();
+      const userId = user?.id || 'anonymous';
+      const timestamp = Date.now();
+      const safeName = (fileName || fileData.name).replace(/[^a-zA-Z0-9.-]/g, '_');
+      const storagePath = `users/${userId}/subjects/${targetSubjectId}/${timestamp}_${safeName}`;
+      const fileRef = ref(activeStorage, storagePath);
+
+      // Upload file directly to Firebase Storage
+      const snapshot = await uploadBytes(fileRef, fileData);
       
-      if (!tokenRes.ok || !tokenData.token) {
-        throw new Error(tokenData.error || 'Failed to retrieve Drive access token. Please reconnect Google in settings.');
-      }
-      
-      const token = tokenData.token;
-
-      // 2. Upload file content directly to Google Drive
-      const arrayBuffer = await fileData.arrayBuffer();
-      
-      const uploadRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=media', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': fileData.type || 'application/octet-stream',
-          'Content-Length': arrayBuffer.byteLength.toString()
-        },
-        body: arrayBuffer
-      });
-
-      if (!uploadRes.ok) {
-        const errText = await uploadRes.text();
-        throw new Error(`Google Drive Upload Error: ${errText.substring(0, 50)}...`);
-      }
-
-      const uploadedFile = await uploadRes.json();
-      const fileId = uploadedFile.id;
-
-      // 3. Update metadata to set correct filename
-      const patchRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,webViewLink`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          name: fileName || fileData.name
-        })
-      });
-
-      if (!patchRes.ok) {
-        throw new Error('File uploaded but failed to set filename.');
-      }
-
-      const finalFile = await patchRes.json();
+      // Get secure download URL
+      const downloadURL = await getDownloadURL(snapshot.ref);
 
       store.uploadResource(targetSubjectId, {
         name: fileName || fileData.name,
-        url: finalFile.webViewLink,
+        url: downloadURL,
         type: fileType
       });
       
@@ -210,7 +183,7 @@ export default function ResourcesPage() {
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-mono text-white/50 mb-1">Select File (Google Drive)</label>
+                      <label className="block text-[10px] font-mono text-white/50 mb-1">Select File</label>
                       <input
                         type="file"
                         required
@@ -252,7 +225,7 @@ export default function ResourcesPage() {
                       disabled={isUploading}
                       className="w-full bg-gradient-to-r from-cyber-purple/50 to-cyber-blue/50 hover:from-cyber-purple hover:to-cyber-blue text-white rounded-lg py-2.5 text-xs font-mono font-bold flex items-center justify-center gap-1.5 cursor-pointer border border-cyber-blue/30 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <UploadCloud className="w-4 h-4" /> {isUploading ? 'Uploading to Drive...' : 'Upload File'}
+                      <UploadCloud className="w-4 h-4" /> {isUploading ? 'Uploading to Cloud...' : 'Upload File'}
                     </button>
                   </form>
                 )}
@@ -410,9 +383,20 @@ export default function ResourcesPage() {
                               </a>
                               <button
                                 type="button"
-                                onClick={(e) => {
+                                onClick={async (e) => {
                                   e.stopPropagation();
                                   if (confirm(`Are you sure you want to delete the file "${file.name}"?`)) {
+                                    try {
+                                      const activeStorage = storage;
+                                      if (activeStorage && file.url && file.url.startsWith('https://firebasestorage.googleapis.com')) {
+                                        const fileRef = ref(activeStorage, file.url);
+                                        await deleteObject(fileRef).catch(err => {
+                                          console.warn("Failed to delete object from Storage:", err);
+                                        });
+                                      }
+                                    } catch (err) {
+                                      console.error("Storage delete error:", err);
+                                    }
                                     store.removeResource(sub.id, file.id);
                                   }
                                 }}
