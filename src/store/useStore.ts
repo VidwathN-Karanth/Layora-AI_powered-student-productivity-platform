@@ -48,6 +48,7 @@ export interface UserProfile {
   collegeStart: string;
   collegeEnd: string;
   freeBlocks: { id: string; start: string; end: string; label?: string }[];
+  lastActiveDate?: string;
 }
 
 export interface RegisteredUser {
@@ -69,6 +70,7 @@ export interface RegisteredUser {
   collegeStart: string;
   collegeEnd: string;
   freeBlocks: { id: string; start: string; end: string; label?: string }[];
+  lastActiveDate?: string;
 }
 
 interface AppState {
@@ -83,6 +85,7 @@ interface AppState {
   updateOnboardingStatus: (status: boolean) => void;
   updateRoutine: (routine: Partial<UserProfile>) => void;
   incrementStreak: () => void;
+  checkAndUpdateStreak: () => void;
 
   // Subjects & Uploads
   subjects: Subject[];
@@ -205,7 +208,8 @@ const DEFAULT_REGISTERED_USERS: RegisteredUser[] = [
     freeBlocks: [
       { id: 'free-1', start: '17:00', end: '19:00', label: 'Evening Study' },
       { id: 'free-2', start: '20:00', end: '22:00', label: 'Night Review' }
-    ]
+    ],
+    lastActiveDate: '2026-05-29'
   },
   {
     email: 'alex.mercer@gmail.com',
@@ -228,7 +232,8 @@ const DEFAULT_REGISTERED_USERS: RegisteredUser[] = [
     freeBlocks: [
       { id: 'free-1', start: '17:00', end: '19:00', label: 'Evening Study' },
       { id: 'free-2', start: '20:00', end: '22:00', label: 'Night Review' }
-    ]
+    ],
+    lastActiveDate: '2026-05-29'
   }
 ];
 
@@ -261,7 +266,8 @@ export const useStore = create<AppState>()(
               sleepTime: existing.sleepTime,
               collegeStart: existing.collegeStart,
               collegeEnd: existing.collegeEnd,
-              freeBlocks: existing.freeBlocks
+              freeBlocks: existing.freeBlocks,
+              lastActiveDate: existing.lastActiveDate
             },
             subjects: existing.subjects || [],
             resources: existing.resources || {},
@@ -309,7 +315,8 @@ export const useStore = create<AppState>()(
               sleepTime: newGoogleUser.sleepTime,
               collegeStart: newGoogleUser.collegeStart,
               collegeEnd: newGoogleUser.collegeEnd,
-              freeBlocks: newGoogleUser.freeBlocks
+              freeBlocks: newGoogleUser.freeBlocks,
+              lastActiveDate: newGoogleUser.lastActiveDate
             },
             subjects: newGoogleUser.subjects,
             resources: newGoogleUser.resources,
@@ -350,7 +357,8 @@ export const useStore = create<AppState>()(
             sleepTime: matched.sleepTime,
             collegeStart: matched.collegeStart,
             collegeEnd: matched.collegeEnd,
-            freeBlocks: matched.freeBlocks
+            freeBlocks: matched.freeBlocks,
+            lastActiveDate: matched.lastActiveDate
           },
           subjects: matched.subjects || [],
           resources: matched.resources || {},
@@ -425,6 +433,7 @@ export const useStore = create<AppState>()(
                 collegeStart: user.collegeStart,
                 collegeEnd: user.collegeEnd,
                 freeBlocks: user.freeBlocks,
+                lastActiveDate: user.lastActiveDate,
                 subjects,
                 resources,
                 activities,
@@ -468,6 +477,50 @@ export const useStore = create<AppState>()(
         if (!state.user) return {};
         return { user: { ...state.user, streakCount: state.user.streakCount + 1 } };
       }),
+      checkAndUpdateStreak: () => {
+        const { user } = get();
+        if (!user) return;
+
+        const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local format
+
+        if (!user.lastActiveDate) {
+          set({
+            user: {
+              ...user,
+              lastActiveDate: todayStr,
+              streakCount: user.streakCount || 1
+            }
+          });
+          return;
+        }
+
+        if (user.lastActiveDate === todayStr) {
+          return;
+        }
+
+        const lastActive = new Date(user.lastActiveDate);
+        const today = new Date(todayStr);
+        const diffTime = Math.abs(today.getTime() - lastActive.getTime());
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 1) {
+          set({
+            user: {
+              ...user,
+              lastActiveDate: todayStr,
+              streakCount: (user.streakCount || 0) + 1
+            }
+          });
+        } else if (diffDays > 1) {
+          set({
+            user: {
+              ...user,
+              lastActiveDate: todayStr,
+              streakCount: 1
+            }
+          });
+        }
+      },
 
       // Subjects & Resources
       subjects: [],
