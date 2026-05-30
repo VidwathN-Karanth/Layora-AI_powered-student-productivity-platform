@@ -54,14 +54,21 @@ export const executeAIActions = (actions: AIAction[]) => {
         case 'CREATE_STUDY_BLOCK':
           // Re-uses the setTimetable block logic but appends
           if (act.data.start && act.data.end && act.data.title) {
+            const blockType = act.data.type || 'study';
+            const colorsMap = {
+              class: 'border-l-4 border-secondary bg-secondary-fixed text-on-surface',
+              study: 'border-l-4 border-primary bg-primary-fixed text-on-surface',
+              extracurricular: 'border-l-4 border-pink-500 bg-pink-950/20 text-pink-200',
+              break: 'border-l-4 border-emerald-500 bg-emerald-950/20 text-emerald-200',
+            };
             const newBlock: TimetableBlock = {
               id: `ai-block-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-              day: Number(act.data.day) || new Date().getDay(),
+              day: typeof act.data.day !== 'undefined' ? Number(act.data.day) : new Date().getDay(),
               start: act.data.start,
               end: act.data.end,
               title: act.data.title,
-              type: act.data.type || 'study',
-              color: act.data.color || 'border-l-4 border-primary bg-primary-fixed text-on-surface',
+              type: blockType,
+              color: act.data.color || colorsMap[blockType as keyof typeof colorsMap] || colorsMap.study,
               details: act.data.details || 'AI Scheduled'
             };
             store.setTimetable([...store.timetable, newBlock]);
