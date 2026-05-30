@@ -116,6 +116,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // Compile student context - prune UI properties (ids, colors, extra metadata) to minimize token footprint
     const context = {
       currentSchedule: store.timetable.map((block) => ({
+        id: block.id,
         day: block.day,
         start: block.start,
         end: block.end,
