@@ -31,7 +31,46 @@ export default function TasksPage() {
     );
   }
 
-  const filteredTasks = store.tasks.filter((t) => {
+  const todayNum = new Date().getDay();
+
+  const timeToMin = (t: string) => {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  };
+
+  const todayStudyTasks: Task[] = store.timetable
+    .filter((b) => b.day === todayNum && b.type === 'study' && !b.completed)
+    .filter((b) => !store.tasks.some((t) => t.id === `task-from-block-${b.id}`))
+    .map((block) => {
+      let subjectId = '';
+      let subjectName = 'General study';
+      if (block.subjectCode) {
+        const matchedSubject = store.subjects.find((s) => s.code === block.subjectCode);
+        if (matchedSubject) {
+          subjectId = matchedSubject.id;
+          subjectName = matchedSubject.name;
+        }
+      }
+
+      const startMin = timeToMin(block.start);
+      const endMin = timeToMin(block.end);
+      const duration = endMin >= startMin ? (endMin - startMin) : (1440 - startMin + endMin);
+
+      return {
+        id: `task-from-block-${block.id}`,
+        subjectId: subjectId || 'sub-general',
+        subjectName: subjectName,
+        title: block.title,
+        deadline: new Date().toISOString().split('T')[0],
+        estimatedMinutes: duration,
+        actualMinutesSpent: 0,
+        status: 'pending' as const
+      };
+    });
+
+  const allTasks = [...store.tasks, ...todayStudyTasks];
+
+  const filteredTasks = allTasks.filter((t) => {
     if (activeTab === 'pending') return t.status !== 'completed';
     if (activeTab === 'completed') return t.status === 'completed';
     return true;
