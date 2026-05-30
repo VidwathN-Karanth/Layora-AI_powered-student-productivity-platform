@@ -13,11 +13,12 @@ export default function PlannerPage() {
   const store = useStore();
 
   const [mounted, setMounted] = useState(false);
+  const [activeDay, setActiveDay] = useState(1); // 1 = Monday by default
+
   useEffect(() => {
     setMounted(true);
+    setActiveDay(new Date().getDay());
   }, []);
-
-  const [activeDay, setActiveDay] = useState(1); // 1 = Monday by default
   const [loadingSchedule, setLoadingSchedule] = useState(false);
   const [syncingCalendar, setSyncingCalendar] = useState(false);
   const [syncSuccess, setSyncSuccess] = useState(false);
