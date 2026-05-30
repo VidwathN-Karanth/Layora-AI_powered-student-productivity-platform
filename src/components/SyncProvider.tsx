@@ -83,6 +83,40 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
               // Regular path: overwrite local state with what is in Firestore
               isHydrated.current = false;
               useStore.getState().setFullState(firebaseState);
+
+              // If the store's merged user profile is richer (has higher streak or study hours)
+              // than what was stored in Firestore, immediately push the update back to Firestore
+              const mergedState = useStore.getState();
+              if (mergedState.user && firebaseState.user && 
+                  (mergedState.user.streakCount !== firebaseState.user.streakCount ||
+                   mergedState.user.totalStudyHours !== firebaseState.user.totalStudyHours)) {
+                
+                console.log('SyncProvider - merged state is richer than Firestore, pushing update back to Firestore');
+                const stateToSave = {
+                  user: mergedState.user,
+                  subjects: mergedState.subjects,
+                  resources: mergedState.resources,
+                  activities: mergedState.activities,
+                  websites: mergedState.websites,
+                  courses: mergedState.courses,
+                  tasks: mergedState.tasks,
+                  timetable: mergedState.timetable,
+                  themeAccent: mergedState.themeAccent,
+                  apiKeys: mergedState.apiKeys,
+                  selectedModel: mergedState.selectedModel,
+                  calendarSynced: mergedState.calendarSynced,
+                  is24HourFormat: mergedState.is24HourFormat,
+                  chatHistory: mergedState.chatHistory
+                };
+                
+                const docRef = doc(currentDb, 'user_states', user.id);
+                setDoc(docRef, {
+                  state: stateToSave,
+                  updated_at: new Date().toISOString()
+                }, { merge: true }).catch((err) => {
+                  console.error('SyncProvider - failed to push merged state:', err);
+                });
+              }
             }
           }
           isHydrated.current = true;
