@@ -58,6 +58,7 @@ export interface TimetableBlock {
   color: string;
   subjectCode?: string;
   details?: string;
+  completed?: boolean;
 }
 
 // Local smart algorithm that prioritizes credits, optimizes timings, balances breaks, and schedules studies.

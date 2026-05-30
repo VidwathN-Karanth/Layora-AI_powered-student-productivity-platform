@@ -5,7 +5,7 @@ import { useStore } from '@/store/useStore';
 import { motion } from 'framer-motion';
 import { 
   Flame, BookOpen, Clock, CheckSquare, Globe, 
-  ExternalLink, ChevronRight, Award, AlertCircle, Sparkles 
+  ExternalLink, ChevronRight, Award, AlertCircle, Sparkles, Check
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -62,10 +62,104 @@ export default function DashboardHome() {
   const completedTasks = tasks.filter((t) => t.status === 'completed').length;
   const completionRate = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
 
+  const timeToMin = (t: string) => {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  };
+
+  const handleToggleBlockCompleted = (block: any) => {
+    const isCompleted = !block.completed;
+    store.updateTimetableBlock(block.id, { completed: isCompleted });
+
+    const taskId = `task-from-block-${block.id}`;
+    if (isCompleted) {
+      // Find matching subject
+      let subjectId = '';
+      let subjectName = 'General activity';
+      if (block.type === 'study') {
+        const matchedSubject = store.subjects.find((s) => s.code === block.subjectCode || block.title.toLowerCase().includes(s.name.toLowerCase()));
+        if (matchedSubject) {
+          subjectId = matchedSubject.id;
+          subjectName = matchedSubject.name;
+        } else if (block.title.includes(':')) {
+          subjectName = block.title.split(':').pop()?.trim() || 'General study';
+        }
+      }
+
+      const startMin = timeToMin(block.start);
+      const endMin = timeToMin(block.end);
+      const duration = endMin >= startMin ? (endMin - startMin) : (1440 - startMin + endMin);
+
+      // Create a completed task in the store.tasks array
+      const newTask = {
+        id: taskId,
+        subjectId: subjectId || 'sub-general',
+        subjectName: subjectName,
+        title: block.title,
+        deadline: new Date().toISOString().split('T')[0],
+        estimatedMinutes: duration,
+        actualMinutesSpent: duration,
+        status: 'completed' as const,
+        completedAt: new Date().toISOString()
+      };
+
+      store.setFullState({
+        tasks: [...store.tasks.filter(t => t.id !== taskId), newTask]
+      });
+    } else {
+      // Remove it from the tasks list
+      store.setFullState({
+        tasks: store.tasks.filter(t => t.id !== taskId)
+      });
+    }
+  };
+
+  const handleStartStudySession = (block: any) => {
+    const taskId = `task-from-block-${block.id}`;
+    const existingTask = store.tasks.find((t) => t.id === taskId);
+
+    if (!existingTask) {
+      let subjectId = '';
+      let subjectName = 'General study';
+      if (block.subjectCode) {
+        const matchedSubject = store.subjects.find((s) => s.code === block.subjectCode);
+        if (matchedSubject) {
+          subjectId = matchedSubject.id;
+          subjectName = matchedSubject.name;
+        }
+      }
+
+      const startMin = timeToMin(block.start);
+      const endMin = timeToMin(block.end);
+      const duration = endMin >= startMin ? (endMin - startMin) : (1440 - startMin + endMin);
+
+      const newTask = {
+        id: taskId,
+        subjectId: subjectId || 'sub-general',
+        subjectName: subjectName,
+        title: block.title,
+        deadline: new Date().toISOString().split('T')[0],
+        estimatedMinutes: duration,
+        actualMinutesSpent: 0,
+        status: 'in_progress' as const
+      };
+
+      store.setFullState({
+        tasks: [...store.tasks.filter(t => t.id !== taskId), newTask]
+      });
+    }
+
+    if (store.activeTaskId === taskId) {
+      store.stopTaskTimer(true);
+    } else {
+      store.startTaskTimer(taskId);
+    }
+  };
+
   // Find today's events from the weekly plan
   const todayNum = new Date().getDay(); // 0 = Sunday, 1 = Monday etc.
   const todaySchedule = timetable
-    .filter((b) => b.day === todayNum)
+    .filter((b) => b.day === todayNum && !b.completed)
     .sort((a, b) => a.start.localeCompare(b.start));
 
   return (
@@ -184,21 +278,43 @@ export default function DashboardHome() {
                 </div>
               ) : (
                 todaySchedule.map((block) => (
-                  <div key={block.id} className={`flex items-center gap-4 p-3 rounded-xl bg-white/5 border-l-4 ${
+                  <div key={block.id} className={`flex items-center gap-4 p-3 rounded-xl bg-white/5 border-l-4 transition-all ${
                     block.type === 'study' ? 'border-cyber-blue' : 'border-cyber-purple'
                   }`}>
-                    <div className="font-mono text-xs font-bold text-center w-20 text-white">
+                    {/* Tick Icon to complete task */}
+                    <button 
+                      onClick={() => handleToggleBlockCompleted(block)}
+                      className={`w-5 h-5 rounded-full border flex items-center justify-center transition shrink-0 cursor-pointer ${
+                        block.completed 
+                          ? 'bg-emerald-500 border-emerald-400 text-black' 
+                          : 'border-white/20 hover:border-emerald-500 hover:bg-emerald-500/10 text-transparent hover:text-emerald-400'
+                      }`}
+                      title="Mark completed"
+                    >
+                      <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                    </button>
+
+                    <div className="font-mono text-xs font-bold text-center w-20 text-white shrink-0">
                       <div>{block.start}</div>
                       <div className="text-[10px] text-white/50 font-normal">{block.end}</div>
                     </div>
-                    <div className="border-l border-white/10 pl-4 flex-1">
-                      <div className="font-mono font-semibold text-xs text-white">{block.title}</div>
+
+                    <div className="border-l border-white/10 pl-4 flex-1 min-w-0">
+                      <div className="font-mono font-semibold text-xs text-white truncate">{block.title}</div>
                       <p className="text-[10px] text-white/50 truncate font-sans mt-0.5">{block.details}</p>
                     </div>
+
                     {block.type === 'study' && (
-                      <span className="text-[9px] font-mono bg-cyber-blue/10 text-cyber-blue px-2 py-0.5 rounded border border-cyber-blue/30 uppercase shrink-0">
-                        Study Session
-                      </span>
+                      <button
+                        onClick={() => handleStartStudySession(block)}
+                        className={`px-3 py-1.5 rounded-xl text-[9px] font-mono font-bold flex items-center gap-1 transition cursor-pointer uppercase shrink-0 border ${
+                          store.activeTaskId === `task-from-block-${block.id}`
+                            ? 'bg-red-500/20 border-red-500/50 text-red-400 animate-pulse'
+                            : 'bg-cyber-blue/10 hover:bg-cyber-blue/20 border border-cyber-blue/30 text-cyber-blue'
+                        }`}
+                      >
+                        {store.activeTaskId === `task-from-block-${block.id}` ? 'Stop' : 'Start Session'}
+                      </button>
                     )}
                   </div>
                 ))
