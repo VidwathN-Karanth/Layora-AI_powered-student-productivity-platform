@@ -32,6 +32,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [isLoaded, isSignedIn, clerkUser]);
 
+  useEffect(() => {
+    if (store.isAuthenticated) {
+      store.checkAndUpdateStreak();
+    }
+  }, [store.isAuthenticated]);
+
   // Routing protection is handled by Clerk Middleware
 
   // Sidebar collapsible state
