@@ -141,6 +141,14 @@ interface AppState {
   is24HourFormat: boolean;
   setIs24HourFormat: (val: boolean) => void;
 
+  // Proactive recommendations
+  proactiveRecommendations: {
+    nextBestTask: string;
+    urgentSubject: string;
+    recommendedDuration: number;
+  } | null;
+  setProactiveRecommendations: (recs: any) => void;
+
   // Chat
   chatHistory: ChatMessage[];
   addChatMessage: (role: 'user' | 'assistant', content: string) => void;
@@ -832,6 +840,10 @@ export const useStore = create<AppState>()(
       is24HourFormat: false,
       setIs24HourFormat: (val) => set({ is24HourFormat: val }),
 
+      // Proactive recommendations
+      proactiveRecommendations: null,
+      setProactiveRecommendations: (recs) => set({ proactiveRecommendations: recs }),
+
       // Chat history
       chatHistory: [
         { id: 'msg-welcome', role: 'assistant', content: 'Welcome to your AI Academic Dashboard! I am your student co-pilot. I can help analyze your weekly load, suggest breaks, or resolve complex study questions. Let me know how I can assist you today.', timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
@@ -875,6 +887,7 @@ export const useStore = create<AppState>()(
           selectedModel: 'groq',
           calendarSynced: false,
           is24HourFormat: false,
+          proactiveRecommendations: null,
           chatHistory: [
             { id: 'msg-welcome', role: 'assistant', content: 'Welcome to your AI Academic Dashboard! I am your student co-pilot. I can help analyze your weekly load, suggest breaks, or resolve complex study questions. Let me know how I can assist you today.', timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
           ]
@@ -923,7 +936,8 @@ export const useStore = create<AppState>()(
         selectedModel: state.selectedModel,
         calendarSynced: state.calendarSynced,
         is24HourFormat: state.is24HourFormat,
-        chatHistory: state.chatHistory
+        chatHistory: state.chatHistory,
+        proactiveRecommendations: state.proactiveRecommendations
       }),
     }
   )
