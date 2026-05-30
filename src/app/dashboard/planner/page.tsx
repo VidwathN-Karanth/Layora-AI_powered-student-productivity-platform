@@ -148,7 +148,6 @@ export default function PlannerPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-outline-variant pb-4">
         <div>
           <h2 className="text-xl font-geist font-bold tracking-tight">Weekly Planner</h2>
-          <p className="text-xs text-outline font-mono mt-0.5 uppercase tracking-widest">Generate, arrange, and sync AI optimized study grids.</p>
         </div>
 
         <div className="flex items-center gap-3">
