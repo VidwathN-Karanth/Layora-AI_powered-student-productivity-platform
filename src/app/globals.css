@@ -280,8 +280,12 @@ h1, h2, h3, h4, h5, h6 {
 /* ==========================================================================
    CLERK AUTHENTICATION OVERRIDES (GLASSMORPHISM & HIGHER CONTRAST)
    ========================================================================== */
-.cl-rootBox {
+.cl-rootBox:not(.cl-userButton-root) {
   width: 100% !important;
+}
+
+.cl-userButton-root {
+  width: auto !important;
 }
 
 /* The Sign-In Card Container - Heavy frosted-glass, sharp borders & solid backing */
