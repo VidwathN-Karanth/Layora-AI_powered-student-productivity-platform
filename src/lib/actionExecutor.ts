@@ -2,7 +2,7 @@ import { useStore, Task } from '@/store/useStore';
 import { TimetableBlock } from '@/lib/aiService';
 
 export interface AIAction {
-  action: 'ADD_TASK' | 'UPDATE_TASK' | 'REMOVE_TASK' | 'COMPLETE_TASK' | 'RESCHEDULE_TASK' | 'CREATE_STUDY_BLOCK' | 'REBALANCE_SCHEDULE';
+  action: 'ADD_TASK' | 'UPDATE_TASK' | 'REMOVE_TASK' | 'COMPLETE_TASK' | 'RESCHEDULE_TASK' | 'CREATE_STUDY_BLOCK' | 'REMOVE_STUDY_BLOCK' | 'REBALANCE_SCHEDULE';
   data: any;
 }
 
@@ -39,6 +39,24 @@ export const executeAIActions = (actions: AIAction[]) => {
         case 'REMOVE_TASK':
           if (act.data.taskId) {
             store.removeTask(act.data.taskId);
+            // Bidirectional cleanup: if task is generated from a timetable block, delete the block too
+            if (act.data.taskId.startsWith('task-from-block-')) {
+              const blockId = act.data.taskId.replace('task-from-block-', '');
+              store.setTimetable(store.timetable.filter((b) => b.id !== blockId));
+            }
+          }
+          break;
+
+        case 'REMOVE_STUDY_BLOCK':
+          if (act.data.blockId) {
+            store.setTimetable(store.timetable.filter((b) => b.id !== act.data.blockId));
+            // Bidirectional cleanup: delete any task associated with this block
+            const associatedTaskId = `task-from-block-${act.data.blockId}`;
+            if (store.tasks.some(t => t.id === associatedTaskId)) {
+              store.setFullState({
+                tasks: store.tasks.filter(t => t.id !== associatedTaskId)
+              });
+            }
           }
           break;
 
