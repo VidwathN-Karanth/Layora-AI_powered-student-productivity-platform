@@ -10,6 +10,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const { user, isLoaded } = useUser();
   const isHydrated = useRef(false);
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingStateRef = useRef<any>(null);
   
   const themeAccent = useStore((state) => state.themeAccent);
 
@@ -173,6 +174,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = useStore.subscribe((state) => {
       if (!isHydrated.current) return;
 
+      pendingStateRef.current = state;
+
       if (syncTimeoutRef.current) {
         clearTimeout(syncTimeoutRef.current);
       }
@@ -198,16 +201,84 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             updated_at: new Date().toISOString()
           }, { merge: true });
           
+          pendingStateRef.current = null;
           console.log('SyncProvider - successfully pushed state to Firebase');
         } catch (err) {
           console.error('Failed to sync state to Firebase:', err);
         }
-      }, 2000);
+      }, 1000);
     });
 
     return () => {
       unsubscribe();
       if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+    };
+  }, [isLoaded, user?.id]);
+
+  // 3. Force Flush Pending State on Unload/Visibility Change
+  useEffect(() => {
+    if (!isLoaded || !user || !isFirebaseConfigured || !db) {
+      return;
+    }
+
+    const currentDb = db;
+
+    const flushSync = async () => {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+        syncTimeoutRef.current = null;
+      }
+
+      if (pendingStateRef.current) {
+        const state = pendingStateRef.current;
+        pendingStateRef.current = null;
+        try {
+          const {
+            user: storeUser, subjects, resources, activities, websites, courses, tasks,
+            timetable, themeAccent, apiKeys, selectedModel,
+            calendarSynced, is24HourFormat, chatHistory, proactiveRecommendations
+          } = state;
+
+          const stateToSave = {
+            user: storeUser,
+            subjects, resources, activities, websites, courses, tasks,
+            timetable, themeAccent, apiKeys, selectedModel,
+            calendarSynced, is24HourFormat, chatHistory, proactiveRecommendations
+          };
+
+          const docRef = doc(currentDb, 'user_states', user.id);
+          await setDoc(docRef, {
+            state: stateToSave,
+            updated_at: new Date().toISOString()
+          }, { merge: true });
+          
+          console.log('SyncProvider - successfully flushed pending state on visibility change/unload');
+        } catch (err) {
+          console.error('Failed to flush state on visibility change/unload:', err);
+        }
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        flushSync();
+      }
+    };
+
+    const handleBeforeUnload = () => {
+      flushSync();
+    };
+
+    if (typeof window !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      window.addEventListener('beforeunload', handleBeforeUnload);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+      }
     };
   }, [isLoaded, user?.id]);
 
