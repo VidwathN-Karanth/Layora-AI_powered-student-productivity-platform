@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Flame, BookOpen, Clock, CheckSquare, Globe, 
-  ExternalLink, ChevronRight, Award, AlertCircle, Sparkles, Check
+  ExternalLink, ChevronRight, Award, AlertCircle, Sparkles, Check, Plus
 } from 'lucide-react';
 import Link from 'next/link';
 import { formatTimeStr } from '@/lib/timeUtils';
@@ -23,6 +23,31 @@ export default function DashboardHome() {
   const [aiRecs, setAiRecs] = useState<any>(null);
   const [loadingRecs, setLoadingRecs] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [isAddingInstantTask, setIsAddingInstantTask] = useState(false);
+  const [instantTitle, setInstantTitle] = useState('');
+  const [instantStart, setInstantStart] = useState('17:00');
+  const [instantEnd, setInstantEnd] = useState('18:00');
+
+  const handleAddInstantTask = () => {
+    if (!instantTitle.trim()) return;
+
+    const todayNum = new Date().getDay();
+    const newBlock = {
+      id: `instant-block-${Date.now()}`,
+      day: todayNum,
+      start: instantStart,
+      end: instantEnd,
+      title: instantTitle,
+      type: 'study' as const,
+      color: 'border-l-4 border-cyber-blue bg-cyber-blue/10 text-white',
+      details: 'Instant task added from dashboard',
+      completed: false
+    };
+
+    store.setTimetable([...store.timetable, newBlock]);
+    setInstantTitle('');
+    setIsAddingInstantTask(false);
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -200,12 +225,23 @@ export default function DashboardHome() {
           </h2>
         </div>
 
-        {/* Streak counter with fire glow */}
-        <div className="flex items-center gap-2.5 bg-gradient-to-r from-cyber-purple/20 to-cyber-blue/10 border border-cyber-purple/30 rounded-xl px-4 py-2 shadow-lg shadow-cyber-purple/20">
-          <Flame className="w-5 h-5 text-cyber-purple animate-bounce" strokeWidth={1.5} />
-          <div>
-            <div className="text-xs font-mono font-bold leading-none text-white">{user?.streakCount || 0} DAYS</div>
-            <span className="text-[9px] font-mono text-white/50 uppercase tracking-widest">Active Streak</span>
+        <div className="flex items-center gap-3">
+          {/* Instant Task Button */}
+          <button 
+            onClick={() => setIsAddingInstantTask(true)}
+            className="flex items-center gap-2 bg-white/5 hover:bg-cyber-blue/10 border border-white/10 hover:border-cyber-blue/40 rounded-xl px-4 py-2 text-xs font-mono transition cursor-pointer"
+          >
+            <Plus className="w-4 h-4 text-cyber-blue" />
+            <span>Instant Task</span>
+          </button>
+
+          {/* Streak counter with fire glow */}
+          <div className="flex items-center gap-2.5 bg-gradient-to-r from-cyber-purple/20 to-cyber-blue/10 border border-cyber-purple/30 rounded-xl px-4 py-2 shadow-lg shadow-cyber-purple/20">
+            <Flame className="w-5 h-5 text-cyber-purple animate-bounce" strokeWidth={1.5} />
+            <div>
+              <div className="text-xs font-mono font-bold leading-none text-white">{user?.streakCount || 0} DAYS</div>
+              <span className="text-[9px] font-mono text-white/50 uppercase tracking-widest">Active Streak</span>
+            </div>
           </div>
         </div>
       </div>
@@ -467,6 +503,77 @@ export default function DashboardHome() {
             </div>
           </div>        </div>
       </div>
+
+      {/* Instant Task Modal */}
+      <AnimatePresence>
+        {isAddingInstantTask && (
+          <>
+            <div onClick={() => setIsAddingInstantTask(false)} className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"></div>
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm glass-panel p-6 rounded-2xl z-50 border border-cyber-blue/30"
+            >
+              <div className="flex items-center gap-2 border-b border-white/10 pb-2 mb-4">
+                <Sparkles className="w-5 h-5 text-cyber-blue animate-pulse" />
+                <h3 className="text-sm font-geist font-bold text-white uppercase">Add Instant Task</h3>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-mono text-white/50 mb-1 uppercase tracking-wider">Task Name</label>
+                  <input
+                    type="text"
+                    value={instantTitle}
+                    onChange={(e) => setInstantTitle(e.target.value)}
+                    placeholder="E.g., Review Chemistry Chapter 3"
+                    className="w-full input-hud"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-mono text-white/50 mb-1 uppercase tracking-wider">Start Time</label>
+                    <input
+                      type="time"
+                      value={instantStart}
+                      onChange={(e) => setInstantStart(e.target.value)}
+                      className="w-full input-hud text-center"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-mono text-white/50 mb-1 uppercase tracking-wider">End Time</label>
+                    <input
+                      type="time"
+                      value={instantEnd}
+                      onChange={(e) => setInstantEnd(e.target.value)}
+                      className="w-full input-hud text-center"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-2.5 pt-2">
+                  <button 
+                    type="button"
+                    onClick={() => setIsAddingInstantTask(false)} 
+                    className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl py-2 text-xs font-mono transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={handleAddInstantTask} 
+                    className="flex-1 btn-neon py-2 text-xs transition cursor-pointer"
+                  >
+                    Add Task
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
