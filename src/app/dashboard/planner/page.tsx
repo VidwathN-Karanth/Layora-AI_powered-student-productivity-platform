@@ -8,6 +8,7 @@ import {
   RefreshCw, Check, ArrowRight, Play, AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { formatTimeStr } from '@/lib/timeUtils';
 
 export default function PlannerPage() {
   const store = useStore();
@@ -254,8 +255,8 @@ export default function PlannerPage() {
                 >
                   {/* Time columns */}
                   <div className="font-mono text-center w-24 shrink-0">
-                    <span className="text-sm font-black text-on-surface">{block.start}</span>
-                    <span className="text-[10px] text-outline block leading-tight">{block.end}</span>
+                    <span className="text-sm font-black text-on-surface">{formatTimeStr(block.start, store.is24HourFormat)}</span>
+                    <span className="text-[10px] text-outline block leading-tight">{formatTimeStr(block.end, store.is24HourFormat)}</span>
                   </div>
 
                   <div className="border-l border-outline-variant pl-4 flex-1">

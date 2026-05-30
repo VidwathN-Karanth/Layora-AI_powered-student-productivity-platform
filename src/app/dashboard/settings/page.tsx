@@ -164,6 +164,34 @@ export default function SettingsPage() {
                 );
               })}
             </div>
+
+            <div className="border-t border-outline-variant pt-4 space-y-2">
+              <span className="text-[10px] font-mono text-outline uppercase block">Time Display Format</span>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => store.setIs24HourFormat(false)}
+                  className={`p-2.5 rounded-xl border text-xs font-mono transition text-center cursor-pointer ${
+                    !store.is24HourFormat
+                      ? 'border-primary bg-primary-fixed text-on-surface font-bold'
+                      : 'border-outline-variant bg-white/2 text-on-surface-variant hover:bg-surface-container'
+                  }`}
+                >
+                  12-Hour (AM/PM)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => store.setIs24HourFormat(true)}
+                  className={`p-2.5 rounded-xl border text-xs font-mono transition text-center cursor-pointer ${
+                    store.is24HourFormat
+                      ? 'border-primary bg-primary-fixed text-on-surface font-bold'
+                      : 'border-outline-variant bg-white/2 text-on-surface-variant hover:bg-surface-container'
+                  }`}
+                >
+                  24-Hour
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
