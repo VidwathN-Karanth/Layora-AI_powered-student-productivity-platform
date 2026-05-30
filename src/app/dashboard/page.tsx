@@ -21,8 +21,9 @@ export default function DashboardHome() {
   const websites = store.websites;
   const timetable = store.timetable;
 
-  const [aiRecs, setAiRecs] = useState<any>(null);
-  const [loadingRecs, setLoadingRecs] = useState(true);
+  const aiRecs = store.proactiveRecommendations;
+  const setAiRecs = store.setProactiveRecommendations;
+  const [loadingRecs, setLoadingRecs] = useState(!aiRecs);
   const [mounted, setMounted] = useState(false);
   const [isAddingInstantTask, setIsAddingInstantTask] = useState(false);
   const [instantTitle, setInstantTitle] = useState('');

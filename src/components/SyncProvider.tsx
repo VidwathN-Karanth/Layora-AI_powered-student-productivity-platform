@@ -66,7 +66,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
                 selectedModel: localState.selectedModel || firebaseState.selectedModel || 'groq',
                 calendarSynced: localState.calendarSynced || firebaseState.calendarSynced || false,
                 is24HourFormat: localState.is24HourFormat || firebaseState.is24HourFormat || false,
-                chatHistory: localState.chatHistory.length > 1 ? localState.chatHistory : (firebaseState.chatHistory || [])
+                chatHistory: localState.chatHistory.length > 1 ? localState.chatHistory : (firebaseState.chatHistory || []),
+                proactiveRecommendations: localState.proactiveRecommendations || firebaseState.proactiveRecommendations || null
               };
 
               isHydrated.current = true;
@@ -106,7 +107,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
                   selectedModel: mergedState.selectedModel,
                   calendarSynced: mergedState.calendarSynced,
                   is24HourFormat: mergedState.is24HourFormat,
-                  chatHistory: mergedState.chatHistory
+                  chatHistory: mergedState.chatHistory,
+                  proactiveRecommendations: mergedState.proactiveRecommendations
                 };
                 
                 const docRef = doc(currentDb, 'user_states', user.id);
@@ -128,14 +130,14 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           const {
             user: storeUser, subjects, resources, activities, websites, courses, tasks,
             timetable, themeAccent, apiKeys, selectedModel,
-            calendarSynced, is24HourFormat, chatHistory
+            calendarSynced, is24HourFormat, chatHistory, proactiveRecommendations
           } = state;
 
           const stateToSave = {
             user: storeUser,
             subjects, resources, activities, websites, courses, tasks,
             timetable, themeAccent, apiKeys, selectedModel,
-            calendarSynced, is24HourFormat, chatHistory
+            calendarSynced, is24HourFormat, chatHistory, proactiveRecommendations
           };
 
           const docRef = doc(currentDb, 'user_states', user.id);
@@ -180,14 +182,14 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           const {
             user: storeUser, subjects, resources, activities, websites, courses, tasks,
             timetable, themeAccent, apiKeys, selectedModel,
-            calendarSynced, is24HourFormat, chatHistory
+            calendarSynced, is24HourFormat, chatHistory, proactiveRecommendations
           } = state;
 
           const stateToSave = {
             user: storeUser,
             subjects, resources, activities, websites, courses, tasks,
             timetable, themeAccent, apiKeys, selectedModel,
-            calendarSynced, is24HourFormat, chatHistory
+            calendarSynced, is24HourFormat, chatHistory, proactiveRecommendations
           };
 
           const docRef = doc(currentDb, 'user_states', user.id);
