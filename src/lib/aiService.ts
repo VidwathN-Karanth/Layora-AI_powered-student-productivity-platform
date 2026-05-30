@@ -327,7 +327,7 @@ export function resolveScheduleOverlaps(schedule: TimetableBlock[]): TimetableBl
       return 100000000 + index;
     }
     // 2. Custom or AI-added blocks (manually set times from chat/UI)
-    const isCustom = block.id.startsWith('custom-block-') || block.id.startsWith('ai-block-');
+    const isCustom = block.id.startsWith('custom-block-') || block.id.startsWith('ai-block-') || block.id.startsWith('instant-block-');
     if (isCustom) {
       const match = block.id.match(/\d+/);
       const timestamp = match ? parseInt(match[0], 10) : 0;
