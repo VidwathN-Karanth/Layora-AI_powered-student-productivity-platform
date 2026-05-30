@@ -88,9 +88,6 @@ export const executeAIActions = (actions: AIAction[]) => {
     }
   });
 
-  // Automatically rebalance schedule if any task operations occurred and AI didn't explicitly request it
-  const taskActions = ['ADD_TASK', 'UPDATE_TASK', 'REMOVE_TASK', 'COMPLETE_TASK'];
-  if (actions.some(a => taskActions.includes(a.action)) && !actions.some(a => a.action === 'REBALANCE_SCHEDULE')) {
-    store.generateSchedule();
-  }
+  // We no longer automatically trigger store.generateSchedule() on task operations, 
+  // as it could disrupt custom/AI-placed schedule blocks. AI should request REBALANCE_SCHEDULE explicitly.
 };
