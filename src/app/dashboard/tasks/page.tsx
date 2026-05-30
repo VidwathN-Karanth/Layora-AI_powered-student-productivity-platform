@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore, Task } from '@/store/useStore';
 import { 
   CheckSquare, Plus, Clock, Play, Pause, Check, 
@@ -11,12 +11,25 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function TasksPage() {
   const store = useStore();
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'completed'>('pending');
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskSubjectId, setNewTaskSubjectId] = useState('');
   const [newTaskDeadline, setNewTaskDeadline] = useState('2026-05-30');
   const [newTaskEstimate, setNewTaskEstimate] = useState(60);
+
+  if (!mounted) {
+    return (
+      <div className="flex items-center justify-center py-20 font-mono text-xs text-white/50">
+        Loading Task Manager telemetry...
+      </div>
+    );
+  }
 
   const filteredTasks = store.tasks.filter((t) => {
     if (activeTab === 'pending') return t.status !== 'completed';
@@ -108,7 +121,7 @@ export default function TasksPage() {
                 </div>
                 <div className="flex gap-2">
                   <button 
-                    onClick={() => store.stopTaskTimer(true)}
+                    onClick={() => store.stopTaskTimer(true, true)}
                     className="bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-400 px-3 py-2 rounded-xl text-xs font-mono font-bold border border-emerald-500/50 cursor-pointer transition flex items-center gap-1.5"
                   >
                     <Check className="w-4 h-4" strokeWidth={1.5} /> Complete

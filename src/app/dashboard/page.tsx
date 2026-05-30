@@ -21,6 +21,11 @@ export default function DashboardHome() {
 
   const [aiRecs, setAiRecs] = useState<any>(null);
   const [loadingRecs, setLoadingRecs] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     async function fetchProactive() {
@@ -168,6 +173,14 @@ export default function DashboardHome() {
   const todaySchedule = timetable
     .filter((b) => b.day === todayNum && !b.completed)
     .sort((a, b) => a.start.localeCompare(b.start));
+
+  if (!mounted) {
+    return (
+      <div className="flex items-center justify-center py-20 font-mono text-xs text-white/50">
+        Syncing dashboard telemetry...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
