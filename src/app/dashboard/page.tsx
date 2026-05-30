@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { formatTimeStr } from '@/lib/timeUtils';
+import { isFirebaseConfigured } from '@/lib/firebaseClient';
 
 export default function DashboardHome() {
   const store = useStore();
@@ -226,6 +227,19 @@ export default function DashboardHome() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Firebase Sync Status Badge */}
+          {isFirebaseConfigured ? (
+            <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/30 border border-emerald-500/20 rounded-full px-2.5 py-1.5 flex items-center gap-1.5 shrink-0" title="All changes are synchronized to the cloud in real-time.">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+              CLOUD SYNCED
+            </span>
+          ) : (
+            <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-950/30 border border-amber-500/20 rounded-full px-2.5 py-1.5 flex items-center gap-1.5 shrink-0" title="Running in Local Demo Mode. Ensure Firebase keys are configured in environment variables to enable cloud sync.">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+              LOCAL DEMO
+            </span>
+          )}
+
           {/* Instant Task Button */}
           <button 
             onClick={() => setIsAddingInstantTask(true)}
