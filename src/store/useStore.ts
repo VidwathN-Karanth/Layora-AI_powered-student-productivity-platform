@@ -558,18 +558,60 @@ export const useStore = create<AppState>()(
           blockIdToUpdate = id.replace('task-from-block-', '');
         }
 
-        const updatedTasks = state.tasks.map((t) => {
-          if (t.id === id) {
-            const nextStatus: 'pending' | 'in_progress' | 'completed' = t.status === 'completed' ? 'pending' : 'completed';
-            isBlockCompleted = nextStatus === 'completed';
-            return { 
-              ...t, 
-              status: nextStatus,
-              completedAt: nextStatus === 'completed' ? new Date().toISOString() : undefined
+        const exists = state.tasks.some((t) => t.id === id);
+        let updatedTasks;
+
+        if (!exists && blockIdToUpdate) {
+          const block = state.timetable.find((b) => b.id === blockIdToUpdate);
+          if (block) {
+            let subjectId = '';
+            let subjectName = 'General study';
+            if (block.subjectCode) {
+              const matchedSubject = state.subjects.find((s) => s.code === block.subjectCode);
+              if (matchedSubject) {
+                subjectId = matchedSubject.id;
+                subjectName = matchedSubject.name;
+              }
+            }
+
+            const timeToMin = (t: string) => {
+              const [h, m] = t.split(':').map(Number);
+              return h * 60 + m;
             };
+            const startMin = timeToMin(block.start);
+            const endMin = timeToMin(block.end);
+            const duration = endMin >= startMin ? (endMin - startMin) : (1440 - startMin + endMin);
+
+            const newTask: Task = {
+              id: id,
+              subjectId: subjectId || 'sub-general',
+              subjectName: subjectName,
+              title: block.title,
+              deadline: new Date().toISOString().split('T')[0],
+              estimatedMinutes: duration,
+              actualMinutesSpent: duration,
+              status: 'completed',
+              completedAt: new Date().toISOString()
+            };
+            isBlockCompleted = true;
+            updatedTasks = [...state.tasks, newTask];
+          } else {
+            updatedTasks = state.tasks;
           }
-          return t;
-        });
+        } else {
+          updatedTasks = state.tasks.map((t) => {
+            if (t.id === id) {
+              const nextStatus: 'pending' | 'in_progress' | 'completed' = t.status === 'completed' ? 'pending' : 'completed';
+              isBlockCompleted = nextStatus === 'completed';
+              return { 
+                ...t, 
+                status: nextStatus,
+                completedAt: nextStatus === 'completed' ? new Date().toISOString() : undefined
+              };
+            }
+            return t;
+          });
+        }
 
         const updatedTimetable = blockIdToUpdate
           ? state.timetable.map((b) => b.id === blockIdToUpdate ? { ...b, completed: isBlockCompleted } : b)
@@ -592,11 +634,52 @@ export const useStore = create<AppState>()(
         if (state.activeTaskId) {
           state.stopTaskTimer(true);
         }
+
+        let updatedTasks = state.tasks;
+        const exists = state.tasks.some((t) => t.id === taskId);
+        if (!exists && taskId.startsWith('task-from-block-')) {
+          const blockId = taskId.replace('task-from-block-', '');
+          const block = state.timetable.find((b) => b.id === blockId);
+          if (block) {
+            let subjectId = '';
+            let subjectName = 'General study';
+            if (block.subjectCode) {
+              const matchedSubject = state.subjects.find((s) => s.code === block.subjectCode);
+              if (matchedSubject) {
+                subjectId = matchedSubject.id;
+                subjectName = matchedSubject.name;
+              }
+            }
+
+            const timeToMin = (t: string) => {
+              const [h, m] = t.split(':').map(Number);
+              return h * 60 + m;
+            };
+            const startMin = timeToMin(block.start);
+            const endMin = timeToMin(block.end);
+            const duration = endMin >= startMin ? (endMin - startMin) : (1440 - startMin + endMin);
+
+            const newTask: Task = {
+              id: taskId,
+              subjectId: subjectId || 'sub-general',
+              subjectName: subjectName,
+              title: block.title,
+              deadline: new Date().toISOString().split('T')[0],
+              estimatedMinutes: duration,
+              actualMinutesSpent: 0,
+              status: 'in_progress'
+            };
+            updatedTasks = [...state.tasks, newTask];
+          }
+        } else {
+          updatedTasks = state.tasks.map((t) => t.id === taskId ? { ...t, status: 'in_progress' } : t);
+        }
+
         set({
           activeTaskId: taskId,
           activeTimerStart: Date.now(),
           activeTimerElapsed: 0,
-          tasks: state.tasks.map((t) => t.id === taskId ? { ...t, status: 'in_progress' } : t)
+          tasks: updatedTasks
         });
       },
 
