@@ -12,6 +12,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
   // 1. Initial Load from Supabase
   useEffect(() => {
+    console.log('SyncProvider - checking Supabase config:', { isSupabaseConfigured, hasUser: !!user });
     if (!isLoaded || !user || !isSupabaseConfigured || !supabase) {
       return;
     }
@@ -29,7 +30,10 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (data && data.state) {
+          console.log('SyncProvider - successfully loaded state from Supabase');
           useStore.getState().setFullState(data.state);
+        } else {
+          console.log('SyncProvider - no state found in Supabase for user');
         }
       } catch (err) {
         console.error('Failed to load state:', err);
@@ -68,11 +72,17 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             calendarSynced, is24HourFormat, chatHistory
           };
 
-          await supabase!.from('user_states').upsert({
+          const { error } = await supabase!.from('user_states').upsert({
             user_id: user.id,
             state: stateToSave,
             updated_at: new Date().toISOString()
           });
+          
+          if (error) {
+            console.error('Supabase Upsert Error:', error);
+          } else {
+            console.log('SyncProvider - successfully pushed state to Supabase');
+          }
         } catch (err) {
           console.error('Failed to sync state to Supabase:', err);
         }
