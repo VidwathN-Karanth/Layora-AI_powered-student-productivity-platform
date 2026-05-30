@@ -27,13 +27,56 @@ export default function DashboardHome() {
   const [mounted, setMounted] = useState(false);
   const [isAddingInstantTask, setIsAddingInstantTask] = useState(false);
   const [instantTitle, setInstantTitle] = useState('');
-  const [instantStart, setInstantStart] = useState('17:00');
-  const [instantEnd, setInstantEnd] = useState('18:00');
+  const [instantStart, setInstantStart] = useState('');
+  const [instantEnd, setInstantEnd] = useState('');
+  const [instantError, setInstantError] = useState('');
+
+  const handleOpenInstantTaskModal = () => {
+    const now = new Date();
+    const formatHHMM = (date: Date) => {
+      const h = date.getHours().toString().padStart(2, '0');
+      const m = date.getMinutes().toString().padStart(2, '0');
+      return `${h}:${m}`;
+    };
+    
+    setInstantTitle('');
+    setInstantStart(formatHHMM(now));
+    
+    const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+    setInstantEnd(formatHHMM(oneHourLater));
+    
+    setInstantError('');
+    setIsAddingInstantTask(true);
+  };
 
   const handleAddInstantTask = () => {
-    if (!instantTitle.trim()) return;
+    setInstantError('');
+    if (!instantTitle.trim()) {
+      setInstantError('Task name is required.');
+      return;
+    }
 
-    const todayNum = new Date().getDay();
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMin = now.getMinutes();
+
+    const [startHour, startMin] = instantStart.split(':').map(Number);
+    const [endHour, endMin] = instantEnd.split(':').map(Number);
+
+    if (startHour < currentHour || (startHour === currentHour && startMin < currentMin)) {
+      setInstantError('Cannot create a task for a time that has already passed today.');
+      return;
+    }
+
+    const startTotalMin = startHour * 60 + startMin;
+    const endTotalMin = endHour * 60 + endMin;
+
+    if (endTotalMin <= startTotalMin && endHour >= startHour) {
+      setInstantError('End time must be after start time.');
+      return;
+    }
+
+    const todayNum = now.getDay();
     const newBlock = {
       id: `instant-block-${Date.now()}`,
       day: todayNum,
@@ -243,7 +286,7 @@ export default function DashboardHome() {
 
           {/* Instant Task Button */}
           <button 
-            onClick={() => setIsAddingInstantTask(true)}
+            onClick={handleOpenInstantTaskModal}
             className="flex items-center gap-2 bg-white/5 hover:bg-cyber-blue/10 border border-white/10 hover:border-cyber-blue/40 rounded-xl px-4 py-2 text-xs font-mono transition cursor-pointer"
           >
             <Plus className="w-4 h-4 text-cyber-blue" />
@@ -536,6 +579,13 @@ export default function DashboardHome() {
               </div>
               
               <div className="space-y-4">
+                {instantError && (
+                  <div className="flex items-center gap-2 text-red-400 bg-red-950/20 border border-red-500/20 rounded-xl p-2.5 text-[10px] font-mono">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+                    <span>{instantError}</span>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-[10px] font-mono text-white/50 mb-1 uppercase tracking-wider">Task Name</label>
                   <input
