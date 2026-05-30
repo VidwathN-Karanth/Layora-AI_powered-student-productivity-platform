@@ -666,7 +666,7 @@ export default function DashboardHome() {
                     onClick={handleAddInstantTask} 
                     className="flex-1 btn-neon py-2 text-xs transition cursor-pointer"
                   >
-                    Add Task
+                    Add Instant
                   </button>
                 </div>
               </div>
