@@ -78,12 +78,13 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       syncTimeoutRef.current = setTimeout(async () => {
         try {
           const {
-            subjects, resources, activities, websites, courses, tasks,
+            user: storeUser, subjects, resources, activities, websites, courses, tasks,
             timetable, themeAccent, apiKeys, selectedModel,
             calendarSynced, is24HourFormat, chatHistory
           } = state;
 
           const stateToSave = {
+            user: storeUser,
             subjects, resources, activities, websites, courses, tasks,
             timetable, themeAccent, apiKeys, selectedModel,
             calendarSynced, is24HourFormat, chatHistory
