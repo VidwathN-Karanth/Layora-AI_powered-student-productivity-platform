@@ -8,6 +8,7 @@ import {
   Clock, BookOpen, UploadCloud, Dumbbell, Globe, Award, CheckCircle, 
   Plus, Trash, ChevronRight, ChevronLeft, ArrowRight, ShieldCheck, File 
 } from 'lucide-react';
+import { formatTimeStr } from '@/lib/timeUtils';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -290,7 +291,7 @@ export default function OnboardingPage() {
                           <div key={b.id} className="flex justify-between items-center bg-surface-container border border-outline-variant rounded-xl px-3 py-1.5 text-xs">
                             <span className="font-mono text-on-surface">{b.label || 'Study Block'}</span>
                             <div className="flex items-center gap-3">
-                              <span className="font-mono text-outline">{b.start} - {b.end}</span>
+                              <span className="font-mono text-outline">{formatTimeStr(b.start, store.is24HourFormat)} - {formatTimeStr(b.end, store.is24HourFormat)}</span>
                               <button onClick={() => handleRemoveFreeBlock(b.id)} className="text-red-400 hover:text-red-300">
                                 <Trash className="w-3.5 h-3.5" />
                               </button>
@@ -790,7 +791,7 @@ export default function OnboardingPage() {
                   {/* Summary Box */}
                   <div className="w-full max-w-md bg-surface-container rounded-xl border border-outline-variant p-4 grid grid-cols-2 gap-3 text-xs font-mono">
                     <div className="text-outline">Wake/Sleep cycles:</div>
-                    <div className="text-right text-primary">{wakeTime} - {sleepTime}</div>
+                    <div className="text-right text-primary">{formatTimeStr(wakeTime, store.is24HourFormat)} - {formatTimeStr(sleepTime, store.is24HourFormat)}</div>
                     <div className="text-outline">Subjects loaded:</div>
                     <div className="text-right text-primary">{subjects.length} courses</div>
                     <div className="text-outline">Extra activities:</div>

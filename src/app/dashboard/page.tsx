@@ -8,6 +8,7 @@ import {
   ExternalLink, ChevronRight, Award, AlertCircle, Sparkles, Check
 } from 'lucide-react';
 import Link from 'next/link';
+import { formatTimeStr } from '@/lib/timeUtils';
 
 export default function DashboardHome() {
   const store = useStore();
@@ -356,8 +357,8 @@ export default function DashboardHome() {
                     </button>
 
                     <div className="font-mono text-xs font-bold text-center w-20 text-white shrink-0">
-                      <div>{block.start}</div>
-                      <div className="text-[10px] text-white/50 font-normal">{block.end}</div>
+                      <div>{formatTimeStr(block.start, store.is24HourFormat)}</div>
+                      <div className="text-[10px] text-white/50 font-normal">{formatTimeStr(block.end, store.is24HourFormat)}</div>
                     </div>
 
                     <div className="border-l border-white/10 pl-4 flex-1 min-w-0">
@@ -413,8 +414,8 @@ export default function DashboardHome() {
                     block.type === 'study' ? 'border-cyber-blue' : 'border-cyber-purple'
                   }`}>
                     <div className="font-mono text-xs font-bold text-center w-20 text-white shrink-0">
-                      <div>{block.start}</div>
-                      <div className="text-[10px] text-white/50 font-normal">{block.end}</div>
+                      <div>{formatTimeStr(block.start, store.is24HourFormat)}</div>
+                      <div className="text-[10px] text-white/50 font-normal">{formatTimeStr(block.end, store.is24HourFormat)}</div>
                     </div>
 
                     <div className="border-l border-white/10 pl-4 flex-1 min-w-0">
