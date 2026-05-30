@@ -83,18 +83,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const scrollToBottom = () => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
-    } else {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
     }
+    messagesEndRef.current?.scrollIntoView({ block: 'end', behavior: 'auto' });
   };
   
   useEffect(() => {
     if (chatOpen) {
-      // The chat panel takes 300ms to animate in (duration: 0.3). 
-      // Wait for it to finish so the layout is stable and scroll doesn't get interrupted.
-      setTimeout(() => {
-        scrollToBottom();
-      }, 350);
+      scrollToBottom();
+      const t1 = setTimeout(scrollToBottom, 50);
+      const t2 = setTimeout(scrollToBottom, 150);
+      const t3 = setTimeout(scrollToBottom, 350);
+      const t4 = setTimeout(scrollToBottom, 600);
+      const t5 = setTimeout(scrollToBottom, 1000); // Backstop for slower connections/hydration
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+        clearTimeout(t4);
+        clearTimeout(t5);
+      };
     }
   }, [store.chatHistory, chatLoading, chatOpen]);
 
@@ -103,13 +110,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const container = scrollContainerRef.current;
     if (!container) return;
 
-    // Scroll to bottom immediately
-    container.scrollTop = container.scrollHeight;
+    scrollToBottom();
 
     const resizeObserver = new ResizeObserver(() => {
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
-      }
+      scrollToBottom();
     });
 
     resizeObserver.observe(container);
@@ -117,7 +121,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => {
       resizeObserver.disconnect();
     };
-  }, [chatOpen, store.chatHistory]);
+  }, [chatOpen]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
