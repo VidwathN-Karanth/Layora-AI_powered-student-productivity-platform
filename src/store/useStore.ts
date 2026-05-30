@@ -7,7 +7,8 @@ import {
   Routine, 
   TimetableBlock, 
   AIKeys,
-  generateLocalWeeklySchedule 
+  generateLocalWeeklySchedule,
+  resolveScheduleOverlaps
 } from '@/lib/aiService';
 
 export interface Task {
@@ -739,7 +740,7 @@ export const useStore = create<AppState>()(
         timetable: state.timetable.map((b) => b.id === id ? { ...b, ...updatedFields } : b)
       })),
       generateSchedule: () => {
-        const { user, subjects, activities, courses } = get();
+        const { user, subjects, activities, courses, timetable } = get();
         if (!user) return;
         
         const routine: Routine = {
@@ -752,8 +753,16 @@ export const useStore = create<AppState>()(
           freeBlocks: user.freeBlocks
         };
 
-        const schedule = generateLocalWeeklySchedule(routine, subjects, activities, courses);
-        set({ timetable: schedule });
+        // Preserve all manual custom blocks and AI-added blocks
+        const customBlocks = timetable.filter(
+          (b) => b.id.startsWith('custom-block-') || b.id.startsWith('ai-block-')
+        );
+
+        const baseSchedule = generateLocalWeeklySchedule(routine, subjects, activities, courses);
+        
+        // Merge base schedule with custom/AI blocks and resolve overlaps
+        const combined = [...customBlocks, ...baseSchedule];
+        set({ timetable: resolveScheduleOverlaps(combined) });
       },
 
       // Accent settings & API Keys
