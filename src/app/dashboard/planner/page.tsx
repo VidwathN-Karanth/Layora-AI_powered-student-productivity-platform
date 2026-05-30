@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
 import { generateAISchedule, TimetableBlock } from '@/lib/aiService';
 import { 
@@ -11,6 +11,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function PlannerPage() {
   const store = useStore();
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const [activeDay, setActiveDay] = useState(1); // 1 = Monday by default
   const [loadingSchedule, setLoadingSchedule] = useState(false);
@@ -127,6 +132,14 @@ export default function PlannerPage() {
       ...blocks
     ]);
   };
+
+  if (!mounted) {
+    return (
+      <div className="flex items-center justify-center py-20 font-mono text-xs text-white/50">
+        Loading planner telemetry...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

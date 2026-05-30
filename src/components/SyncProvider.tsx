@@ -4,7 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useStore } from '@/store/useStore';
 import { db, isFirebaseConfigured } from '@/lib/firebaseClient';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
 export function SyncProvider({ children }: { children: React.ReactNode }) {
   const { user, isLoaded } = useUser();
@@ -21,7 +21,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     }
   }, [themeAccent]);
 
-  // 1. Initial Load from Firebase
+  // 1. Listen to Real-Time Updates from Firebase
   useEffect(() => {
     console.log('SyncProvider - checking Firebase config:', { isFirebaseConfigured, hasUser: !!user });
     if (!isLoaded || !user || !isFirebaseConfigured || !db) {
@@ -30,28 +30,34 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
     const currentDb = db;
 
-    const loadState = async () => {
+    const unsubscribeSnapshot = onSnapshot(doc(currentDb, 'user_states', user.id), (docSnap) => {
       try {
-        const docRef = doc(currentDb, 'user_states', user.id);
-        const docSnap = await getDoc(docRef);
-
         if (docSnap.exists()) {
           const data = docSnap.data();
           if (data && data.state) {
-            console.log('SyncProvider - successfully loaded state from Firebase');
+            console.log('SyncProvider - real-time state loaded from Firebase');
+            
+            // Disable synchronization temporarily to avoid change echo loops
+            isHydrated.current = false;
             useStore.getState().setFullState(data.state);
           }
+          isHydrated.current = true;
         } else {
           console.log('SyncProvider - no state found in Firebase for user');
+          isHydrated.current = true;
         }
       } catch (err) {
-        console.error('Failed to load state:', err);
-      } finally {
+        console.error('Failed to process real-time state update:', err);
         isHydrated.current = true;
       }
-    };
+    }, (err) => {
+      console.error('Failed to listen to state:', err);
+      isHydrated.current = true;
+    });
 
-    loadState();
+    return () => {
+      unsubscribeSnapshot();
+    };
   }, [isLoaded, user?.id]);
 
   // 2. Subscribe to Store Changes and Sync

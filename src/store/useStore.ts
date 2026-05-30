@@ -116,7 +116,7 @@ interface AppState {
   activeTimerStart: number | null; // Timestamp in ms
   activeTimerElapsed: number; // seconds
   startTaskTimer: (taskId: string) => void;
-  stopTaskTimer: (saveProgress?: boolean) => void;
+  stopTaskTimer: (saveProgress?: boolean, markCompleted?: boolean) => void;
   updateTimerSecond: () => void;
 
   // Timetable
@@ -531,16 +531,37 @@ export const useStore = create<AppState>()(
       addTask: (task) => set((state) => ({
         tasks: [...state.tasks, { ...task, id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`, actualMinutesSpent: 0, status: 'pending' }]
       })),
-      removeTask: (id) => set((state) => ({
-        tasks: state.tasks.filter((t) => t.id !== id)
-      })),
+      removeTask: (id) => set((state) => {
+        let blockIdToUpdate: string | null = null;
+        if (id.startsWith('task-from-block-')) {
+          blockIdToUpdate = id.replace('task-from-block-', '');
+        }
+
+        const updatedTasks = state.tasks.filter((t) => t.id !== id);
+        const updatedTimetable = blockIdToUpdate
+          ? state.timetable.map((b) => b.id === blockIdToUpdate ? { ...b, completed: false } : b)
+          : state.timetable;
+
+        return {
+          tasks: updatedTasks,
+          timetable: updatedTimetable
+        };
+      }),
       updateTask: (id, updatedFields) => set((state) => ({
         tasks: state.tasks.map((t) => t.id === id ? { ...t, ...updatedFields } : t)
       })),
-      toggleTaskStatus: (id) => set((state) => ({
-        tasks: state.tasks.map((t) => {
+      toggleTaskStatus: (id) => set((state) => {
+        let blockIdToUpdate: string | null = null;
+        let isBlockCompleted = false;
+
+        if (id.startsWith('task-from-block-')) {
+          blockIdToUpdate = id.replace('task-from-block-', '');
+        }
+
+        const updatedTasks = state.tasks.map((t) => {
           if (t.id === id) {
-            const nextStatus = t.status === 'completed' ? 'pending' : 'completed';
+            const nextStatus: 'pending' | 'in_progress' | 'completed' = t.status === 'completed' ? 'pending' : 'completed';
+            isBlockCompleted = nextStatus === 'completed';
             return { 
               ...t, 
               status: nextStatus,
@@ -548,8 +569,17 @@ export const useStore = create<AppState>()(
             };
           }
           return t;
-        })
-      })),
+        });
+
+        const updatedTimetable = blockIdToUpdate
+          ? state.timetable.map((b) => b.id === blockIdToUpdate ? { ...b, completed: isBlockCompleted } : b)
+          : state.timetable;
+
+        return {
+          tasks: updatedTasks,
+          timetable: updatedTimetable
+        };
+      }),
 
       // Timer variables
       activeTaskId: null,
@@ -570,27 +600,41 @@ export const useStore = create<AppState>()(
         });
       },
 
-      stopTaskTimer: (saveProgress = true) => {
-        const { activeTaskId, activeTimerElapsed, tasks, user } = get();
+      stopTaskTimer: (saveProgress = true, markCompleted = false) => {
+        const { activeTaskId, activeTimerElapsed, tasks, timetable, user } = get();
         if (!activeTaskId) return;
 
         const minutesElapsed = Math.round(activeTimerElapsed / 60);
+        
+        let blockIdToUpdate: string | null = null;
+        if (markCompleted && activeTaskId.startsWith('task-from-block-')) {
+          blockIdToUpdate = activeTaskId.replace('task-from-block-', '');
+        }
+
+        const updatedTasks = tasks.map((t) => {
+          if (t.id === activeTaskId) {
+            const updatedMinutes = t.actualMinutesSpent + minutesElapsed;
+            const nextStatus: 'pending' | 'in_progress' | 'completed' = markCompleted ? 'completed' : (saveProgress ? t.status : 'pending');
+            return { 
+              ...t, 
+              actualMinutesSpent: updatedMinutes,
+              status: nextStatus,
+              completedAt: nextStatus === 'completed' ? new Date().toISOString() : t.completedAt
+            };
+          }
+          return t;
+        });
+
+        const updatedTimetable = blockIdToUpdate
+          ? timetable.map((b) => b.id === blockIdToUpdate ? { ...b, completed: true } : b)
+          : timetable;
 
         set({
           activeTaskId: null,
           activeTimerStart: null,
           activeTimerElapsed: 0,
-          tasks: tasks.map((t) => {
-            if (t.id === activeTaskId) {
-              const updatedMinutes = t.actualMinutesSpent + minutesElapsed;
-              return { 
-                ...t, 
-                actualMinutesSpent: updatedMinutes,
-                status: saveProgress ? t.status : 'pending' 
-              };
-            }
-            return t;
-          }),
+          tasks: updatedTasks,
+          timetable: updatedTimetable,
           user: user ? {
             ...user,
             totalStudyHours: parseFloat((user.totalStudyHours + (activeTimerElapsed / 3600)).toFixed(2))

@@ -414,7 +414,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   {formatTimer(Math.max(0, (activeTask.estimatedMinutes * 60) - store.activeTimerElapsed))}
                 </span>
                 <button 
-                  onClick={() => store.stopTaskTimer(true)} 
+                  onClick={() => store.stopTaskTimer(true, true)} 
                   className="hover:text-white border-l border-white/20 pl-1.5 transition ml-1"
                   title="Complete Task"
                 >
