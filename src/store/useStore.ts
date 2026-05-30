@@ -880,7 +880,30 @@ export const useStore = create<AppState>()(
           ]
         });
       },
-      setFullState: (newState) => set((state) => ({ ...state, ...newState }))
+      setFullState: (newState) => set((state) => {
+        let mergedUser = state.user;
+        if (newState.user !== undefined) {
+          if (newState.user === null) {
+            mergedUser = null;
+          } else if (!mergedUser) {
+            mergedUser = newState.user;
+          } else {
+            mergedUser = {
+              ...newState.user,
+              streakCount: Math.max(mergedUser.streakCount || 0, newState.user.streakCount || 0),
+              totalStudyHours: Math.max(mergedUser.totalStudyHours || 0, newState.user.totalStudyHours || 0),
+              lastActiveDate: (mergedUser.lastActiveDate && newState.user.lastActiveDate)
+                ? (new Date(mergedUser.lastActiveDate) > new Date(newState.user.lastActiveDate) ? mergedUser.lastActiveDate : newState.user.lastActiveDate)
+                : (mergedUser.lastActiveDate || newState.user.lastActiveDate),
+            };
+          }
+        }
+        return {
+          ...state,
+          ...newState,
+          user: mergedUser
+        };
+      })
     }),
     {
       name: 'layora-productivity-store',
