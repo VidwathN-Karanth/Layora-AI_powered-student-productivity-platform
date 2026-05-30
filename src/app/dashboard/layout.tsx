@@ -98,6 +98,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [store.chatHistory, chatLoading, chatOpen]);
 
+  // Keep chat container scrolled to bottom during width transitions and on initial page mount/reload
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    // Scroll to bottom immediately
+    container.scrollTop = container.scrollHeight;
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+      }
+    });
+
+    resizeObserver.observe(container);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [chatOpen, store.chatHistory]);
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!messageText.trim()) return;
