@@ -126,6 +126,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       currentTasks: store.tasks
         .filter((t) => t.status !== 'completed')
         .map((task) => ({
+          taskId: task.id,
           title: task.title,
           deadline: task.deadline,
           estimatedMinutes: task.estimatedMinutes
@@ -149,18 +150,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           end: fb.end,
           label: fb.label
         })),
-      }
+      },
+      todayDayOfWeek: new Date().getDay(), // 0 = Sunday, 1 = Monday, etc.
+      currentTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
+      todayDateString: new Date().toISOString().split('T')[0]
     };
-
-    // Attach task IDs to context so AI can reference them for edit/delete
-    context.currentTasks = store.tasks
-      .filter((t) => t.status !== 'completed')
-      .map((task) => ({
-        taskId: task.id,
-        title: task.title,
-        deadline: task.deadline,
-        estimatedMinutes: task.estimatedMinutes
-      }));
 
     const rawResponse = await sendAIChatMessage(
       query,

@@ -321,15 +321,40 @@ export function resolveScheduleOverlaps(schedule: TimetableBlock[]): TimetableBl
     return `${h.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
   };
 
-  const getUnoccupiedSegments = (start: number, end: number, occupied: { start: number; end: number }[]) => {
-    let segments = [{ start, end }];
-    
+  const getBlockPriority = (block: TimetableBlock, index: number) => {
+    // 1. Mandatory university classes are highest priority
+    if (block.type === 'class') {
+      return 100000000 + index;
+    }
+    // 2. Custom or AI-added blocks (manually set times from chat/UI)
+    const isCustom = block.id.startsWith('custom-block-') || block.id.startsWith('ai-block-');
+    if (isCustom) {
+      const match = block.id.match(/\d+/);
+      const timestamp = match ? parseInt(match[0], 10) : 0;
+      return 1000000 + (timestamp || index);
+    }
+    // 3. Extracurricular blocks
+    if (block.type === 'extracurricular') {
+      return 500000 + index;
+    }
+    // 4. Default flexible study and break blocks (lowest priority)
+    return index;
+  };
+
+  const adjustBlockAgainstOccupied = (
+    block: TimetableBlock,
+    occupied: { start: number; end: number }[]
+  ): TimetableBlock[] => {
+    let segments = [{ start: timeToMin(block.start), end: timeToMin(block.end) }];
+
     occupied.forEach((occ) => {
       const nextSegments: { start: number; end: number }[] = [];
       segments.forEach((seg) => {
         if (occ.end <= seg.start || occ.start >= seg.end) {
+          // No overlap
           nextSegments.push(seg);
         } else {
+          // Overlap: shrink or split
           if (occ.start > seg.start) {
             nextSegments.push({ start: seg.start, end: occ.start });
           }
@@ -341,7 +366,15 @@ export function resolveScheduleOverlaps(schedule: TimetableBlock[]): TimetableBl
       segments = nextSegments;
     });
 
-    return segments.filter(seg => seg.end - seg.start >= 15);
+    // Keep segments at least 10 minutes long to avoid tiny, useless blocks
+    return segments
+      .filter((seg) => seg.end - seg.start >= 10)
+      .map((seg, idx) => ({
+        ...block,
+        id: idx === 0 ? block.id : `${block.id}-split-${idx}`,
+        start: minToTime(seg.start),
+        end: minToTime(seg.end),
+      }));
   };
 
   const adjustedSchedule: TimetableBlock[] = [];
@@ -350,48 +383,22 @@ export function resolveScheduleOverlaps(schedule: TimetableBlock[]): TimetableBl
   for (let day = 0; day <= 6; day++) {
     const dayBlocks = schedule.filter(b => b.day === day);
     
-    // Fixed blocks: class and extracurricular
-    const fixedBlocks = dayBlocks.filter(b => b.type === 'class' || b.type === 'extracurricular');
-    // Flexible blocks: study and break, sorted by start time
-    const flexibleBlocks = dayBlocks
-      .filter(b => b.type === 'study' || b.type === 'break')
-      .sort((a, b) => a.start.localeCompare(b.start));
+    // Sort all blocks of the day by priority descending
+    const sortedBlocks = dayBlocks
+      .map((block, index) => ({ block, priority: getBlockPriority(block, index) }))
+      .sort((a, b) => b.priority - a.priority);
 
     const occupiedIntervals: { start: number; end: number }[] = [];
 
-    // Push fixed blocks directly
-    fixedBlocks.forEach((block) => {
-      adjustedSchedule.push(block);
-      occupiedIntervals.push({
-        start: timeToMin(block.start),
-        end: timeToMin(block.end)
-      });
-    });
-
-    // Resolve overlaps for flexible blocks
-    flexibleBlocks.forEach((block) => {
-      const flexStart = timeToMin(block.start);
-      const flexEnd = timeToMin(block.end);
-
-      const unoccupied = getUnoccupiedSegments(flexStart, flexEnd, occupiedIntervals);
-      
-      if (unoccupied.length > 0) {
-        // Sort unoccupied by duration descending to find the largest chunk
-        const sortedSegments = [...unoccupied].sort((a, b) => (b.end - b.start) - (a.end - a.start));
-        const bestSegment = sortedSegments[0];
-
-        adjustedSchedule.push({
-          ...block,
-          start: minToTime(bestSegment.start),
-          end: minToTime(bestSegment.end)
-        });
-
-        // Add this adjusted interval to occupied so subsequent blocks don't overlap it
+    sortedBlocks.forEach(({ block }) => {
+      const segments = adjustBlockAgainstOccupied(block, occupiedIntervals);
+      segments.forEach((seg) => {
+        adjustedSchedule.push(seg);
         occupiedIntervals.push({
-          start: bestSegment.start,
-          end: bestSegment.end
+          start: timeToMin(seg.start),
+          end: timeToMin(seg.end)
         });
-      }
+      });
     });
   }
 

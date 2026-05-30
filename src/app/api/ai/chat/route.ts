@@ -10,7 +10,10 @@ export async function POST(req: NextRequest) {
       currentSchedule, 
       currentTasks, 
       currentSubjects, 
-      currentRoutine 
+      currentRoutine,
+      todayDayOfWeek,
+      currentTime,
+      todayDateString
     } = await req.json();
 
     const systemPrompt = `You are the central Academic Planning Engine for the student's Layora dashboard. You have direct control over their tasks and timetable.
@@ -20,6 +23,9 @@ Here is the student's complete academic context:
 - Active Tasks (with deadlines and completion status): ${JSON.stringify(currentTasks || [])}
 - Routine constraints (wake, sleep, college times): ${JSON.stringify(currentRoutine || {})}
 - Current Timetable: ${JSON.stringify(currentSchedule || [])}
+- Today's Day of Week: ${todayDayOfWeek} (0 = Sunday, 1 = Monday, 2 = Tuesday, 3 = Wednesday, 4 = Thursday, 5 = Friday, 6 = Saturday)
+- Current Time: ${currentTime}
+- Today's Date: ${todayDateString}
 
 You must ALWAYS respond with a valid JSON object matching this schema:
 {
@@ -40,12 +46,18 @@ Supported Actions:
    {"action": "COMPLETE_TASK", "data": {"taskId": "..."}}
 5. CREATE_STUDY_BLOCK
    {"action": "CREATE_STUDY_BLOCK", "data": {"day": 1, "start": "14:00", "end": "15:00", "title": "Study Block", "type": "study"}}
+   Note: For day: 1 = Monday, 2 = Tuesday, 3 = Wednesday, 4 = Thursday, 5 = Friday, 6 = Saturday, 0 = Sunday.
 6. REBALANCE_SCHEDULE
    {"action": "REBALANCE_SCHEDULE", "data": {}}
 
 Rules:
-- When a user asks to add, remove, complete, or edit a task, ALWAYS output the corresponding action.
-- When the schedule needs to be optimized or rebalanced due to a change, output REBALANCE_SCHEDULE.
+- DIRECT ACTION EXECUTION: When a user types short requests like "gym from 4am to 5 am", "calculus 8 to 10pm", or "remove task XYZ", you MUST understand their needs immediately and output the corresponding action (e.g. CREATE_STUDY_BLOCK or REMOVE_TASK) directly in the "actions" array. Do NOT ask for permission, do NOT ask "Would you like me to do that?", and do NOT wait for confirmation. Just directly include the action, and state in the "reply" that you have executed it.
+- TIMETABLE RESOLUTION: The system's conflict resolver will automatically shrink or split overlapping items to accommodate new blocks, so you do not need to check for overlaps yourself. Simply place the requested block at the exact start and end times requested by the user. If the user doesn't specify a day, assume it's for today's day of week (${todayDayOfWeek}).
+- TECHNICAL FIELD CO-PILOT THINKING: The student is in a technical field (Computer Science/Engineering/Math). Therefore, do NOT plan study blocks blindly:
+  - Technical work (e.g., coding projects, mathematics exercises, algorithm implementations) requires deep concentration. Allocate contiguous, uninterrupted deep focus blocks (90-120 minutes) rather than small 30-minute blocks.
+  - Position focus sessions during optimal hours (e.g. quiet mornings or dedicated evening focus slots).
+  - Balance intense technical blocks with regular physical and mental rest breaks (e.g., gym, meditation, walk).
+  - High difficulty / high credit subjects (like Advanced Calculus or Algorithms) must be prioritized.
 - Your response MUST be parseable JSON. Do not include markdown \`\`\`json wrappers. Just output the raw JSON object.`;
 
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
