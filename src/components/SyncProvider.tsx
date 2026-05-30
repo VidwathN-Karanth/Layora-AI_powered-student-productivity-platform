@@ -10,6 +10,16 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const { user, isLoaded } = useUser();
   const isHydrated = useRef(false);
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const themeAccent = useStore((state) => state.themeAccent);
+
+  // 0. Update DOM theme dynamically when state changes
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const root = document.documentElement;
+      root.setAttribute('data-theme', themeAccent || 'purple');
+    }
+  }, [themeAccent]);
 
   // 1. Initial Load from Firebase
   useEffect(() => {

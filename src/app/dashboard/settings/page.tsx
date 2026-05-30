@@ -41,10 +41,10 @@ export default function SettingsPage() {
   };
 
   const themeAccents = [
-    { name: 'purple', label: 'Neon Purple', color: 'bg-primary border-purple-400' },
-    { name: 'blue', label: 'Cyber Blue', color: 'bg-blue-600 border-blue-400' },
-    { name: 'pink', label: 'Tokyo Pink', color: 'bg-pink-600 border-pink-400' },
-    { name: 'emerald', label: 'Matrix Emerald', color: 'bg-emerald-600 border-emerald-400' }
+    { name: 'purple', label: 'Neon Purple', color: 'bg-[#B026FF] border-[#e1a6ff]' },
+    { name: 'blue', label: 'Cyber Blue', color: 'bg-[#00F0FF] border-[#a6f7ff]' },
+    { name: 'pink', label: 'Tokyo Pink', color: 'bg-[#ff007f] border-[#ffa6d2]' },
+    { name: 'emerald', label: 'Matrix Emerald', color: 'bg-[#10b981] border-[#a7f3d0]' }
   ];
 
   return (
