@@ -104,7 +104,7 @@ export default function TasksPage() {
 
               <div className="flex items-center gap-4">
                 <div className="text-2xl md:text-3xl font-mono font-black text-cyber-blue text-glow-cyan bg-cyber-blue/10 px-4 py-1.5 rounded-xl border border-cyber-blue/30">
-                  {formatTimer((tickingTask.estimatedMinutes * 60) - ((tickingTask.actualMinutesSpent * 60) + store.activeTimerElapsed))}
+                  {formatTimer(Math.max(0, (tickingTask.estimatedMinutes * 60) - store.activeTimerElapsed))}
                 </div>
                 <div className="flex gap-2">
                   <button 
