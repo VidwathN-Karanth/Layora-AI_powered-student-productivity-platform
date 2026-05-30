@@ -117,7 +117,6 @@ export default function TasksPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/10 pb-4">
         <div>
           <h2 className="text-xl font-geist font-bold tracking-tight text-white">Task Manager</h2>
-          <p className="text-xs text-white/50 font-mono mt-0.5 uppercase tracking-widest">Track study milestones, execute live timers, and analyze core durations.</p>
         </div>
 
         <button
