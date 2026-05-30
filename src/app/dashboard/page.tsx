@@ -174,6 +174,13 @@ export default function DashboardHome() {
     .filter((b) => b.day === todayNum && !b.completed)
     .sort((a, b) => a.start.localeCompare(b.start));
 
+  const tomorrowNum = (todayNum + 1) % 7;
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const tomorrowLabel = dayNames[tomorrowNum];
+  const tomorrowSchedule = timetable
+    .filter((b) => b.day === tomorrowNum && !b.completed)
+    .sort((a, b) => a.start.localeCompare(b.start));
+
   if (!mounted) {
     return (
       <div className="flex items-center justify-center py-20 font-mono text-xs text-white/50">
@@ -190,7 +197,6 @@ export default function DashboardHome() {
           <h2 className="text-xl font-geist font-bold tracking-tight text-white">
             Welcome Back, <span className="text-cyber-blue text-glow-cyan">{user?.name || 'Student'}</span>
           </h2>
-          <p className="text-xs text-white/50 font-mono mt-0.5 uppercase tracking-widest">Academic Cyber-pod Status: System Online</p>
         </div>
 
         {/* Streak counter with fire glow */}
@@ -381,6 +387,40 @@ export default function DashboardHome() {
                         );
                       })()
                     )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Tomorrow's Schedule Timeline */}
+          <div className="glass-card rounded-2xl p-5 space-y-4">
+            <div className="flex justify-between items-center border-b border-white/10 pb-2">
+              <h3 className="text-xs font-geist font-bold tracking-wider text-cyber-purple uppercase text-glow-purple">
+                Tomorrow's Schedule ({tomorrowLabel})
+              </h3>
+              <span className="text-[9px] font-mono text-white/40 uppercase">Upcoming Blocks</span>
+            </div>
+
+            <div className="space-y-3 max-h-[260px] overflow-y-auto pr-1">
+              {tomorrowSchedule.length === 0 ? (
+                <div className="text-center font-mono text-xs text-white/50 py-8 border border-dashed border-white/20 rounded-xl">
+                  No academic blocks scheduled for tomorrow.
+                </div>
+              ) : (
+                tomorrowSchedule.map((block) => (
+                  <div key={block.id} className={`flex items-center gap-4 p-3 rounded-xl bg-white/5 border-l-4 transition-all ${
+                    block.type === 'study' ? 'border-cyber-blue' : 'border-cyber-purple'
+                  }`}>
+                    <div className="font-mono text-xs font-bold text-center w-20 text-white shrink-0">
+                      <div>{block.start}</div>
+                      <div className="text-[10px] text-white/50 font-normal">{block.end}</div>
+                    </div>
+
+                    <div className="border-l border-white/10 pl-4 flex-1 min-w-0">
+                      <div className="font-mono font-semibold text-xs text-white truncate">{block.title}</div>
+                      <p className="text-[10px] text-white/50 truncate font-sans mt-0.5">{block.details}</p>
+                    </div>
                   </div>
                 ))
               )}
