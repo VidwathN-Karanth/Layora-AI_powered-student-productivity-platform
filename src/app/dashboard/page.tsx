@@ -62,6 +62,13 @@ export default function DashboardHome() {
   const completedTasks = tasks.filter((t) => t.status === 'completed').length;
   const completionRate = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
 
+  const formatTimer = (totalSeconds: number) => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+    return `${hours > 0 ? hours + ':' : ''}${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const timeToMin = (t: string) => {
     const [h, m] = t.split(':').map(Number);
     return h * 60 + m;
@@ -305,16 +312,26 @@ export default function DashboardHome() {
                     </div>
 
                     {block.type === 'study' && (
-                      <button
-                        onClick={() => handleStartStudySession(block)}
-                        className={`px-3 py-1.5 rounded-xl text-[9px] font-mono font-bold flex items-center gap-1 transition cursor-pointer uppercase shrink-0 border ${
-                          store.activeTaskId === `task-from-block-${block.id}`
-                            ? 'bg-red-500/20 border-red-500/50 text-red-400 animate-pulse'
-                            : 'bg-cyber-blue/10 hover:bg-cyber-blue/20 border border-cyber-blue/30 text-cyber-blue'
-                        }`}
-                      >
-                        {store.activeTaskId === `task-from-block-${block.id}` ? 'Stop' : 'Start Session'}
-                      </button>
+                      (() => {
+                        const startMin = timeToMin(block.start);
+                        const endMin = timeToMin(block.end);
+                        const durationMinutes = endMin >= startMin ? (endMin - startMin) : (1440 - startMin + endMin);
+                        const isTicking = store.activeTaskId === `task-from-block-${block.id}`;
+                        const remainingSeconds = Math.max(0, (durationMinutes * 60) - store.activeTimerElapsed);
+
+                        return (
+                          <button
+                            onClick={() => handleStartStudySession(block)}
+                            className={`px-3 py-1.5 rounded-xl text-[9px] font-mono font-bold flex items-center gap-1 transition cursor-pointer uppercase shrink-0 border ${
+                              isTicking
+                                ? 'bg-red-500/20 border-red-500/50 text-red-400 animate-pulse'
+                                : 'bg-cyber-blue/10 hover:bg-cyber-blue/20 border border-cyber-blue/30 text-cyber-blue'
+                            }`}
+                          >
+                            {isTicking ? `Stop (${formatTimer(remainingSeconds)})` : 'Start Session'}
+                          </button>
+                        );
+                      })()
                     )}
                   </div>
                 ))

@@ -411,7 +411,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <span className="font-mono text-[10px] text-white/50 uppercase">Timer:</span>
                 <span className="font-bold truncate max-w-[120px] font-mono text-white">{activeTask.title}</span>
                 <span className="font-mono font-black text-cyber-blue text-glow-cyan">
-                  {formatTimer(store.activeTimerElapsed)}
+                  {formatTimer(Math.max(0, (activeTask.estimatedMinutes * 60) - store.activeTimerElapsed))}
                 </span>
                 <button 
                   onClick={() => store.stopTaskTimer(true)} 
