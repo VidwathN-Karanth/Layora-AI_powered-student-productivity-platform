@@ -11,7 +11,7 @@
   "dependencies": {
     "@clerk/nextjs": "^7.4.2",
     "@clerk/themes": "^2.4.57",
-    "@supabase/supabase-js": "^2.106.1",
+    "firebase": "^12.14.0",
     "framer-motion": "^12.40.0",
     "lucide-react": "^1.16.0",
     "next": "16.2.6",
