@@ -30,6 +30,7 @@ export default function DashboardHome() {
   const [instantStart, setInstantStart] = useState('');
   const [instantEnd, setInstantEnd] = useState('');
   const [instantError, setInstantError] = useState('');
+  const [instantMode, setInstantMode] = useState<'task' | 'session'>('task');
 
   const handleOpenInstantTaskModal = () => {
     const now = new Date();
@@ -46,6 +47,7 @@ export default function DashboardHome() {
     setInstantEnd(formatHHMM(oneHourLater));
     
     setInstantError('');
+    setInstantMode('task');
     setIsAddingInstantTask(true);
   };
 
@@ -84,9 +86,12 @@ export default function DashboardHome() {
       end: instantEnd,
       title: instantTitle,
       type: 'study' as const,
-      color: 'border-l-4 border-cyber-blue bg-cyber-blue/10 text-white',
-      details: 'Instant task added from dashboard',
-      completed: false
+      color: instantMode === 'session'
+        ? 'border-l-4 border-cyber-blue bg-cyber-blue/10 text-white'
+        : 'border-l-4 border-cyber-purple bg-cyber-purple/10 text-white',
+      details: instantMode === 'session' ? 'Instant session started from dashboard' : 'Instant task scheduled from dashboard',
+      completed: false,
+      isSession: instantMode === 'session'
     };
 
     store.setTimetable([...store.timetable, newBlock]);
@@ -284,13 +289,13 @@ export default function DashboardHome() {
             </span>
           )}
 
-          {/* Instant Task Button */}
+          {/* Instant Button */}
           <button 
             onClick={handleOpenInstantTaskModal}
             className="flex items-center gap-2 bg-white/5 hover:bg-cyber-blue/10 border border-white/10 hover:border-cyber-blue/40 rounded-xl px-4 py-2 text-xs font-mono transition cursor-pointer"
           >
             <Plus className="w-4 h-4 text-cyber-blue" />
-            <span>Instant Task</span>
+            <span>Instant</span>
           </button>
 
           {/* Streak counter with fire glow */}
@@ -435,7 +440,9 @@ export default function DashboardHome() {
               ) : (
                 todaySchedule.map((block) => (
                   <div key={block.id} className={`flex items-center gap-4 p-3 rounded-xl bg-white/5 border-l-4 transition-all ${
-                    block.type === 'study' ? 'border-cyber-blue' : 'border-cyber-purple'
+                    block.isSession === false
+                      ? 'border-cyber-purple'
+                      : (block.type === 'study' ? 'border-cyber-blue' : 'border-cyber-purple')
                   }`}>
                     {/* Tick Icon to complete task */}
                     <button 
@@ -460,7 +467,7 @@ export default function DashboardHome() {
                       <p className="text-[10px] text-white/50 truncate font-sans mt-0.5">{block.details}</p>
                     </div>
 
-                    {block.type === 'study' && (
+                    {block.type === 'study' && block.isSession !== false && (
                       (() => {
                         const startMin = timeToMin(block.start);
                         const endMin = timeToMin(block.end);
@@ -575,7 +582,7 @@ export default function DashboardHome() {
             >
               <div className="flex items-center gap-2 border-b border-white/10 pb-2 mb-4">
                 <Sparkles className="w-5 h-5 text-cyber-blue animate-pulse" />
-                <h3 className="text-sm font-geist font-bold text-white uppercase">Add Instant Task</h3>
+                <h3 className="text-sm font-geist font-bold text-white uppercase">Instant</h3>
               </div>
               
               <div className="space-y-4">
@@ -595,6 +602,34 @@ export default function DashboardHome() {
                     placeholder="E.g., Review Chemistry Chapter 3"
                     className="w-full input-hud"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-mono text-white/50 mb-1.5 uppercase tracking-wider">Type</label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setInstantMode('task')}
+                      className={`flex-1 py-1.5 rounded-xl text-xs font-mono border transition cursor-pointer ${
+                        instantMode === 'task'
+                          ? 'bg-cyber-purple/20 border-cyber-purple text-white font-bold'
+                          : 'bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10'
+                      }`}
+                    >
+                      Task
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInstantMode('session')}
+                      className={`flex-1 py-1.5 rounded-xl text-xs font-mono border transition cursor-pointer ${
+                        instantMode === 'session'
+                          ? 'bg-cyber-blue/20 border-cyber-blue text-white font-bold'
+                          : 'bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10'
+                      }`}
+                    >
+                      Session
+                    </button>
+                  </div>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-3">
