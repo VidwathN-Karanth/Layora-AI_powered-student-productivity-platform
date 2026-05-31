@@ -52,7 +52,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const handleResize = () => setIsMobile(window.innerWidth < 1280);
+      const handleResize = () => {
+        const mobile = window.innerWidth < 1280;
+        setIsMobile(mobile);
+        if (mobile) {
+          setChatOpen(false);
+        }
+      };
       handleResize();
       window.addEventListener('resize', handleResize);
       return () => window.removeEventListener('resize', handleResize);
