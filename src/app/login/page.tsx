@@ -30,8 +30,8 @@ export default function LoginPage() {
           <div className="relative z-10">
             <SignIn 
               routing="hash"
-              fallbackRedirectUrl="/dashboard"
-              signUpFallbackRedirectUrl="/dashboard"
+              fallbackRedirectUrl="/"
+              signUpFallbackRedirectUrl="/"
             />
           </div>
         </div>

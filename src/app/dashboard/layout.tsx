@@ -9,7 +9,7 @@ import {
   LayoutDashboard, CalendarRange, BookMarked, CheckSquare, Calendar, 
   FolderLock, BarChart3, Settings, UserCheck, LogOut, ChevronLeft, 
   ChevronRight, Send, Paperclip, Sparkles, MessageCircle, Clock, 
-  Pause, Check, Menu, X, ArrowUpRight
+  Pause, Check, Menu, X, ArrowUpRight, ShieldAlert
 } from 'lucide-react';
 import { UserButton, useUser, useAuth } from '@clerk/nextjs';
 import OnboardingModal from '@/components/OnboardingModal';
@@ -253,6 +253,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return `${hours > 0 ? hours + ':' : ''}${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const isAdmin = store.user?.email?.toLowerCase() === 'vidwathkaranth@gmail.com';
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Weekly Planner', path: '/dashboard/planner', icon: CalendarRange },
@@ -261,6 +262,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: 'Resources', path: '/dashboard/resources', icon: FolderLock },
     { name: 'Analytics', path: '/dashboard/analytics', icon: BarChart3 },
     { name: 'Settings', path: '/dashboard/settings', icon: Settings },
+    ...(isAdmin ? [{ name: 'Admin Portal', path: '/admin', icon: ShieldAlert }] : [])
   ];
 
   if (!isLoaded || !store.isAuthenticated) return null;
