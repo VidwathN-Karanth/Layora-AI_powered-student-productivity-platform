@@ -292,14 +292,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               animate={{ x: 0 }}
               exit={{ x: -280 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 bottom-0 left-0 w-[260px] bg-cyber-dark/95 border-r border-white/10 z-50 flex flex-col justify-between p-4 md:hidden"
+              className="fixed top-0 bottom-0 left-0 w-[240px] bg-cyber-dark/95 border-r border-white/10 z-50 flex flex-col justify-between p-3.5 md:hidden"
             >
-              <div className="space-y-6">
-                <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
                   <span className="font-mono font-bold text-cyber-blue text-sm">Layora</span>
                   <button onClick={() => setMobileMenuOpen(false)} className="text-white/50"><X className="w-5 h-5" strokeWidth={1.5} /></button>
                 </div>
-                <nav className="space-y-1">
+                <nav className="space-y-0.5">
                   {menuItems.map((item) => {
                     const active = pathname === item.path;
                     const Icon = item.icon;
@@ -307,7 +307,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <button
                         key={item.name}
                         onClick={() => { router.push(item.path); setMobileMenuOpen(false); }}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-mono transition ${
+                        className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-xs font-mono transition ${
                           active ? 'bg-white/10 text-cyber-blue font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white'
                         }`}
                       >
@@ -319,16 +319,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </nav>
               </div>
 
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/10">
-                  <UserButton appearance={{ elements: { userButtonAvatarBox: "w-8 h-8 rounded-lg" } }} />
+              <div className="space-y-2 pt-2 border-t border-white/5">
+                <div className="flex items-center gap-2.5 bg-white/5 p-2 rounded-lg border border-white/10">
+                  <UserButton appearance={{ elements: { userButtonAvatarBox: "w-7 h-7 rounded-lg" } }} />
                   <div className="min-w-0">
-                    <div className="text-xs font-mono font-semibold truncate">{store.user?.name || 'Layora Student'}</div>
-                    <div className="text-[9px] font-mono text-white/40 truncate">{store.user?.email}</div>
+                    <div className="text-[11px] font-mono font-semibold truncate text-white">{store.user?.name || 'Layora Student'}</div>
+                    <div className="text-[8px] font-mono text-white/40 truncate">{store.user?.email}</div>
                   </div>
                 </div>
-                <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 border border-red-500/20 bg-red-500/10 hover:bg-red-500/20 text-red-400 py-2 rounded-xl text-xs font-mono transition">
-                  <LogOut className="w-4 h-4" strokeWidth={1.5} /> Logout
+                <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 border border-red-500/20 bg-red-950/15 hover:bg-red-950/25 text-red-400 py-1.5 rounded-lg text-xs font-mono transition cursor-pointer">
+                  <LogOut className="w-3.5 h-3.5" strokeWidth={1.5} /> Logout
                 </button>
               </div>
             </motion.aside>
