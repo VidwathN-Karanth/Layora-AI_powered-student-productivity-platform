@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useUser, useAuth } from '@clerk/nextjs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '@/lib/firebaseClient';
-import { collection, getDocs, doc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, deleteDoc, setDoc } from 'firebase/firestore';
 import { 
   Users, Clock, Flame, BookOpen, Search, ArrowLeft, 
   Trash2, Settings, Activity, Calendar, ListTodo, 
@@ -50,6 +50,16 @@ export default function AdminPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [activeTab, setActiveTab] = useState<'profile' | 'subjects' | 'tasks' | 'courses' | 'timetable' | 'chat'>('profile');
+  const [editStreak, setEditStreak] = useState<number>(0);
+  const [editHours, setEditHours] = useState<number>(0);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  useEffect(() => {
+    if (selectedUser) {
+      setEditStreak(selectedUser.state.user?.streakCount || 0);
+      setEditHours(selectedUser.state.user?.totalStudyHours || 0);
+    }
+  }, [selectedUser]);
 
   // Verify Admin Access
   useEffect(() => {
@@ -116,6 +126,54 @@ export default function AdminPage() {
       alert("Error deleting user state: " + err.message);
     } finally {
       setLoadingData(false);
+    }
+  };
+
+  // Update User Telemetry Stats (Streak & Hours override)
+  const handleUpdateUserStats = async () => {
+    if (!db || !selectedUser) return;
+    try {
+      setIsSavingEdit(true);
+      
+      const updatedUser = {
+        ...(selectedUser.state.user || {}),
+        streakCount: Number(editStreak),
+        totalStudyHours: Number(editHours)
+      };
+
+      const updatedState = {
+        ...selectedUser.state,
+        user: updatedUser
+      };
+
+      const docRef = doc(db, 'user_states', selectedUser.id);
+      await setDoc(docRef, {
+        state: updatedState,
+        updated_at: new Date().toISOString()
+      }, { merge: true });
+
+      // Update local state list so it updates instantly in the UI table
+      setUsersList((prev) => 
+        prev.map((u) => 
+          u.id === selectedUser.id 
+            ? { ...u, state: updatedState, updated_at: new Date().toISOString() } 
+            : u
+        )
+      );
+
+      // Update currently active inspected user
+      setSelectedUser({
+        ...selectedUser,
+        state: updatedState,
+        updated_at: new Date().toISOString()
+      });
+
+      alert("Node telemetry updated successfully!");
+    } catch (err: any) {
+      console.error("Failed to update user stats:", err);
+      alert("Error updating node telemetry: " + err.message);
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -585,6 +643,44 @@ export default function AdminPage() {
                       ) : (
                         <p className="text-[11px] text-white/30 font-normal">No free time slots added to circadian planner.</p>
                       )}
+                    </div>
+
+                    {/* Administrative Override panel */}
+                    <div className="bg-white/2 border border-cyber-purple/20 rounded-xl p-4 space-y-4">
+                      <div className="text-[10px] text-cyber-purple font-bold uppercase tracking-wider flex items-center gap-1.5">
+                        <Settings className="w-3.5 h-3.5" /> Administrative Telemetry Override
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] text-white/50 font-mono uppercase">Streak Count (days)</label>
+                          <input
+                            type="number"
+                            value={editStreak}
+                            onChange={(e) => setEditStreak(Math.max(0, parseInt(e.target.value) || 0))}
+                            className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-cyber-purple"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] text-white/50 font-mono uppercase">Study Focus Hours (hrs)</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={editHours}
+                            onChange={(e) => setEditHours(Math.max(0, parseFloat(e.target.value) || 0))}
+                            className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-cyber-purple"
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={handleUpdateUserStats}
+                        disabled={isSavingEdit}
+                        className="w-full flex items-center justify-center gap-2 border border-cyber-purple/30 hover:border-cyber-purple bg-cyber-purple/10 hover:bg-cyber-purple/25 text-cyber-purple hover:text-white py-2 rounded-xl text-xs font-bold transition cursor-pointer"
+                      >
+                        {isSavingEdit ? "SAVING NODE..." : "WRITE DATA OVERRIDE"}
+                      </button>
                     </div>
                   </div>
                 )}
