@@ -227,115 +227,107 @@ export default function TasksPage() {
                 key={task.id} 
                 className={`glass-card rounded-xl p-3 border relative overflow-hidden transition duration-300 ${
                   task.status === 'completed'
-                    ? 'bg-emerald-950/10 border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.06)]'
+                    ? 'bg-emerald-950/10 border-emerald-500/20'
                     : isTicking
-                    ? 'bg-cyber-blue/5 border-cyber-blue/60 ring-1 ring-cyber-blue/15 shadow-[0_0_15px_rgba(0,240,255,0.1)] animate-pulse-glow'
-                    : 'bg-cyber-purple/5 border-cyber-purple/20 hover:border-cyber-purple/40 shadow-sm'
+                    ? 'bg-primary/5 border-primary ring-1 ring-primary/15 animate-pulse-glow'
+                    : 'bg-secondary/5 border-secondary/20 hover:border-secondary/40'
                 }`}
+                style={{
+                  boxShadow: task.status === 'completed' 
+                    ? '0 0 12px rgba(16, 185, 129, 0.06)' 
+                    : isTicking 
+                    ? '0 0 15px var(--cyber-glow-primary)' 
+                    : undefined
+                }}
               >
-                <div className="flex justify-between items-start gap-2">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[9px] font-mono bg-cyber-blue/10 text-cyber-blue px-1.5 py-0.5 rounded border border-cyber-blue/20">
-                        {task.subjectName}
-                      </span>
-                      {task.status === 'completed' ? (
-                        <span className="text-[8px] font-mono font-bold uppercase bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/25">
-                          Completed
-                        </span>
-                      ) : isTicking ? (
-                        <span className="text-[8px] font-mono font-bold uppercase bg-cyber-blue/20 text-cyber-blue px-1.5 py-0.5 rounded border border-cyber-blue/40 animate-pulse">
-                          In Progress
-                        </span>
-                      ) : (
-                        <span className="text-[8px] font-mono font-bold uppercase bg-cyber-purple/10 text-cyber-purple px-1.5 py-0.5 rounded border border-cyber-purple/25">
-                          Pending
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <input 
-                        type="checkbox" 
-                        checked={task.status === 'completed'}
-                        onChange={() => store.toggleTaskStatus(task.id)}
-                        className="w-3.5 h-3.5 rounded border-white/20 bg-black/40 text-cyber-blue focus:ring-cyber-blue cursor-pointer accent-emerald-500"
-                      />
-                      <h3 className={`font-geist font-bold text-xs transition ${task.status === 'completed' ? 'text-white/40 line-through' : 'text-white'}`}>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  {/* Left Side: Checkbox, Title, Badges */}
+                  <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                    <input 
+                      type="checkbox" 
+                      checked={task.status === 'completed'}
+                      onChange={() => store.toggleTaskStatus(task.id)}
+                      className="w-3.5 h-3.5 rounded border-white/20 bg-black/40 text-primary focus:ring-primary cursor-pointer accent-emerald-500 mt-0.5 shrink-0"
+                    />
+                    <div className="space-y-1 min-w-0">
+                      <h3 className={`font-geist font-bold text-xs transition ${task.status === 'completed' ? 'text-white/40 line-through' : 'text-white'} truncate`}>
                         {task.title}
                       </h3>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[8px] font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded border border-primary/20">
+                          {task.subjectName}
+                        </span>
+                        {task.status === 'completed' ? (
+                          <span className="text-[8px] font-mono font-bold uppercase bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/25">
+                            Completed
+                          </span>
+                        ) : isTicking ? (
+                          <span className="text-[8px] font-mono font-bold uppercase bg-primary/20 text-primary px-1.5 py-0.5 rounded border border-primary/40 animate-pulse">
+                            In Progress
+                          </span>
+                        ) : (
+                          <span className="text-[8px] font-mono font-bold uppercase bg-secondary/10 text-secondary px-1.5 py-0.5 rounded border border-secondary/25">
+                            Pending
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  <button 
-                    onClick={() => store.removeTask(task.id)}
-                    className="p-1 hover:bg-red-950/40 text-on-surface/20 hover:text-red-400 rounded transition"
-                    title="Delete milestone"
-                  >
-                    <Trash className="w-3 h-3" strokeWidth={1.5} />
-                  </button>
-                </div>
+                  {/* Right Side: Due Date, Spent Time & Actions */}
+                  <div className="flex items-center gap-3 shrink-0 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 border-white/5 pt-2 sm:pt-0">
+                    {/* Due & Spent info stacked, placed to the right-most part of the main text area */}
+                    <div className="flex flex-col gap-0.5 text-[9px] font-mono text-white/40 text-left sm:text-right sm:pr-2">
+                      <div className="flex items-center sm:justify-end gap-1.5">
+                        <Calendar className="w-3 h-3 text-secondary/70" strokeWidth={1.5} />
+                        <span>Due: {task.deadline}</span>
+                      </div>
+                      <div className="flex items-center sm:justify-end gap-1.5">
+                        <Clock className="w-3 h-3 text-primary/70" strokeWidth={1.5} />
+                        <span>
+                          Spent: {isTicking 
+                            ? Math.floor(task.actualMinutesSpent + (store.activeTimerElapsed / 60)) 
+                            : task.actualMinutesSpent}/{task.estimatedMinutes}m
+                        </span>
+                      </div>
+                    </div>
 
-                {/* Estimation & deadlines details */}
-                <div className="mt-2.5 flex flex-col gap-1 text-[9px] font-mono text-white/40">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3 text-cyber-purple/70" strokeWidth={1.5} />
-                    <span>Due: {task.deadline}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-cyber-blue/70" strokeWidth={1.5} />
-                    <span>
-                      Spent: {isTicking 
-                        ? Math.floor(task.actualMinutesSpent + (store.activeTimerElapsed / 60)) 
-                        : task.actualMinutesSpent} / {task.estimatedMinutes} mins
-                    </span>
-                  </div>
-                </div>
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-1.5">
+                      {task.status !== 'completed' && (
+                        <button
+                          onClick={() => handleTimerToggle(task.id)}
+                          className={`px-2 py-1 rounded-lg text-[9px] font-mono font-bold flex items-center gap-1 transition cursor-pointer ${
+                            isTicking 
+                              ? 'bg-red-500/20 border border-red-500/40 text-red-400' 
+                              : 'bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary'
+                          }`}
+                        >
+                          {isTicking ? <Pause className="w-3 h-3" strokeWidth={1.5} /> : <Play className="w-3 h-3" strokeWidth={1.5} />}
+                          {isTicking ? 'Pause' : 'Start'}
+                        </button>
+                      )}
 
-                {/* Footer Controls */}
-                <div className="flex justify-between items-center mt-3 pt-2 border-t border-white/5">
-                  <div className="flex flex-col">
-                    <span className="text-[9px] font-mono font-semibold text-white/40">
-                      Status: <span className={`capitalize ${
-                        task.status === 'completed'
-                          ? 'text-emerald-400 text-glow-cyan'
-                          : isTicking
-                          ? 'text-cyber-blue text-glow-cyan'
-                          : 'text-cyber-purple text-glow-purple'
-                      }`}>{task.status === 'in_progress' ? 'In Progress' : task.status}</span>
-                    </span>
-                    {task.status === 'completed' && task.completedAt && (
-                      <span className="text-[8px] font-mono text-white/30 mt-0.5">
-                        Done: {new Date(task.completedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    {task.status !== 'completed' && (
                       <button
-                        onClick={() => handleTimerToggle(task.id)}
-                        className={`px-2 py-1 rounded-lg text-[9px] font-mono font-bold flex items-center gap-1 transition cursor-pointer ${
-                          isTicking 
-                            ? 'bg-red-500/20 border border-red-500/40 text-red-400' 
-                            : 'bg-cyber-blue/10 hover:bg-cyber-blue/20 border border-cyber-blue/30 text-cyber-blue'
+                        onClick={() => store.toggleTaskStatus(task.id)}
+                        className={`p-1 rounded-lg border transition cursor-pointer ${
+                          task.status === 'completed'
+                            ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
+                            : 'bg-white/5 border-white/20 hover:bg-emerald-500/10 hover:border-emerald-500/40 hover:text-emerald-400 text-white/50'
                         }`}
+                        title={task.status === 'completed' ? 'Mark Pending' : 'Mark Completed'}
                       >
-                        {isTicking ? <Pause className="w-3 h-3" strokeWidth={1.5} /> : <Play className="w-3 h-3" strokeWidth={1.5} />}
-                        {isTicking ? 'Pause' : 'Start'}
+                        <Check className="w-3 h-3" strokeWidth={1.5} />
                       </button>
-                    )}
 
-                    <button
-                      onClick={() => store.toggleTaskStatus(task.id)}
-                      className={`p-1.5 rounded-xl border transition cursor-pointer ${
-                        task.status === 'completed'
-                          ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
-                          : 'bg-white/5 border-white/20 hover:bg-emerald-500/10 hover:border-emerald-500/40 hover:text-emerald-400 text-white/50'
-                      }`}
-                      title={task.status === 'completed' ? 'Mark Pending' : 'Mark Completed'}
-                    >
-                      <Check className="w-3 h-3" strokeWidth={1.5} />
-                    </button>
+                      <button 
+                        onClick={() => store.removeTask(task.id)}
+                        className="p-1 hover:bg-red-950/40 text-white/20 hover:text-red-400 rounded transition"
+                        title="Delete milestone"
+                      >
+                        <Trash className="w-3 h-3" strokeWidth={1.5} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
