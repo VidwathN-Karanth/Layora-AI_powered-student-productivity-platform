@@ -210,9 +210,9 @@ export default function TasksPage() {
       </div>
 
       {/* Task Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         {filteredTasks.length === 0 ? (
-          <div className="col-span-2 text-center py-20 border border-dashed border-white/20 rounded-2xl font-mono text-xs text-white/40">
+          <div className="text-center py-20 border border-dashed border-white/20 rounded-2xl font-mono text-xs text-white/40">
             No milestones matching status selection.
           </div>
         ) : (
@@ -225,18 +225,35 @@ export default function TasksPage() {
             return (
               <div 
                 key={task.id} 
-                className={`glass-card rounded-2xl p-5 border relative overflow-hidden transition ${
-                  task.status === 'completed' ? 'bg-emerald-500/5 border-emerald-500/20 shadow-sm' : 'bg-white/5 border-white/10 shadow-sm'
-                } ${
-                  isTicking ? 'border-cyber-blue ring-2 ring-cyber-blue/20' : ''
+                className={`glass-card rounded-2xl p-5 border relative overflow-hidden transition duration-300 ${
+                  task.status === 'completed'
+                    ? 'bg-emerald-950/15 border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.08)]'
+                    : isTicking
+                    ? 'bg-cyber-blue/10 border-cyber-blue/80 ring-1 ring-cyber-blue/20 shadow-[0_0_20px_rgba(0,240,255,0.15)] animate-pulse-glow'
+                    : 'bg-cyber-purple/5 border-cyber-purple/35 hover:border-cyber-purple/60 shadow-[0_0_12px_rgba(176,38,255,0.05)]'
                 }`}
               >
                 <div className="flex justify-between items-start gap-2">
                   <div className="flex-1">
-                    <span className="text-[10px] font-mono bg-cyber-blue/10 text-cyber-blue px-2 py-0.5 rounded border border-cyber-blue/30">
-                      {task.subjectName}
-                    </span>
-                    <div className="flex items-center gap-3 mt-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-mono bg-cyber-blue/10 text-cyber-blue px-2 py-0.5 rounded border border-cyber-blue/30">
+                        {task.subjectName}
+                      </span>
+                      {task.status === 'completed' ? (
+                        <span className="text-[9px] font-mono font-bold uppercase bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/30">
+                          Completed
+                        </span>
+                      ) : isTicking ? (
+                        <span className="text-[9px] font-mono font-bold uppercase bg-cyber-blue/20 text-cyber-blue px-2 py-0.5 rounded border border-cyber-blue/50 animate-pulse">
+                          In Progress
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-mono font-bold uppercase bg-cyber-purple/10 text-cyber-purple px-2 py-0.5 rounded border border-cyber-purple/35">
+                          Pending
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 mt-3">
                       <input 
                         type="checkbox" 
                         checked={task.status === 'completed'}
@@ -259,21 +276,31 @@ export default function TasksPage() {
                 </div>
 
                 {/* Estimation & deadlines progress */}
-                <div className="mt-4 space-y-2">
-                  <div className="flex justify-between items-center text-[10px] font-mono text-white/50">
-                    <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5 text-cyber-purple" strokeWidth={1.5} /> Due: {task.deadline}</span>
-                    <span>
-                      Spent: {isTicking 
-                        ? Math.floor(task.actualMinutesSpent + (store.activeTimerElapsed / 60)) 
-                        : task.actualMinutesSpent} / {task.estimatedMinutes} mins
-                    </span>
+                <div className="mt-4 space-y-3">
+                  <div className="flex flex-col gap-1.5 text-[10px] font-mono text-white/50">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-cyber-purple" strokeWidth={1.5} />
+                      <span>Due: {task.deadline}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-cyber-blue" strokeWidth={1.5} />
+                      <span>
+                        Spent: {isTicking 
+                          ? Math.floor(task.actualMinutesSpent + (store.activeTimerElapsed / 60)) 
+                          : task.actualMinutesSpent} / {task.estimatedMinutes} mins
+                      </span>
+                    </div>
                   </div>
 
                   {/* Progress Indicator Slider */}
                   <div className="progress-track bg-white/10">
                     <div 
                       className={`progress-fill ${
-                        task.status === 'completed' ? 'bg-emerald-500' : 'bg-gradient-to-r from-cyber-purple to-cyber-blue shadow-[0_0_10px_rgba(0,240,255,0.5)]'
+                        task.status === 'completed'
+                          ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]'
+                          : isTicking
+                          ? 'bg-cyber-blue shadow-[0_0_10px_rgba(0,240,255,0.5)]'
+                          : 'bg-cyber-purple shadow-[0_0_10px_rgba(176,38,255,0.5)]'
                       }`}
                       style={{ width: `${task.status === 'completed' ? 100 : progressRatio}%` }}
                     ></div>
@@ -284,7 +311,13 @@ export default function TasksPage() {
                 <div className="flex justify-between items-center mt-5 pt-3 border-t border-white/10">
                   <div className="flex flex-col">
                     <span className="text-[10px] font-mono font-semibold text-white/50">
-                      Status: <span className={`capitalize ${task.status === 'completed' ? 'text-emerald-400 text-glow-cyan' : 'text-cyber-purple text-glow-purple'}`}>{task.status === 'in_progress' ? 'In Progress' : task.status}</span>
+                      Status: <span className={`capitalize ${
+                        task.status === 'completed'
+                          ? 'text-emerald-400 text-glow-cyan'
+                          : isTicking
+                          ? 'text-cyber-blue text-glow-cyan'
+                          : 'text-cyber-purple text-glow-purple'
+                      }`}>{task.status === 'in_progress' ? 'In Progress' : task.status}</span>
                     </span>
                     {task.status === 'completed' && task.completedAt && (
                       <span className="text-[9px] font-mono text-white/30 mt-0.5">
