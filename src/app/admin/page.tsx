@@ -9,7 +9,7 @@ import { collection, getDocs, doc, deleteDoc } from 'firebase/firestore';
 import { 
   Users, Clock, Flame, BookOpen, Search, ArrowLeft, 
   Trash2, Settings, Activity, Calendar, ListTodo, 
-  CheckCircle2, Building2, LogOut, X, FileText, Globe, RefreshCw, Eye
+  CheckCircle2, Building2, LogOut, X, FileText, Globe, RefreshCw, Eye, Sparkles
 } from 'lucide-react';
 
 interface TelemetryUser {
@@ -126,6 +126,8 @@ export default function AdminPage() {
   const totalTasks = usersList.reduce((acc, u) => acc + (u.state.tasks?.length || 0), 0);
   const totalCompletedTasks = usersList.reduce((acc, u) => acc + (u.state.tasks?.filter(t => t.status === 'completed').length || 0), 0);
   const completionRate = totalTasks > 0 ? Math.round((totalCompletedTasks / totalTasks) * 100) : 0;
+  const totalAiQueries = usersList.reduce((acc, u) => acc + (u.state.chatHistory?.filter(m => m.role === 'user').length || 0), 0);
+  const totalAiTokens = usersList.reduce((acc, u) => acc + Math.round((u.state.chatHistory?.reduce((sum, m) => sum + (m.content?.length || 0), 0) || 0) / 4), 0);
 
   // Filter user list by search query
   const filteredUsers = usersList.filter((u) => {
@@ -233,7 +235,7 @@ export default function AdminPage() {
         )}
 
         {/* Status Metrics Row */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <div className="glass-panel p-5 border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[110px]">
             <div className="text-[10px] text-white/40 font-bold uppercase tracking-wider">Telemetry States</div>
             <div className="text-3xl font-black text-cyber-purple mt-2 flex items-baseline gap-1 text-glow-purple">
@@ -271,6 +273,16 @@ export default function AdminPage() {
             </div>
             <div className="text-[10px] text-white/50 mt-1 border-t border-white/5 pt-2 flex items-center gap-1.5">
               <CheckCircle2 className="w-3 h-3 text-emerald-400" /> {totalCompletedTasks} / {totalTasks} global tasks done
+            </div>
+          </div>
+
+          <div className="glass-panel p-5 border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[110px] col-span-2 md:col-span-1">
+            <div className="text-[10px] text-white/40 font-bold uppercase tracking-wider">AI Copilot Load</div>
+            <div className="text-3xl font-black text-cyber-blue mt-2 flex items-baseline gap-1 text-glow-cyan">
+              {totalAiQueries} <span className="text-xs text-white/40 font-normal">prompts</span>
+            </div>
+            <div className="text-[10px] text-white/50 mt-1 border-t border-white/5 pt-2 flex items-center gap-1.5 truncate">
+              <Sparkles className="w-3 h-3 text-cyber-purple animate-pulse shrink-0" /> ~{(totalAiTokens).toLocaleString()} tokens consumed
             </div>
           </div>
         </section>
@@ -315,6 +327,7 @@ export default function AdminPage() {
                     <th className="p-4 font-normal text-right">Study Time</th>
                     <th className="p-4 font-normal text-center">Subjects</th>
                     <th className="p-4 font-normal text-center">Tasks Done</th>
+                    <th className="p-4 font-normal text-center">AI Load</th>
                     <th className="p-4 font-normal">Last Active Sync</th>
                     <th className="p-4 font-normal text-center">Diagnostics</th>
                   </tr>
@@ -367,6 +380,14 @@ export default function AdminPage() {
                           }`}>
                             {completedTasks} / {tasksList.length}
                           </span>
+                        </td>
+                        <td className="p-4 text-center font-mono">
+                          <div className="font-bold text-white">
+                            {u.state.chatHistory?.filter(m => m.role === 'user').length || 0} <span className="text-[9px] text-white/40 font-normal">prompts</span>
+                          </div>
+                          <div className="text-[9px] text-cyber-purple">
+                            ~{Math.round((u.state.chatHistory?.reduce((sum, m) => sum + (m.content?.length || 0), 0) || 0) / 4).toLocaleString()} tok
+                          </div>
                         </td>
                         <td className="p-4">
                           <div className="font-medium text-white/70">{formatLastSync(u.updated_at)}</div>
