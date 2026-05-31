@@ -225,42 +225,42 @@ export default function TasksPage() {
             return (
               <div 
                 key={task.id} 
-                className={`glass-card rounded-2xl p-5 border relative overflow-hidden transition duration-300 ${
+                className={`glass-card rounded-xl p-3 border relative overflow-hidden transition duration-300 ${
                   task.status === 'completed'
-                    ? 'bg-emerald-950/15 border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.08)]'
+                    ? 'bg-emerald-950/10 border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.06)]'
                     : isTicking
-                    ? 'bg-cyber-blue/10 border-cyber-blue/80 ring-1 ring-cyber-blue/20 shadow-[0_0_20px_rgba(0,240,255,0.15)] animate-pulse-glow'
-                    : 'bg-cyber-purple/5 border-cyber-purple/35 hover:border-cyber-purple/60 shadow-[0_0_12px_rgba(176,38,255,0.05)]'
+                    ? 'bg-cyber-blue/5 border-cyber-blue/60 ring-1 ring-cyber-blue/15 shadow-[0_0_15px_rgba(0,240,255,0.1)] animate-pulse-glow'
+                    : 'bg-cyber-purple/5 border-cyber-purple/20 hover:border-cyber-purple/40 shadow-sm'
                 }`}
               >
                 <div className="flex justify-between items-start gap-2">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] font-mono bg-cyber-blue/10 text-cyber-blue px-2 py-0.5 rounded border border-cyber-blue/30">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[9px] font-mono bg-cyber-blue/10 text-cyber-blue px-1.5 py-0.5 rounded border border-cyber-blue/20">
                         {task.subjectName}
                       </span>
                       {task.status === 'completed' ? (
-                        <span className="text-[9px] font-mono font-bold uppercase bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/30">
+                        <span className="text-[8px] font-mono font-bold uppercase bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/25">
                           Completed
                         </span>
                       ) : isTicking ? (
-                        <span className="text-[9px] font-mono font-bold uppercase bg-cyber-blue/20 text-cyber-blue px-2 py-0.5 rounded border border-cyber-blue/50 animate-pulse">
+                        <span className="text-[8px] font-mono font-bold uppercase bg-cyber-blue/20 text-cyber-blue px-1.5 py-0.5 rounded border border-cyber-blue/40 animate-pulse">
                           In Progress
                         </span>
                       ) : (
-                        <span className="text-[9px] font-mono font-bold uppercase bg-cyber-purple/10 text-cyber-purple px-2 py-0.5 rounded border border-cyber-purple/35">
+                        <span className="text-[8px] font-mono font-bold uppercase bg-cyber-purple/10 text-cyber-purple px-1.5 py-0.5 rounded border border-cyber-purple/25">
                           Pending
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 mt-3">
+                    <div className="flex items-center gap-2 mt-2">
                       <input 
                         type="checkbox" 
                         checked={task.status === 'completed'}
                         onChange={() => store.toggleTaskStatus(task.id)}
-                        className="w-4 h-4 rounded border-white/20 bg-black/40 text-cyber-blue focus:ring-cyber-blue cursor-pointer accent-emerald-500"
+                        className="w-3.5 h-3.5 rounded border-white/20 bg-black/40 text-cyber-blue focus:ring-cyber-blue cursor-pointer accent-emerald-500"
                       />
-                      <h3 className={`font-geist font-bold text-sm transition ${task.status === 'completed' ? 'text-white/40 line-through' : 'text-white'}`}>
+                      <h3 className={`font-geist font-bold text-xs transition ${task.status === 'completed' ? 'text-white/40 line-through' : 'text-white'}`}>
                         {task.title}
                       </h3>
                     </div>
@@ -268,49 +268,33 @@ export default function TasksPage() {
 
                   <button 
                     onClick={() => store.removeTask(task.id)}
-                    className="p-1 hover:bg-red-950/40 text-on-surface/20 hover:text-red-400 rounded-lg transition"
+                    className="p-1 hover:bg-red-950/40 text-on-surface/20 hover:text-red-400 rounded transition"
                     title="Delete milestone"
                   >
-                    <Trash className="w-3.5 h-3.5" strokeWidth={1.5} />
+                    <Trash className="w-3 h-3" strokeWidth={1.5} />
                   </button>
                 </div>
 
-                {/* Estimation & deadlines progress */}
-                <div className="mt-4 space-y-3">
-                  <div className="flex flex-col gap-1.5 text-[10px] font-mono text-white/50">
-                    <div className="flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-cyber-purple" strokeWidth={1.5} />
-                      <span>Due: {task.deadline}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-cyber-blue" strokeWidth={1.5} />
-                      <span>
-                        Spent: {isTicking 
-                          ? Math.floor(task.actualMinutesSpent + (store.activeTimerElapsed / 60)) 
-                          : task.actualMinutesSpent} / {task.estimatedMinutes} mins
-                      </span>
-                    </div>
+                {/* Estimation & deadlines details */}
+                <div className="mt-2.5 flex flex-col gap-1 text-[9px] font-mono text-white/40">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="w-3 h-3 text-cyber-purple/70" strokeWidth={1.5} />
+                    <span>Due: {task.deadline}</span>
                   </div>
-
-                  {/* Progress Indicator Slider */}
-                  <div className="progress-track bg-white/10">
-                    <div 
-                      className={`progress-fill ${
-                        task.status === 'completed'
-                          ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]'
-                          : isTicking
-                          ? 'bg-cyber-blue shadow-[0_0_10px_rgba(0,240,255,0.5)]'
-                          : 'bg-cyber-purple shadow-[0_0_10px_rgba(176,38,255,0.5)]'
-                      }`}
-                      style={{ width: `${task.status === 'completed' ? 100 : progressRatio}%` }}
-                    ></div>
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-cyber-blue/70" strokeWidth={1.5} />
+                    <span>
+                      Spent: {isTicking 
+                        ? Math.floor(task.actualMinutesSpent + (store.activeTimerElapsed / 60)) 
+                        : task.actualMinutesSpent} / {task.estimatedMinutes} mins
+                    </span>
                   </div>
                 </div>
 
                 {/* Footer Controls */}
-                <div className="flex justify-between items-center mt-5 pt-3 border-t border-white/10">
+                <div className="flex justify-between items-center mt-3 pt-2 border-t border-white/5">
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-mono font-semibold text-white/50">
+                    <span className="text-[9px] font-mono font-semibold text-white/40">
                       Status: <span className={`capitalize ${
                         task.status === 'completed'
                           ? 'text-emerald-400 text-glow-cyan'
@@ -320,24 +304,24 @@ export default function TasksPage() {
                       }`}>{task.status === 'in_progress' ? 'In Progress' : task.status}</span>
                     </span>
                     {task.status === 'completed' && task.completedAt && (
-                      <span className="text-[9px] font-mono text-white/30 mt-0.5">
+                      <span className="text-[8px] font-mono text-white/30 mt-0.5">
                         Done: {new Date(task.completedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </span>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     {task.status !== 'completed' && (
                       <button
                         onClick={() => handleTimerToggle(task.id)}
-                        className={`px-3 py-1.5 rounded-xl text-[10px] font-mono font-bold flex items-center gap-1 transition cursor-pointer ${
+                        className={`px-2 py-1 rounded-lg text-[9px] font-mono font-bold flex items-center gap-1 transition cursor-pointer ${
                           isTicking 
-                            ? 'bg-red-500/20 border border-red-500/50 text-red-400' 
+                            ? 'bg-red-500/20 border border-red-500/40 text-red-400' 
                             : 'bg-cyber-blue/10 hover:bg-cyber-blue/20 border border-cyber-blue/30 text-cyber-blue'
                         }`}
                       >
-                        {isTicking ? <Pause className="w-3.5 h-3.5" strokeWidth={1.5} /> : <Play className="w-3.5 h-3.5" strokeWidth={1.5} />}
-                        {isTicking ? 'Pause Clock' : 'Start Clock'}
+                        {isTicking ? <Pause className="w-3 h-3" strokeWidth={1.5} /> : <Play className="w-3 h-3" strokeWidth={1.5} />}
+                        {isTicking ? 'Pause' : 'Start'}
                       </button>
                     )}
 
@@ -345,12 +329,12 @@ export default function TasksPage() {
                       onClick={() => store.toggleTaskStatus(task.id)}
                       className={`p-1.5 rounded-xl border transition cursor-pointer ${
                         task.status === 'completed'
-                          ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400'
-                          : 'bg-white/5 border-white/20 hover:bg-emerald-500/10 hover:border-emerald-500/50 hover:text-emerald-400 text-white/50'
+                          ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
+                          : 'bg-white/5 border-white/20 hover:bg-emerald-500/10 hover:border-emerald-500/40 hover:text-emerald-400 text-white/50'
                       }`}
                       title={task.status === 'completed' ? 'Mark Pending' : 'Mark Completed'}
                     >
-                      <Check className="w-3.5 h-3.5" strokeWidth={1.5} />
+                      <Check className="w-3 h-3" strokeWidth={1.5} />
                     </button>
                   </div>
                 </div>

@@ -11,6 +11,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const isHydrated = useRef(false);
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pendingStateRef = useRef<any>(null);
+  const lastSavedSerializedRef = useRef<string>('');
   
   const themeAccent = useStore((state) => state.themeAccent);
 
@@ -81,10 +82,12 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
               });
               
               useStore.getState().setFullState(stateToSave);
+              lastSavedSerializedRef.current = JSON.stringify(stateToSave);
             } else {
               // Regular path: overwrite local state with what is in Firestore
               isHydrated.current = false;
               useStore.getState().setFullState(firebaseState);
+              lastSavedSerializedRef.current = JSON.stringify(firebaseState);
 
               // If the store's merged user profile is richer (has higher streak or study hours)
               // than what was stored in Firestore, immediately push the update back to Firestore
@@ -119,6 +122,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
                 }, { merge: true }).catch((err) => {
                   console.error('SyncProvider - failed to push merged state:', err);
                 });
+                lastSavedSerializedRef.current = JSON.stringify(stateToSave);
               }
             }
           }
@@ -148,6 +152,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           }, { merge: true }).catch((err) => {
             console.error('SyncProvider - failed to initialize Firestore:', err);
           });
+          lastSavedSerializedRef.current = JSON.stringify(stateToSave);
         }
       } catch (err) {
         console.error('Failed to process real-time state update:', err);
@@ -174,6 +179,24 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = useStore.subscribe((state) => {
       if (!isHydrated.current) return;
 
+      const {
+        user: storeUser, subjects, resources, activities, websites, courses, tasks,
+        timetable, themeAccent, apiKeys, selectedModel,
+        calendarSynced, is24HourFormat, chatHistory, proactiveRecommendations
+      } = state;
+
+      const stateToSave = {
+        user: storeUser,
+        subjects, resources, activities, websites, courses, tasks,
+        timetable, themeAccent, apiKeys, selectedModel,
+        calendarSynced, is24HourFormat, chatHistory, proactiveRecommendations
+      };
+
+      const serialized = JSON.stringify(stateToSave);
+      if (serialized === lastSavedSerializedRef.current) {
+        return; // No meaningful change to save
+      }
+
       pendingStateRef.current = state;
 
       if (syncTimeoutRef.current) {
@@ -182,31 +205,19 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
       syncTimeoutRef.current = setTimeout(async () => {
         try {
-          const {
-            user: storeUser, subjects, resources, activities, websites, courses, tasks,
-            timetable, themeAccent, apiKeys, selectedModel,
-            calendarSynced, is24HourFormat, chatHistory, proactiveRecommendations
-          } = state;
-
-          const stateToSave = {
-            user: storeUser,
-            subjects, resources, activities, websites, courses, tasks,
-            timetable, themeAccent, apiKeys, selectedModel,
-            calendarSynced, is24HourFormat, chatHistory, proactiveRecommendations
-          };
-
           const docRef = doc(currentDb, 'user_states', user.id);
           await setDoc(docRef, {
             state: stateToSave,
             updated_at: new Date().toISOString()
           }, { merge: true });
           
+          lastSavedSerializedRef.current = serialized;
           pendingStateRef.current = null;
           console.log('SyncProvider - successfully pushed state to Firebase');
         } catch (err) {
           console.error('Failed to sync state to Firebase:', err);
         }
-      }, 1000);
+      }, 200); // 200ms debounce
     });
 
     return () => {
