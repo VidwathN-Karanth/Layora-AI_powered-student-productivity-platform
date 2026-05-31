@@ -439,34 +439,40 @@ export default function DashboardHome() {
                 </div>
               ) : (
                 todaySchedule.map((block) => (
-                  <div key={block.id} className={`flex items-center gap-4 p-3 rounded-xl bg-white/5 border-l-4 transition-all ${
+                  <div key={block.id} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-xl bg-white/5 border-l-4 transition-all ${
                     block.isSession === false
                       ? 'border-cyber-purple'
                       : (block.type === 'study' ? 'border-cyber-blue' : 'border-cyber-purple')
                   }`}>
-                    {/* Tick Icon to complete task */}
-                    <button 
-                      onClick={() => handleToggleBlockCompleted(block)}
-                      className={`w-5 h-5 rounded-full border flex items-center justify-center transition shrink-0 cursor-pointer ${
-                        block.completed 
-                          ? 'bg-emerald-500 border-emerald-400 text-black' 
-                          : 'border-white/20 hover:border-emerald-500 hover:bg-emerald-500/10 text-transparent hover:text-emerald-400'
-                      }`}
-                      title="Mark completed"
-                    >
-                      <Check className="w-3.5 h-3.5" strokeWidth={3} />
-                    </button>
+                    {/* Main row info */}
+                    <div className="flex items-center gap-3 flex-1 min-w-0 w-full">
+                      {/* Tick Icon to complete task */}
+                      <button 
+                        onClick={() => handleToggleBlockCompleted(block)}
+                        className={`w-5 h-5 rounded-full border flex items-center justify-center transition shrink-0 cursor-pointer ${
+                          block.completed 
+                            ? 'bg-emerald-500 border-emerald-400 text-black' 
+                            : 'border-white/20 hover:border-emerald-500 hover:bg-emerald-500/10 text-transparent hover:text-emerald-400'
+                        }`}
+                        title="Mark completed"
+                      >
+                        <Check className="w-3 h-3" strokeWidth={3} />
+                      </button>
 
-                    <div className="font-mono text-xs font-bold text-center w-20 text-white shrink-0">
-                      <div>{formatTimeStr(block.start, store.is24HourFormat)}</div>
-                      <div className="text-[10px] text-white/50 font-normal">{formatTimeStr(block.end, store.is24HourFormat)}</div>
+                      {/* Time Column */}
+                      <div className="font-mono text-xs font-bold text-center w-16 shrink-0 text-white leading-tight">
+                        <div>{formatTimeStr(block.start, store.is24HourFormat)}</div>
+                        <div className="text-[9px] text-white/40 font-normal mt-0.5">{formatTimeStr(block.end, store.is24HourFormat)}</div>
+                      </div>
+
+                      {/* Details */}
+                      <div className="border-l border-white/10 pl-3 flex-1 min-w-0">
+                        <div className="font-mono font-semibold text-xs text-white truncate">{block.title}</div>
+                        <p className="text-[10px] text-white/40 truncate font-sans mt-0.5">{block.details}</p>
+                      </div>
                     </div>
 
-                    <div className="border-l border-white/10 pl-4 flex-1 min-w-0">
-                      <div className="font-mono font-semibold text-xs text-white truncate">{block.title}</div>
-                      <p className="text-[10px] text-white/50 truncate font-sans mt-0.5">{block.details}</p>
-                    </div>
-
+                    {/* Start Session Button */}
                     {block.type === 'study' && block.isSession !== false && (
                       (() => {
                         const startMin = timeToMin(block.start);
@@ -476,16 +482,18 @@ export default function DashboardHome() {
                         const remainingSeconds = Math.max(0, (durationMinutes * 60) - store.activeTimerElapsed);
 
                         return (
-                          <button
-                            onClick={() => handleStartStudySession(block)}
-                            className={`px-3 py-1.5 rounded-xl text-[9px] font-mono font-bold flex items-center gap-1 transition cursor-pointer uppercase shrink-0 border ${
-                              isTicking
-                                ? 'bg-red-500/20 border-red-500/50 text-red-400 animate-pulse'
-                                : 'bg-cyber-blue/10 hover:bg-cyber-blue/20 border border-cyber-blue/30 text-cyber-blue'
-                            }`}
-                          >
-                            {isTicking ? `Stop (${formatTimer(remainingSeconds)})` : 'Start Session'}
-                          </button>
+                          <div className="flex justify-end sm:justify-start w-full sm:w-auto pl-8 sm:pl-0 shrink-0">
+                            <button
+                              onClick={() => handleStartStudySession(block)}
+                              className={`px-3 py-1.5 rounded-xl text-[9px] font-mono font-bold flex items-center gap-1 transition cursor-pointer uppercase border w-full sm:w-auto justify-center ${
+                                isTicking
+                                  ? 'bg-red-500/20 border-red-500/50 text-red-400 animate-pulse'
+                                  : 'bg-cyber-blue/10 hover:bg-cyber-blue/20 border border-cyber-blue/30 text-cyber-blue'
+                              }`}
+                            >
+                              {isTicking ? `Stop (${formatTimer(remainingSeconds)})` : 'Start Session'}
+                            </button>
+                          </div>
                         );
                       })()
                     )}

@@ -251,43 +251,43 @@ export default function PlannerPage() {
               activeDayBlocks.map((block, index) => (
                 <div 
                   key={block.id} 
-                  className={`flex items-center gap-3 p-4 rounded-2xl ${block.color} border-l-4 relative group`}
+                  className={`flex items-center gap-2.5 sm:gap-3 p-3 sm:p-4 rounded-2xl ${block.color} border-l-4 relative group`}
                 >
                   {/* Time columns */}
-                  <div className="font-mono text-center w-24 shrink-0">
-                    <span className="text-sm font-black text-on-surface">{formatTimeStr(block.start, store.is24HourFormat)}</span>
-                    <span className="text-[10px] text-outline block leading-tight">{formatTimeStr(block.end, store.is24HourFormat)}</span>
+                  <div className="font-mono text-center w-16 sm:w-20 shrink-0">
+                    <span className="text-xs sm:text-sm font-black text-on-surface">{formatTimeStr(block.start, store.is24HourFormat)}</span>
+                    <span className="text-[9px] sm:text-[10px] text-outline block leading-tight">{formatTimeStr(block.end, store.is24HourFormat)}</span>
                   </div>
 
-                  <div className="border-l border-outline-variant pl-4 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-sm text-on-surface">{block.title}</span>
+                  <div className="border-l border-outline-variant pl-3 sm:pl-4 flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-mono font-bold text-xs text-on-surface truncate">{block.title}</span>
                       {block.subjectCode && (
-                        <span className="text-[9px] font-mono bg-surface-container border border-outline-variant px-2 py-0.5 rounded text-on-surface-variant">
+                        <span className="text-[8px] sm:text-[9px] font-mono bg-surface-container border border-outline-variant px-1.5 py-0.5 rounded text-on-surface-variant">
                           {block.subjectCode}
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-outline leading-relaxed font-sans mt-0.5">{block.details}</p>
+                    <p className="text-[10px] sm:text-[11px] text-outline leading-relaxed font-sans mt-0.5 truncate">{block.details}</p>
                   </div>
 
                   {/* Drag re-arrange arrows and delete button */}
-                  <div className="flex items-center gap-2 border-l border-outline-variant pl-3 shrink-0">
+                  <div className="flex items-center gap-1.5 sm:gap-2 border-l border-outline-variant pl-2 sm:pl-3 shrink-0">
                     <div className="flex flex-col gap-0.5">
-                      <button onClick={() => handleMoveUp(index)} className="p-0.5 hover:bg-surface-container-high rounded text-outline hover:text-on-surface transition">
+                      <button onClick={() => handleMoveUp(index)} className="p-0.5 hover:bg-surface-container-high rounded text-outline hover:text-on-surface transition text-[10px]">
                         ▲
                       </button>
-                      <button onClick={() => handleMoveDown(index)} className="p-0.5 hover:bg-surface-container-high rounded text-outline hover:text-on-surface transition">
+                      <button onClick={() => handleMoveDown(index)} className="p-0.5 hover:bg-surface-container-high rounded text-outline hover:text-on-surface transition text-[10px]">
                         ▼
                       </button>
                     </div>
 
                     <button 
                       onClick={() => handleDeleteBlock(block.id)}
-                      className="p-1.5 hover:bg-red-950/40 text-outline-variant hover:text-red-400 rounded-lg transition"
+                      className="p-1 hover:bg-red-950/40 text-outline-variant hover:text-red-400 rounded transition"
                       title="Delete block"
                     >
-                      <Trash className="w-4 h-4" strokeWidth={1.5} />
+                      <Trash className="w-3.5 h-3.5" strokeWidth={1.5} />
                     </button>
                   </div>
                 </div>

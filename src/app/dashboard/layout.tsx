@@ -48,6 +48,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   
   // Mobile responsive overrides
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleResize = () => setIsMobile(window.innerWidth < 1280);
+      handleResize();
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
 
   // Digital clock state
   const [timeStr, setTimeStr] = useState('');
@@ -495,13 +505,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* --- RIGHT PERSISTENT AI CHAT PANEL --- */}
       <AnimatePresence>
+        {chatOpen && isMobile && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setChatOpen(false)}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 xl:hidden"
+          />
+        )}
         {chatOpen && (
           <motion.aside
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 340, opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
+            initial={isMobile ? { x: '100%', opacity: 0 } : { width: 0, opacity: 0 }}
+            animate={isMobile ? { x: 0, opacity: 1 } : { width: 340, opacity: 1 }}
+            exit={isMobile ? { x: '100%', opacity: 0 } : { width: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="hidden xl:flex flex-col border-l border-white/10 bg-black/40 backdrop-blur-lg shrink-0 h-screen sticky top-0 z-30 overflow-hidden"
+            className="fixed top-0 bottom-0 right-0 z-50 xl:sticky xl:top-0 w-[85%] sm:w-[340px] xl:w-[340px] flex flex-col border-l border-white/10 bg-[#0B0F19]/95 xl:bg-black/40 backdrop-blur-xl shrink-0 h-screen overflow-hidden shadow-2xl xl:shadow-none"
           >
             {/* Chat header */}
             <div className="p-4 border-b border-white/10 flex items-center justify-between bg-white/5">
