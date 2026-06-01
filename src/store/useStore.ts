@@ -158,6 +158,8 @@ interface AppState {
   clearChat: () => void;
   resetStore: () => void;
   setFullState: (state: Partial<AppState>) => void;
+  hasHydrated: boolean;
+  setHasHydrated: (val: boolean) => void;
 }
 
 const DEFAULT_SUBJECTS: Subject[] = [];
@@ -230,6 +232,8 @@ export const useStore = create<AppState>()(
       user: null,
       isAuthenticated: false,
       registeredUsers: DEFAULT_REGISTERED_USERS,
+      hasHydrated: false,
+      setHasHydrated: (val) => set({ hasHydrated: val }),
 
       login: (email, name) => {
         const { registeredUsers, user: currentUser } = get();
@@ -1053,6 +1057,9 @@ export const useStore = create<AppState>()(
         chatHistory: state.chatHistory,
         proactiveRecommendations: state.proactiveRecommendations
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      }
     }
   )
 );
