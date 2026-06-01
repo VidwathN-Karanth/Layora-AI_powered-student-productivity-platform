@@ -25,6 +25,7 @@ export default function ResourcesPage() {
   const [linkUrl, setLinkUrl] = useState('');
   const [activeSubjectId, setActiveSubjectId] = useState(subjects[0]?.id || '');
   const [fileName, setFileName] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
   const [fileType, setFileType] = useState('pdf');
   const [fileData, setFileData] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -37,10 +38,7 @@ export default function ResourcesPage() {
   const [subDifficulty, setSubDifficulty] = useState<'Easy' | 'Medium' | 'Hard'>('Medium');
   const [subPriority, setSubPriority] = useState<'Low' | 'Medium' | 'High'>('Medium');
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processSelectedFile = (file: File) => {
     const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
     const ext = file.name.split('.').pop()?.toLowerCase() || 'pdf';
     
@@ -48,6 +46,47 @@ export default function ResourcesPage() {
     setFileType(ext);
     setFileData(file);
   };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    processSelectedFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processSelectedFile(file);
+    }
+  };
+
+  React.useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      if (activeTab !== 'upload' || uploadMethod === 'link') return;
+      
+      const file = e.clipboardData?.files?.[0];
+      if (file) {
+        processSelectedFile(file);
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => {
+      window.removeEventListener('paste', handlePaste);
+    };
+  }, [activeTab, uploadMethod]);
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -320,16 +359,55 @@ export default function ResourcesPage() {
                         />
                       </div>
                     ) : (
-                      <div>
+                      <div className="space-y-1">
                         <label className="block text-[10px] font-mono text-white/50 mb-1">Select File</label>
-                        <input
-                          type="file"
-                          required
-                          ref={fileInputRef}
-                          onChange={handleFileChange}
-                          disabled={isUploading}
-                          className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyber-blue file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-mono file:bg-cyber-blue/20 file:text-cyber-blue hover:file:bg-cyber-blue/30 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        />
+                        
+                        {/* Drag and Drop Zone Card */}
+                        <div
+                          onDragOver={handleDragOver}
+                          onDragLeave={handleDragLeave}
+                          onDrop={handleDrop}
+                          onClick={() => fileInputRef.current?.click()}
+                          className={`relative border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition flex flex-col items-center justify-center gap-2 group ${
+                            isDragging 
+                              ? 'border-cyber-blue bg-cyber-blue/10' 
+                              : fileData 
+                                ? 'border-emerald-500/50 bg-emerald-500/5 hover:border-emerald-400' 
+                                : 'border-white/15 bg-black/20 hover:border-cyber-blue/50 hover:bg-black/30'
+                          }`}
+                        >
+                          <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                            className="hidden"
+                          />
+                          
+                          {fileData ? (
+                            <>
+                              <File className="w-7 h-7 text-emerald-400 animate-bounce" />
+                              <div className="text-xs font-mono font-bold text-emerald-400 truncate max-w-[200px]">
+                                {fileData.name}
+                              </div>
+                              <div className="text-[9px] font-mono text-white/40">
+                                Click to replace • Drag new file • Paste from clipboard
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <UploadCloud className="w-7 h-7 text-white/40 group-hover:text-cyber-blue transition" />
+                              <div className="text-xs font-mono text-white/70 group-hover:text-white">
+                                Drag & Drop file here
+                              </div>
+                              <div className="text-[9px] font-mono text-white/40">
+                                or click to browse files
+                              </div>
+                              <div className="text-[8px] font-mono text-cyber-blue/70 bg-cyber-blue/10 px-2 py-0.5 rounded border border-cyber-blue/20 mt-1">
+                                Clipboard Paste (Ctrl+V) Supported
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </div>
                     )}
 
@@ -365,7 +443,7 @@ export default function ResourcesPage() {
                       disabled={isUploading}
                       className="w-full bg-gradient-to-r from-cyber-purple/50 to-cyber-blue/50 hover:from-cyber-purple hover:to-cyber-blue text-white rounded-lg py-2.5 text-xs font-mono font-bold flex items-center justify-center gap-1.5 cursor-pointer border border-cyber-blue/30 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <UploadCloud className="w-4 h-4" /> {isUploading ? 'Uploading...' : uploadMethod === 'drive' ? 'Upload to Google Drive' : uploadMethod === 'link' ? 'Add Link Resource' : 'Load Local File'}
+                      <UploadCloud className="w-4 h-4" /> {isUploading ? 'Uploading...' : uploadMethod === 'drive' ? 'Upload to Google Drive' : 'Add Link Resource'}
                     </button>
                   </form>
                 )}
