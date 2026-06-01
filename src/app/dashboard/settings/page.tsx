@@ -1,15 +1,17 @@
 'use client';
 
 import { useState } from 'react';
+import { useClerk } from '@clerk/nextjs';
 import { useStore } from '@/store/useStore';
 import { 
   Settings, Key, Eye, EyeOff, Check, Sparkles, 
   User, Bell, Calendar, ShieldCheck, RefreshCw,
-  AlertTriangle, Trash2
+  AlertTriangle, Trash2, Loader2
 } from 'lucide-react';
 
 export default function SettingsPage() {
   const store = useStore();
+  const { signOut } = useClerk();
 
   // Local profile states
   const [name, setName] = useState(store.user?.name || '');
@@ -19,6 +21,7 @@ export default function SettingsPage() {
   const [collegeEnd, setCollegeEnd] = useState(store.user?.collegeEnd || '16:00');
 
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isPurging, setIsPurging] = useState(false);
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,10 +36,28 @@ export default function SettingsPage() {
     setTimeout(() => setSaveSuccess(false), 2000);
   };
 
-  const handleSystemReset = () => {
-    if (confirm("Are you absolutely sure you want to erase all registration and application data? This action cannot be undone.")) {
+  const handleSystemReset = async () => {
+    if (!confirm("Are you absolutely sure you want to erase all registration and application data? This action cannot be undone.")) {
+      return;
+    }
+
+    setIsPurging(true);
+    try {
+      // Delete Firestore data + Clerk account server-side
+      const res = await fetch('/api/user/purge', { method: 'DELETE' });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Server error ${res.status}`);
+      }
+    } catch (err: any) {
+      console.error('Purge API error:', err);
+      // Still clear local data even if server call fails
+    } finally {
+      // Clear local state first
       store.resetStore();
-      window.location.href = '/login';
+      // Sign out of Clerk to invalidate the client-side session,
+      // then redirect — this prevents the stale-session blank page issue
+      await signOut({ redirectUrl: '/' });
     }
   };
 
@@ -243,9 +264,14 @@ export default function SettingsPage() {
 
             <button
               onClick={handleSystemReset}
-              className="w-full bg-rose-600/10 hover:bg-rose-600 border border-rose-500/20 hover:border-rose-500 text-rose-300 hover:text-on-surface text-xs font-mono font-bold py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center gap-2 active:scale-[0.98]"
+              disabled={isPurging}
+              className="w-full bg-rose-600/10 hover:bg-rose-600 border border-rose-500/20 hover:border-rose-500 text-rose-300 hover:text-on-surface text-xs font-mono font-bold py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <Trash2 className="w-4 h-4" /> Erase All Registration & Store Data
+              {isPurging ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Purging Data...</>
+              ) : (
+                <><Trash2 className="w-4 h-4" /> Erase All Registration & Store Data</>
+              )}
             </button>
           </div>
         </div>
