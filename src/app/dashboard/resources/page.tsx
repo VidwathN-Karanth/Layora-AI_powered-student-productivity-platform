@@ -460,7 +460,7 @@ export default function ResourcesPage() {
                       required
                       value={subName}
                       onChange={(e) => setSubName(e.target.value)}
-                      placeholder="Introduction to Physics"
+                      placeholder="Subject Name"
                       className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyber-purple"
                     />
                   </div>
@@ -473,7 +473,7 @@ export default function ResourcesPage() {
                         required
                         value={subCode}
                         onChange={(e) => setSubCode(e.target.value)}
-                        placeholder="PHY101"
+                        placeholder="Course Code"
                         className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyber-purple"
                       />
                     </div>

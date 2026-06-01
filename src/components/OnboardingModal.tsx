@@ -340,7 +340,7 @@ export default function OnboardingModal() {
                           type="text" 
                           value={newSubName} 
                           onChange={(e) => setNewSubName(e.target.value)}
-                          placeholder="Introduction to Calculus"
+                          placeholder="Subject Name"
                           className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                         />
                       </div>
@@ -351,7 +351,7 @@ export default function OnboardingModal() {
                             type="text" 
                             value={newSubCode} 
                             onChange={(e) => setNewSubCode(e.target.value)}
-                            placeholder="MATH101"
+                            placeholder="Course Code"
                             className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                           />
                         </div>
