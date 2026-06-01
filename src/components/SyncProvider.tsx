@@ -6,6 +6,12 @@ import { useStore } from '@/store/useStore';
 import { db, isFirebaseConfigured } from '@/lib/firebaseClient';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
+// Module-level flag to suppress ALL Firestore writes during a purge.
+// Set via suppressFirestoreSync() before deleting the Firestore doc so the
+// onSnapshot listener cannot recreate it from local state the moment it fires.
+let suppressSync = false;
+export function suppressFirestoreSync() { suppressSync = true; }
+
 export function SyncProvider({ children }: { children: React.ReactNode }) {
   const { user, isLoaded } = useUser();
   const isHydrated = useRef(false);
@@ -45,6 +51,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
     const unsubscribeSnapshot = onSnapshot(doc(currentDb, 'user_states', user.id), (docSnap) => {
       try {
+        if (suppressSync) return; // Purge in progress — do not read or write Firestore
         if (docSnap.exists()) {
           const data = docSnap.data();
           if (data && data.state) {
@@ -265,6 +272,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       }
 
       const performSync = async () => {
+        if (suppressSync) return; // Purge in progress — skip write
         try {
           inFlightWrites.current++;
           const docRef = doc(currentDb, 'user_states', user.id);
@@ -311,6 +319,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     const currentDb = db;
 
     const flushSync = async () => {
+      if (suppressSync) return; // Purge in progress — skip flush
       if (syncTimeoutRef.current) {
         clearTimeout(syncTimeoutRef.current);
         syncTimeoutRef.current = null;
