@@ -952,13 +952,18 @@ export const useStore = create<AppState>()(
         ]
       }),
       resetStore: () => {
-        if (typeof window !== 'undefined') {
-          window.localStorage.removeItem('layora-productivity-store');
-        }
+        const { user, registeredUsers } = get();
+
+        // Remove the current user from the registered users list
+        const updatedRegisteredUsers = user
+          ? registeredUsers.filter((u) => u.email.toLowerCase() !== user.email.toLowerCase())
+          : registeredUsers;
+
+        // Wipe in-memory state first so the persist middleware serializes an empty slate
         set({
           user: null,
           isAuthenticated: false,
-          registeredUsers: DEFAULT_REGISTERED_USERS,
+          registeredUsers: updatedRegisteredUsers,
           subjects: [],
           resources: {},
           activities: [],
@@ -979,6 +984,11 @@ export const useStore = create<AppState>()(
             { id: 'msg-welcome', role: 'assistant', content: 'Welcome to your AI Academic Dashboard! I am your student co-pilot. I can help analyze your weekly load, suggest breaks, or resolve complex study questions. Let me know how I can assist you today.', timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
           ]
         });
+
+        // After set() persists the cleaned state, overwrite the key entirely to remove any leftovers
+        if (typeof window !== 'undefined') {
+          window.localStorage.removeItem('layora-productivity-store');
+        }
       },
       setFullState: (newState) => set((state) => {
         let mergedUser = state.user;
