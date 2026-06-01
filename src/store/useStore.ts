@@ -581,20 +581,20 @@ export const useStore = create<AppState>()(
       })),
       removeSubject: (id) => {
         try {
-          const deletedSubject = get().subjects.find((s) => s.id === id);
+          const deletedSubject = (get().subjects || []).find((s) => s.id === id);
           
           set((state) => {
-            const remainingSubjects = state.subjects.filter((s) => s.id !== id);
-            const updatedTasks = state.tasks.filter((t) => t.subjectId !== id);
-            const updatedResources = { ...state.resources };
+            const remainingSubjects = (state.subjects || []).filter((s) => s.id !== id);
+            const updatedTasks = (state.tasks || []).filter((t) => t.subjectId !== id);
+            const updatedResources = { ...(state.resources || {}) };
             delete updatedResources[id];
             
-            let updatedTimetable = state.timetable;
+            let updatedTimetable = state.timetable || [];
             if (deletedSubject) {
               const deletedCode = (deletedSubject.code || '').toLowerCase();
               const deletedName = (deletedSubject.name || '').toLowerCase();
 
-              updatedTimetable = state.timetable.filter((b) => {
+              updatedTimetable = (state.timetable || []).filter((b) => {
                 const blockCode = (b.subjectCode || '').toLowerCase();
                 const blockTitle = (b.title || '').toLowerCase();
                 
@@ -612,8 +612,9 @@ export const useStore = create<AppState>()(
               timetable: updatedTimetable
             };
           });
-        } catch (error) {
+        } catch (error: any) {
           console.error("Failed to remove subject from store:", error);
+          alert("Error removing subject: " + error.message);
         }
         
         // Asynchronously regenerate the schedule to fill the gaps
