@@ -67,15 +67,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // Digital clock state
   const [timeStr, setTimeStr] = useState('');
+  const lastCheckedDateRef = useRef('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      lastCheckedDateRef.current = new Date().toLocaleDateString('en-CA');
+    }
+  }, []);
+
   useEffect(() => {
     const updateTime = () => {
       const d = new Date();
       setTimeStr(d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: !store.is24HourFormat }));
+      
+      const currentDayStr = d.toLocaleDateString('en-CA');
+      if (currentDayStr !== lastCheckedDateRef.current) {
+        lastCheckedDateRef.current = currentDayStr;
+        if (store.isAuthenticated) {
+          store.checkAndUpdateStreak();
+        }
+      }
     };
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
-  }, [store.is24HourFormat]);
+  }, [store.is24HourFormat, store.isAuthenticated]);
 
   useEffect(() => {
     if (store.activeTaskId) {

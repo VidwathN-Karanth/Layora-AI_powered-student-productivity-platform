@@ -486,10 +486,13 @@ export const useStore = create<AppState>()(
         return { user: { ...state.user, streakCount: state.user.streakCount + 1 } };
       }),
       checkAndUpdateStreak: () => {
-        const { user } = get();
+        const { user, tasks, timetable } = get();
         if (!user) return;
 
         const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local format
+
+        const updatedTasks = tasks.filter((t) => t.status !== 'completed');
+        const updatedTimetable = timetable.map((b) => ({ ...b, completed: false }));
 
         if (!user.lastActiveDate) {
           set({
@@ -497,7 +500,9 @@ export const useStore = create<AppState>()(
               ...user,
               lastActiveDate: todayStr,
               streakCount: user.streakCount || 1
-            }
+            },
+            tasks: updatedTasks,
+            timetable: updatedTimetable
           });
           return;
         }
@@ -517,7 +522,9 @@ export const useStore = create<AppState>()(
               ...user,
               lastActiveDate: todayStr,
               streakCount: (user.streakCount || 0) + 1
-            }
+            },
+            tasks: updatedTasks,
+            timetable: updatedTimetable
           });
         } else if (diffDays > 1) {
           set({
@@ -525,7 +532,9 @@ export const useStore = create<AppState>()(
               ...user,
               lastActiveDate: todayStr,
               streakCount: 1
-            }
+            },
+            tasks: updatedTasks,
+            timetable: updatedTimetable
           });
         }
       },
