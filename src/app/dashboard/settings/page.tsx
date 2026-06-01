@@ -53,11 +53,13 @@ export default function SettingsPage() {
       console.error('Purge API error:', err);
       // Still clear local data even if server call fails
     } finally {
-      // Clear local state first
+      // Clear local store
       store.resetStore();
-      // Sign out of Clerk to invalidate the client-side session,
-      // then redirect — this prevents the stale-session blank page issue
-      await signOut({ redirectUrl: '/' });
+      // Fire signOut non-blocking — the account is already deleted server-side
+      // so the promise may hang; don't await it
+      try { signOut().catch(() => {}); } catch (_) {}
+      // Hard replace so the redirect is guaranteed regardless of signOut state
+      window.location.replace('/');
     }
   };
 
