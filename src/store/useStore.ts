@@ -8,6 +8,7 @@ import {
   TimetableBlock, 
   AIKeys,
   generateLocalWeeklySchedule,
+  generateAISchedule,
   resolveScheduleOverlaps
 } from '@/lib/aiService';
 
@@ -127,7 +128,7 @@ interface AppState {
   timetable: TimetableBlock[];
   setTimetable: (blocks: TimetableBlock[]) => void;
   updateTimetableBlock: (id: string, updatedFields: Partial<TimetableBlock>) => void;
-  generateSchedule: () => void;
+  generateSchedule: () => Promise<void>;
 
   // Settings
   themeAccent: 'purple' | 'blue' | 'pink' | 'emerald';
@@ -146,6 +147,8 @@ interface AppState {
     nextBestTask: string;
     urgentSubject: string;
     recommendedDuration: number;
+    workloadWarning?: string;
+    mentorAdvice?: string;
   } | null;
   setProactiveRecommendations: (recs: any) => void;
 
@@ -562,9 +565,33 @@ export const useStore = create<AppState>()(
       addSubject: (subj) => set((state) => ({
         subjects: [...state.subjects, { ...subj, id: `sub-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` }]
       })),
-      removeSubject: (id) => set((state) => ({
-        subjects: state.subjects.filter((s) => s.id !== id)
-      })),
+      removeSubject: (id) => {
+        const deletedSubject = get().subjects.find((s) => s.id === id);
+        
+        set((state) => {
+          const remainingSubjects = state.subjects.filter((s) => s.id !== id);
+          const updatedTasks = state.tasks.filter((t) => t.subjectId !== id);
+          
+          let updatedTimetable = state.timetable;
+          if (deletedSubject) {
+            updatedTimetable = state.timetable.filter((b) => {
+              const isMatch = b.subjectCode === deletedSubject.code || 
+                              (b.title.toLowerCase().includes(deletedSubject.name.toLowerCase())) ||
+                              (b.title.toLowerCase().includes(deletedSubject.code.toLowerCase()));
+              return !isMatch;
+            });
+          }
+          
+          return {
+            subjects: remainingSubjects,
+            tasks: updatedTasks,
+            timetable: updatedTimetable
+          };
+        });
+        
+        // Asynchronously regenerate the schedule to fill the gaps
+        get().generateSchedule();
+      },
       resources: {},
       uploadResource: (subjectId, res) => set((state) => {
         const subResources = state.resources[subjectId] || [];
@@ -827,8 +854,8 @@ export const useStore = create<AppState>()(
       updateTimetableBlock: (id, updatedFields) => set((state) => ({
         timetable: state.timetable.map((b) => b.id === id ? { ...b, ...updatedFields } : b)
       })),
-      generateSchedule: () => {
-        const { user, subjects, activities, courses, timetable } = get();
+      generateSchedule: async () => {
+        const { user, subjects, activities, courses, timetable, apiKeys } = get();
         if (!user) return;
         
         const routine: Routine = {
@@ -846,7 +873,8 @@ export const useStore = create<AppState>()(
           (b) => b.id.startsWith('custom-block-') || b.id.startsWith('ai-block-')
         );
 
-        const baseSchedule = generateLocalWeeklySchedule(routine, subjects, activities, courses);
+        // Call remote AI schedule or local smart scheduler fallback
+        const baseSchedule = await generateAISchedule(apiKeys, routine, subjects, activities, courses);
         
         // Merge base schedule with custom/AI blocks and resolve overlaps
         const combined = [...customBlocks, ...baseSchedule];

@@ -72,13 +72,46 @@ export function generateLocalWeeklySchedule(
   const schedule: TimetableBlock[] = [];
   const days = [1, 2, 3, 4, 5, 6]; // Monday to Saturday (rest on Sunday by default)
 
-  // 1. Sort subjects by priority and credits
-  const sortedSubjects = [...subjects].sort((a, b) => {
+  // 1. Combine subjects and active online courses, then sort by priority/importance
+  interface StudyItem {
+    type: 'subject' | 'course';
+    name: string;
+    code?: string;
+    details: string;
+    priorityScore: number;
+    credits?: number;
+    difficulty?: string;
+    priority?: string;
+  }
+
+  const studyItems: StudyItem[] = [];
+
+  subjects.forEach((sub) => {
     const priorityWeight = { High: 3, Medium: 2, Low: 1 };
-    const scoreA = (priorityWeight[a.priority] || 2) * 5 + a.credits;
-    const scoreB = (priorityWeight[b.priority] || 2) * 5 + b.credits;
-    return scoreB - scoreA;
+    const score = (priorityWeight[sub.priority] || 2) * 5 + sub.credits;
+    studyItems.push({
+      type: 'subject',
+      name: sub.name,
+      code: sub.code,
+      details: `AI Mentor: Review credits (${sub.credits}) & assignments. Difficulty: ${sub.difficulty}. Keep pushing forward!`,
+      priorityScore: score,
+      credits: sub.credits,
+      difficulty: sub.difficulty,
+      priority: sub.priority
+    });
   });
+
+  courses.forEach((course) => {
+    // Online courses are given a baseline priority score so they rotate with subjects
+    studyItems.push({
+      type: 'course',
+      name: course.name,
+      details: `AI Mentor: Online course work on ${course.platform}. Current Progress: ${course.progress}%. Keep learning!`,
+      priorityScore: 7, // moderate-high priority
+    });
+  });
+
+  const sortedStudyItems = studyItems.sort((a, b) => b.priorityScore - a.priorityScore);
 
   // Helper to convert time string "HH:MM" to minutes from midnight
   const timeToMin = (t: string) => {
@@ -184,6 +217,56 @@ export function generateLocalWeeklySchedule(
       }
     });
 
+    // B.2 Daily LeetCode practice session
+    let leetcodeScheduled = false;
+    // Look through free blocks first to find a suitable space
+    routine.freeBlocks.forEach((freeBlock) => {
+      if (leetcodeScheduled) return;
+      const freeStart = timeToMin(freeBlock.start);
+      const freeEnd = timeToMin(freeBlock.end);
+      const unoccupiedSegments = getUnoccupiedSegments(freeStart, freeEnd, occupiedIntervals);
+      
+      for (const segment of unoccupiedSegments) {
+        const segStart = segment.start;
+        const segEnd = segment.end;
+        const duration = segEnd - segStart;
+        if (duration >= 45) {
+          const leetcodeEnd = segStart + 45;
+          schedule.push({
+            id: `block-${day}-leetcode`,
+            day,
+            start: minToTime(segStart),
+            end: minToTime(leetcodeEnd),
+            title: 'Solve 1 LeetCode Problem',
+            type: 'study',
+            color: colors.study,
+            details: 'AI Mentor: Daily coding practice keeps your technical problem-solving sharp. Solve at least 1 problem!'
+          });
+          occupiedIntervals.push({ start: segStart, end: leetcodeEnd });
+          leetcodeScheduled = true;
+          break;
+        }
+      }
+    });
+
+    if (!leetcodeScheduled) {
+      // Fallback: schedule in evening free time, say 20:00 to 20:45
+      const sleepMin = timeToMin(routine.sleepTime || '22:00');
+      const startMin = Math.min(1200, sleepMin - 60); // 20:00 or 1 hour before sleep
+      const endMin = startMin + 45;
+      schedule.push({
+        id: `block-${day}-leetcode-fallback`,
+        day,
+        start: minToTime(startMin),
+        end: minToTime(endMin),
+        title: 'Solve 1 LeetCode Problem',
+        type: 'study',
+        color: colors.study,
+        details: 'AI Mentor: Daily coding practice. Pick an easy-level problem to maintain your daily study streak!'
+      });
+      occupiedIntervals.push({ start: startMin, end: endMin });
+    }
+
     // C. Study blocks in the Free time slots (filtering out conflicts with occupied times)
     let studyBlocksScheduled = 0;
     
@@ -204,19 +287,20 @@ export function generateLocalWeeklySchedule(
           if (duration > 120) {
             // Study Session 1
             const s1End = segStart + 90; // 90 min study
-            const nextSubject = sortedSubjects[studyBlocksScheduled % Math.max(1, sortedSubjects.length)];
+            const nextItem = sortedStudyItems[studyBlocksScheduled % Math.max(1, sortedStudyItems.length)];
             
-            if (nextSubject) {
+            if (nextItem) {
+              const isSub = nextItem.type === 'subject';
               schedule.push({
                 id: `block-${day}-study-1-${blockIdCounter++}`,
                 day,
                 start: minToTime(segStart),
                 end: minToTime(s1End),
-                title: `Study: ${nextSubject.name}`,
+                title: isSub ? `Study: ${nextItem.name}` : `Course: ${nextItem.name}`,
                 type: 'study',
                 color: colors.study,
-                subjectCode: nextSubject.code,
-                details: `Review credits (${nextSubject.credits}) & assignments. Difficulty: ${nextSubject.difficulty}`
+                subjectCode: nextItem.code,
+                details: nextItem.details
               });
               studyBlocksScheduled++;
             }
@@ -236,35 +320,37 @@ export function generateLocalWeeklySchedule(
 
             // Study Session 2
             const s2End = Math.min(segEnd, breakEnd + 90);
-            const nextSubject2 = sortedSubjects[studyBlocksScheduled % Math.max(1, sortedSubjects.length)];
-            if (nextSubject2 && (s2End - breakEnd) >= 45) {
+            const nextItem2 = sortedStudyItems[studyBlocksScheduled % Math.max(1, sortedStudyItems.length)];
+            if (nextItem2 && (s2End - breakEnd) >= 45) {
+              const isSub2 = nextItem2.type === 'subject';
               schedule.push({
                 id: `block-${day}-study-2-${blockIdCounter++}`,
                 day,
                 start: minToTime(breakEnd),
                 end: minToTime(s2End),
-                title: `Study: ${nextSubject2.name}`,
+                title: isSub2 ? `Study: ${nextItem2.name}` : `Course: ${nextItem2.name}`,
                 type: 'study',
                 color: colors.study,
-                subjectCode: nextSubject2.code,
-                details: `Deep work on ${nextSubject2.name}. Priority: ${nextSubject2.priority}`
+                subjectCode: nextItem2.code,
+                details: nextItem2.details
               });
               studyBlocksScheduled++;
             }
           } else {
             // Regular single study block
-            const nextSubject = sortedSubjects[studyBlocksScheduled % Math.max(1, sortedSubjects.length)];
-            if (nextSubject) {
+            const nextItem = sortedStudyItems[studyBlocksScheduled % Math.max(1, sortedStudyItems.length)];
+            if (nextItem) {
+              const isSub = nextItem.type === 'subject';
               schedule.push({
                 id: `block-${day}-study-single-${blockIdCounter++}`,
                 day,
                 start: minToTime(segStart),
                 end: minToTime(segEnd),
-                title: `Study: ${nextSubject.name}`,
+                title: isSub ? `Study: ${nextItem.name}` : `Course: ${nextItem.name}`,
                 type: 'study',
                 color: colors.study,
-                subjectCode: nextSubject.code,
-                details: `Focus block on credits (${nextSubject.credits}) course. Difficulty: ${nextSubject.difficulty}`
+                subjectCode: nextItem.code,
+                details: nextItem.details
               });
               studyBlocksScheduled++;
             }
@@ -301,6 +387,18 @@ export function generateLocalWeeklySchedule(
         type: 'break',
         color: colors.break,
         details: 'Review study hours stats and set active goals for next week.'
+      });
+
+      // Add a LeetCode block on Sunday too!
+      schedule.push({
+        id: `block-0-leetcode`,
+        day: 0, // Sunday
+        start: '14:00',
+        end: '14:45',
+        title: 'Solve 1 LeetCode Problem',
+        type: 'study',
+        color: colors.study,
+        details: 'AI Mentor: Sunday algorithmic challenge. Work on a medium-level LeetCode problem to stretch your skills!'
       });
     }
   });
