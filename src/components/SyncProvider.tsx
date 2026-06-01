@@ -67,7 +67,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             const localHasData = (localState.timetable && localState.timetable.length > 0) || 
                                  (localState.subjects && localState.subjects.length > 0) || 
                                  (localState.user && localState.user.isOnboarded);
-            const firebaseIsEmpty = !firebaseState.timetable || firebaseState.timetable.length === 0;
+            const firebaseIsEmpty = !firebaseState.user || !firebaseState.user.isOnboarded;
             
             if (localHasData && firebaseIsEmpty) {
               console.log('SyncProvider - local state has active data but Firestore is empty/default, merging and initializing Firestore');
@@ -338,7 +338,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           await setDoc(docRef, {
             state: sanitizeStateForFirestore(stateToSave),
             updated_at: new Date().toISOString()
-          }, { merge: true });
+          });
           
           console.log('SyncProvider - successfully flushed pending state on visibility change/unload');
         } catch (err) {
