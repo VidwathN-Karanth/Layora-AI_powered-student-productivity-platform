@@ -201,6 +201,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       }
     }, (err) => {
       console.error('Failed to listen to state:', err);
+      alert('Failed to listen to Firebase state: ' + err.message);
       isHydrated.current = true;
     });
 
@@ -257,8 +258,9 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           
           lastSavedSerializedRef.current = serialized;
           console.log('SyncProvider - successfully pushed state to Firebase');
-        } catch (err) {
+        } catch (err: any) {
           console.error('Failed to sync state to Firebase:', err);
+          alert('Failed to sync state to Firebase: ' + err.message);
         } finally {
           inFlightWrites.current--;
           if (pendingStateRef.current === state) {
