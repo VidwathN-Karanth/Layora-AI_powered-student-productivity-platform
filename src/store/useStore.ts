@@ -580,31 +580,41 @@ export const useStore = create<AppState>()(
         subjects: [...state.subjects, { ...subj, id: `sub-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` }]
       })),
       removeSubject: (id) => {
-        const deletedSubject = get().subjects.find((s) => s.id === id);
-        
-        set((state) => {
-          const remainingSubjects = state.subjects.filter((s) => s.id !== id);
-          const updatedTasks = state.tasks.filter((t) => t.subjectId !== id);
-          const updatedResources = { ...state.resources };
-          delete updatedResources[id];
+        try {
+          const deletedSubject = get().subjects.find((s) => s.id === id);
           
-          let updatedTimetable = state.timetable;
-          if (deletedSubject) {
-            updatedTimetable = state.timetable.filter((b) => {
-              const isMatch = b.subjectCode === deletedSubject.code || 
-                              (b.title.toLowerCase().includes(deletedSubject.name.toLowerCase())) ||
-                              (b.title.toLowerCase().includes(deletedSubject.code.toLowerCase()));
-              return !isMatch;
-            });
-          }
-          
-          return {
-            subjects: remainingSubjects,
-            tasks: updatedTasks,
-            resources: updatedResources,
-            timetable: updatedTimetable
-          };
-        });
+          set((state) => {
+            const remainingSubjects = state.subjects.filter((s) => s.id !== id);
+            const updatedTasks = state.tasks.filter((t) => t.subjectId !== id);
+            const updatedResources = { ...state.resources };
+            delete updatedResources[id];
+            
+            let updatedTimetable = state.timetable;
+            if (deletedSubject) {
+              const deletedCode = (deletedSubject.code || '').toLowerCase();
+              const deletedName = (deletedSubject.name || '').toLowerCase();
+
+              updatedTimetable = state.timetable.filter((b) => {
+                const blockCode = (b.subjectCode || '').toLowerCase();
+                const blockTitle = (b.title || '').toLowerCase();
+                
+                const isMatch = (deletedSubject.code && blockCode === deletedSubject.code.toLowerCase()) || 
+                                (deletedCode && blockTitle.includes(deletedCode)) ||
+                                (deletedName && blockTitle.includes(deletedName));
+                return !isMatch;
+              });
+            }
+            
+            return {
+              subjects: remainingSubjects,
+              tasks: updatedTasks,
+              resources: updatedResources,
+              timetable: updatedTimetable
+            };
+          });
+        } catch (error) {
+          console.error("Failed to remove subject from store:", error);
+        }
         
         // Asynchronously regenerate the schedule to fill the gaps
         get().generateSchedule();
@@ -872,30 +882,34 @@ export const useStore = create<AppState>()(
         timetable: state.timetable.map((b) => b.id === id ? { ...b, ...updatedFields } : b)
       })),
       generateSchedule: async () => {
-        const { user, subjects, activities, courses, timetable, apiKeys } = get();
-        if (!user) return;
-        
-        const routine: Routine = {
-          wakeTime: user.wakeTime,
-          sleepTime: user.sleepTime,
-          collegeTimings: {
-            start: user.collegeStart,
-            end: user.collegeEnd
-          },
-          freeBlocks: user.freeBlocks
-        };
+        try {
+          const { user, subjects, activities, courses, timetable, apiKeys } = get();
+          if (!user) return;
+          
+          const routine: Routine = {
+            wakeTime: user.wakeTime || '06:00',
+            sleepTime: user.sleepTime || '22:00',
+            collegeTimings: {
+              start: user.collegeStart || '09:00',
+              end: user.collegeEnd || '16:00'
+            },
+            freeBlocks: user.freeBlocks || []
+          };
 
-        // Preserve all manual custom blocks and AI-added blocks
-        const customBlocks = timetable.filter(
-          (b) => b.id.startsWith('custom-block-') || b.id.startsWith('ai-block-')
-        );
+          // Preserve all manual custom blocks and AI-added blocks
+          const customBlocks = timetable.filter(
+            (b) => b.id && (b.id.startsWith('custom-block-') || b.id.startsWith('ai-block-'))
+          );
 
-        // Call remote AI schedule or local smart scheduler fallback
-        const baseSchedule = await generateAISchedule(apiKeys, routine, subjects, activities, courses);
-        
-        // Merge base schedule with custom/AI blocks and resolve overlaps
-        const combined = [...customBlocks, ...baseSchedule];
-        set({ timetable: resolveScheduleOverlaps(combined) });
+          // Call remote AI schedule or local smart scheduler fallback
+          const baseSchedule = await generateAISchedule(apiKeys, routine, subjects, activities, courses);
+          
+          // Merge base schedule with custom/AI blocks and resolve overlaps
+          const combined = [...customBlocks, ...baseSchedule];
+          set({ timetable: resolveScheduleOverlaps(combined) });
+        } catch (error) {
+          console.error("Failed to generate weekly schedule:", error);
+        }
       },
 
       // Accent settings & API Keys
