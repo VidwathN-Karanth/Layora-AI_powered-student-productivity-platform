@@ -32,11 +32,7 @@ export default function OnboardingModal() {
     credits: number;
     difficulty: 'Easy' | 'Medium' | 'Hard';
     priority: 'Low' | 'Medium' | 'High';
-  }[]>([
-    { name: 'Advanced Calculus', code: 'MATH201', credits: 4, difficulty: 'Hard', priority: 'High' },
-    { name: 'Data Structures & Algorithms', code: 'CS202', credits: 4, difficulty: 'Hard', priority: 'High' },
-    { name: 'Quantum Physics', code: 'PHY102', credits: 3, difficulty: 'Medium', priority: 'Medium' }
-  ]);
+  }[]>([]);
   const [newSubName, setNewSubName] = useState('');
   const [newSubCode, setNewSubCode] = useState('');
   const [newSubCredits, setNewSubCredits] = useState(3);
@@ -44,10 +40,7 @@ export default function OnboardingModal() {
   const [newSubPriority, setNewSubPriority] = useState<'Low' | 'Medium' | 'High'>('Medium');
 
   // Study materials (simulated file names uploaded)
-  const [uploadedFiles, setUploadedFiles] = useState<{ [subIndex: number]: { name: string; type: string }[] }>({
-    0: [{ name: 'Calculus Syllabus.pdf', type: 'pdf' }],
-    1: [{ name: 'Algorithms Sorting Notes.docx', type: 'docx' }]
-  });
+  const [uploadedFiles, setUploadedFiles] = useState<{ [subIndex: number]: { name: string; type: string }[] }>({});
   const [mockFileName, setMockFileName] = useState('');
 
   const [activities, setActivities] = useState<{
@@ -55,27 +48,18 @@ export default function OnboardingModal() {
     duration: number;
     preferredTimings: 'morning' | 'afternoon' | 'evening';
     priority: 'Low' | 'Medium' | 'High';
-  }[]>([
-    { name: 'Gym Training', duration: 60, preferredTimings: 'evening', priority: 'High' },
-    { name: 'Meditation', duration: 15, preferredTimings: 'morning', priority: 'Medium' }
-  ]);
+  }[]>([]);
   const [newActName, setNewActName] = useState('');
   const [newActDuration, setNewActDuration] = useState(45);
   const [newActTiming, setNewActTiming] = useState<'morning' | 'afternoon' | 'evening'>('evening');
   const [newActPriority, setNewActPriority] = useState<'Low' | 'Medium' | 'High'>('Medium');
 
-  const [websites, setWebsites] = useState([
-    { name: 'LeetCode', url: 'https://leetcode.com', timeSpentGoal: 45 },
-    { name: 'GitHub', url: 'https://github.com', timeSpentGoal: 30 }
-  ]);
+  const [websites, setWebsites] = useState<{ id?: string; name: string; url: string; timeSpentGoal: number }[]>([]);
   const [newWebName, setNewWebName] = useState('');
   const [newWebUrl, setNewWebUrl] = useState('');
   const [newWebGoal, setNewWebGoal] = useState(30);
 
-  const [courses, setCourses] = useState([
-    { name: 'Next.js 15 Foundations', platform: 'Vercel Academy', progress: 65, weeklyGoal: 3, deadline: '2026-06-15' },
-    { name: 'React Native for Beginners', platform: 'Udemy', progress: 40, weeklyGoal: 5, deadline: '2026-07-01' }
-  ]);
+  const [courses, setCourses] = useState<{ name: string; platform: string; progress: number; weeklyGoal: number; deadline: string }[]>([]);
   const [newCourseName, setNewCourseName] = useState('');
   const [newCoursePlatform, setNewCoursePlatform] = useState('');
   const [newCourseProgress, setNewCourseProgress] = useState(0);
