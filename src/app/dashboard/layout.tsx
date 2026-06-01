@@ -544,7 +544,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             animate={isMobile ? { x: 0, opacity: 1 } : { width: 340, opacity: 1 }}
             exit={isMobile ? { x: '100%', opacity: 0 } : { width: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed top-0 bottom-0 right-0 z-50 xl:sticky xl:top-0 w-[85%] sm:w-[340px] xl:w-[340px] flex flex-col border-l border-white/10 bg-[#0B0F19]/95 xl:bg-black/40 backdrop-blur-xl shrink-0 h-screen overflow-hidden shadow-2xl xl:shadow-none"
+            className="fixed top-0 right-0 z-50 xl:sticky xl:top-0 w-[85%] sm:w-[340px] xl:w-[340px] flex flex-col border-l border-white/10 bg-[#0B0F19]/95 xl:bg-black/40 backdrop-blur-xl shrink-0 h-[100dvh] overflow-hidden shadow-2xl xl:shadow-none"
           >
             {/* Chat header */}
             <div className="p-4 border-b border-white/10 flex items-center justify-between bg-white/5">
@@ -601,7 +601,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
 
             {/* Chat footer input */}
-            <form onSubmit={handleSendMessage} className="p-3 border-t border-white/10 bg-white/5">
+            <form onSubmit={handleSendMessage} className="p-3 pb-5 md:pb-3 border-t border-white/10 bg-white/5">
               <div className="flex gap-2 bg-black/40 border border-white/10 rounded-xl px-2.5 py-1.5 items-center">
                 <button type="button" className="text-white/40 hover:text-white" title="Attach file">
                   <Paperclip className="w-4 h-4" />
