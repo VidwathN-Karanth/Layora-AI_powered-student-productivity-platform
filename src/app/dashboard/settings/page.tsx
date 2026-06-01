@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useClerk } from '@clerk/nextjs';
+import { suppressFirestoreSync } from '@/components/SyncProvider';
 import { useStore } from '@/store/useStore';
 import { 
   Settings, Key, Eye, EyeOff, Check, Sparkles, 
@@ -42,6 +43,17 @@ export default function SettingsPage() {
     }
 
     setIsPurging(true);
+
+    // Silence SyncProvider FIRST — before any deletion — so the onSnapshot
+    // listener cannot recreate the Firestore doc the moment we delete it.
+    suppressFirestoreSync();
+
+    // Clear localStorage directly (bypasses Zustand set(), so SyncProvider
+    // subscriber never fires and cannot push old data back to Firestore).
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('layora-productivity-store');
+    }
+
     try {
       // Delete Firestore data server-side
       const res = await fetch('/api/user/purge', { method: 'DELETE' });
@@ -52,14 +64,6 @@ export default function SettingsPage() {
     } catch (err: any) {
       console.error('Purge API error:', err);
       // Continue regardless — still need to clear local data and sign out
-    }
-
-    // Directly wipe localStorage — this bypasses Zustand's set() entirely,
-    // so SyncProvider's store subscriber never fires and cannot recreate
-    // the Firestore document we just deleted.
-    // (calling resetStore() would trigger set() → SyncProvider → setDoc → data resurrection)
-    if (typeof window !== 'undefined') {
-      window.localStorage.removeItem('layora-productivity-store');
     }
 
     // signOut works cleanly (Clerk account still exists) and handles the redirect.
