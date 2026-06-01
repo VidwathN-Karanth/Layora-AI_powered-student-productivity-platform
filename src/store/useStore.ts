@@ -490,6 +490,23 @@ export const useStore = create<AppState>()(
         if (!user) return;
 
         const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local format
+        const todayNum = new Date().getDay();
+
+        // Helper to check if a completed timestamp is from a previous day
+        const isPreviousDay = (dateStr: string | undefined) => {
+          if (!dateStr) return true; // Treat tasks without timestamp as previous day tasks
+          try {
+            const completedDate = new Date(dateStr);
+            const today = new Date();
+            return (
+              completedDate.getFullYear() < today.getFullYear() ||
+              (completedDate.getFullYear() === today.getFullYear() && completedDate.getMonth() < today.getMonth()) ||
+              (completedDate.getFullYear() === today.getFullYear() && completedDate.getMonth() === today.getMonth() && completedDate.getDate() < today.getDate())
+            );
+          } catch (e) {
+            return true;
+          }
+        };
 
         const updatedTasks = tasks.filter((t) => t.status !== 'completed');
         const updatedTimetable = timetable.map((b) => ({ ...b, completed: false }));
@@ -508,6 +525,32 @@ export const useStore = create<AppState>()(
         }
 
         if (user.lastActiveDate === todayStr) {
+          // If the day is already updated, we should still clear completed tasks and blocks from previous days
+          const hasOldCompletedTasks = tasks.some((t) => t.status === 'completed' && isPreviousDay(t.completedAt));
+          const hasCompletedBlocksOnOtherDays = timetable.some((b) => b.completed && b.day !== todayNum);
+
+          if (hasOldCompletedTasks || hasCompletedBlocksOnOtherDays) {
+            const filteredTasks = tasks.filter((t) => !(t.status === 'completed' && isPreviousDay(t.completedAt)));
+            
+            // Collect IDs of blocks completed in previous days
+            const oldCompletedBlockIds = new Set(
+              tasks
+                .filter((t) => t.status === 'completed' && isPreviousDay(t.completedAt) && t.id.startsWith('task-from-block-'))
+                .map((t) => t.id.replace('task-from-block-', ''))
+            );
+
+            const filteredTimetable = timetable.map((b) => {
+              if (b.day !== todayNum || oldCompletedBlockIds.has(b.id)) {
+                return { ...b, completed: false };
+              }
+              return b;
+            });
+
+            set({
+              tasks: filteredTasks,
+              timetable: filteredTimetable
+            });
+          }
           return;
         }
 
