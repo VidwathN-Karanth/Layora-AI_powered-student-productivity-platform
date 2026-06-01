@@ -4,12 +4,20 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useUser } from '@clerk/nextjs';
 import { ShieldAlert, UserCheck, LogOut } from 'lucide-react';
+import { useStore } from '@/store/useStore';
 
 export default function RootPage() {
   const router = useRouter();
-  const { isLoaded: isAuthLoaded, isSignedIn } = useAuth();
+  const { isLoaded: isAuthLoaded, isSignedIn, signOut } = useAuth();
   const { isLoaded: isUserLoaded, user } = useUser();
+  const store = useStore();
   const [showPortal, setShowPortal] = useState(false);
+
+  const handleLogout = async () => {
+    store.logout();
+    await signOut();
+    router.replace('/login');
+  };
 
   useEffect(() => {
     if (!isAuthLoaded || !isUserLoaded) return;
@@ -94,10 +102,10 @@ export default function RootPage() {
           </div>
           
           <button 
-            onClick={() => router.push('/login')} 
+            onClick={handleLogout} 
             className="flex items-center gap-2 border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white px-4 py-2 rounded-xl text-xs font-mono transition cursor-pointer mt-4"
           >
-            <LogOut className="w-4 h-4" /> Change Account
+            <LogOut className="w-4 h-4" /> Logout
           </button>
         </div>
       </main>

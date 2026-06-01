@@ -232,8 +232,13 @@ export const useStore = create<AppState>()(
       registeredUsers: DEFAULT_REGISTERED_USERS,
 
       login: (email, name) => {
-        const { registeredUsers } = get();
+        const { registeredUsers, user: currentUser } = get();
         const normalizedEmail = email.trim().toLowerCase();
+
+        if (currentUser && currentUser.email.toLowerCase() === normalizedEmail) {
+          set({ isAuthenticated: true });
+          return;
+        }
 
         const existing = registeredUsers.find(
           (u) => u.email.toLowerCase() === normalizedEmail
@@ -316,7 +321,7 @@ export const useStore = create<AppState>()(
       },
 
       loginWithCredentials: (email, passwordVal) => {
-        const { registeredUsers } = get();
+        const { registeredUsers, user: currentUser } = get();
         const normalizedEmail = email.trim().toLowerCase();
 
         const matched = registeredUsers.find(
@@ -329,6 +334,11 @@ export const useStore = create<AppState>()(
 
         if (matched.passwordVal !== passwordVal) {
           return { success: false, error: 'Incorrect password.' };
+        }
+
+        if (currentUser && currentUser.email.toLowerCase() === normalizedEmail) {
+          set({ isAuthenticated: true });
+          return { success: true };
         }
 
         set({
