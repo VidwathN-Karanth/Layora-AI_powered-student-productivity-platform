@@ -522,8 +522,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
 
         {/* --- SCROLLABLE WORKSPACE CONTENT --- */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 z-10 mt-14 md:mt-0">
-          {children}
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 z-10 mt-14 md:mt-0 flex flex-col justify-between">
+          <div className="flex-1">
+            {children}
+          </div>
+          <footer className="mt-12 pt-4 border-t border-white/5 text-center font-mono text-[9px] text-white/30 space-y-1">
+            <div>© {new Date().getFullYear()} Vidwath N Karanth. All rights reserved.</div>
+            <div>Contact: <a href="mailto:4mt24cs239@mite.ac.in" className="text-cyber-blue hover:underline">4mt24cs239@mite.ac.in</a></div>
+          </footer>
         </div>
       </main>
 
