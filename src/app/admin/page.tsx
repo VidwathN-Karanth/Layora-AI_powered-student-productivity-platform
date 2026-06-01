@@ -113,6 +113,7 @@ export default function AdminPage() {
   // Delete User Sync Record
   const handleDeleteRecord = async (userId: string) => {
     if (!db) return;
+    setShowDeleteConfirm(null);
     try {
       setLoadingData(true);
       await deleteDoc(doc(db, 'user_states', userId));
@@ -120,10 +121,11 @@ export default function AdminPage() {
       if (selectedUser?.id === userId) {
         setSelectedUser(null);
       }
-      setShowDeleteConfirm(null);
     } catch (err: any) {
       console.error("Failed to delete user state:", err);
       alert("Error deleting user state: " + err.message);
+      // Re-fetch telemetry to restore list consistency on failure
+      fetchTelemetry();
     } finally {
       setLoadingData(false);
     }
