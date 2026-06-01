@@ -12,6 +12,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pendingStateRef = useRef<any>(null);
   const lastSavedSerializedRef = useRef<string>('');
+  const lastSavedSubjectsRef = useRef<any[]>([]);
+  const lastSavedResourcesRef = useRef<any>({});
   const inFlightWrites = useRef(0);
 
   const sanitizeStateForFirestore = (state: any) => {
@@ -93,12 +95,14 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
               setDoc(docRef, {
                 state: sanitizeStateForFirestore(stateToSave),
                 updated_at: new Date().toISOString()
-              }, { merge: true }).catch((err) => {
+              }).catch((err) => {
                 console.error('SyncProvider - failed to merge/initialize Firestore:', err);
               });
               
               useStore.getState().setFullState(stateToSave);
               lastSavedSerializedRef.current = JSON.stringify(stateToSave);
+              lastSavedSubjectsRef.current = stateToSave.subjects || [];
+              lastSavedResourcesRef.current = stateToSave.resources || {};
             } else {
               // Regular path: overwrite local state with Firestore state, but merge resources to prevent file loss
               isHydrated.current = false;
@@ -126,6 +130,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
               useStore.getState().setFullState(mergedState);
               lastSavedSerializedRef.current = JSON.stringify(mergedState);
+              lastSavedSubjectsRef.current = mergedState.subjects || [];
+              lastSavedResourcesRef.current = mergedState.resources || {};
 
               // If the store's merged user profile is richer (has higher streak or study hours)
               // than what was stored in Firestore, or if resources were merged/updated,
@@ -160,10 +166,12 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
                 setDoc(docRef, {
                   state: sanitizeStateForFirestore(stateToSave),
                   updated_at: new Date().toISOString()
-                }, { merge: true }).catch((err) => {
+                }).catch((err) => {
                   console.error('SyncProvider - failed to push merged state:', err);
                 });
                 lastSavedSerializedRef.current = JSON.stringify(stateToSave);
+                lastSavedSubjectsRef.current = stateToSave.subjects || [];
+                lastSavedResourcesRef.current = stateToSave.resources || {};
               }
             }
           }
@@ -190,10 +198,12 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           setDoc(docRef, {
             state: sanitizeStateForFirestore(stateToSave),
             updated_at: new Date().toISOString()
-          }, { merge: true }).catch((err) => {
+          }).catch((err) => {
             console.error('SyncProvider - failed to initialize Firestore:', err);
           });
           lastSavedSerializedRef.current = JSON.stringify(stateToSave);
+          lastSavedSubjectsRef.current = stateToSave.subjects || [];
+          lastSavedResourcesRef.current = stateToSave.resources || {};
         }
       } catch (err) {
         console.error('Failed to process real-time state update:', err);
@@ -240,23 +250,32 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         return; // No meaningful change to save
       }
 
+      // Check if it is a structural change (subjects or resources list changed)
+      const lastSubjects = lastSavedSubjectsRef.current || [];
+      const lastResources = lastSavedResourcesRef.current || {};
+      const subjectsChanged = JSON.stringify(subjects) !== JSON.stringify(lastSubjects);
+      const resourcesChanged = JSON.stringify(resources) !== JSON.stringify(lastResources);
+      const isImmediate = subjectsChanged || resourcesChanged;
+
       pendingStateRef.current = state;
 
       if (syncTimeoutRef.current) {
         clearTimeout(syncTimeoutRef.current);
+        syncTimeoutRef.current = null;
       }
 
-      syncTimeoutRef.current = setTimeout(async () => {
-        syncTimeoutRef.current = null;
+      const performSync = async () => {
         try {
           inFlightWrites.current++;
           const docRef = doc(currentDb, 'user_states', user.id);
           await setDoc(docRef, {
             state: sanitizeStateForFirestore(stateToSave),
             updated_at: new Date().toISOString()
-          }, { merge: true });
+          });
           
           lastSavedSerializedRef.current = serialized;
+          lastSavedSubjectsRef.current = subjects || [];
+          lastSavedResourcesRef.current = resources || {};
           console.log('SyncProvider - successfully pushed state to Firebase');
         } catch (err: any) {
           console.error('Failed to sync state to Firebase:', err);
@@ -267,7 +286,13 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             pendingStateRef.current = null;
           }
         }
-      }, 200); // 200ms debounce
+      };
+
+      if (isImmediate) {
+        performSync();
+      } else {
+        syncTimeoutRef.current = setTimeout(performSync, 200);
+      }
     });
 
     return () => {
