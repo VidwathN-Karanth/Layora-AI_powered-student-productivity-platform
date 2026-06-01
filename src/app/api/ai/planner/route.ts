@@ -18,14 +18,20 @@ export async function POST(req: NextRequest) {
 
 
     const promptText = `
-      You are an expert student productivity schedule planner. Generate a balanced weekly study schedule in JSON format based on the following student configuration:
+      You are an expert student productivity schedule planner and academic mentor. Generate a highly optimized, balanced weekly study schedule in JSON format based on the following student configuration:
       Wake time: ${routine.wakeTime}
       Sleep time: ${routine.sleepTime}
       College class hours: ${routine.collegeTimings?.start} to ${routine.collegeTimings?.end} (Monday - Friday)
-      Subjects (allocate weekly study sessions depending on credits & difficulty): ${JSON.stringify(subjects)}
+      Subjects (allocate weekly study sessions depending on credits, priority, and difficulty): ${JSON.stringify(subjects)}
       Extracurricular Activities: ${JSON.stringify(activities)}
       Active Online Courses: ${JSON.stringify(courses)}
       Free blocks specified by the user: ${JSON.stringify(routine.freeBlocks)}
+
+      Scheduling Priorities & Rules:
+      1. IMPORTANCE ALIGNMENT: Allocate study blocks by thinking about subject importance. High credit value, High priority, and Hard difficulty subjects must get more frequent and longer study blocks (e.g. 90-120 minutes of contiguous deep study). Easy and Low priority subjects get fewer and shorter slots.
+      2. ONLINE COURSES: You MUST explicitly schedule study/learning blocks for the active online courses from the list of courses. Give them at least 1-2 dedicated blocks throughout the week.
+      3. DAILY LEETCODE/CODING PRACTICE: You MUST schedule exactly one study block EVERY DAY (Monday through Sunday) for "Solve 1 LeetCode Problem" (or general algorithmic/technical practice) of type "study". Place it in the student's free times or evening slots (e.g. for 30-45 minutes).
+      4. PERSONALIZED MENTOR TIPS: Write an encouraging, helpful, personalized mentor-style tip in the "details" field of each study block (e.g. "Solve today's LeetCode daily challenge!", "Focus on high-yield exam topics for Math", "Take a short walk to refresh your cognitive focus").
 
       Follow this exact JSON structure:
       {
@@ -35,11 +41,11 @@ export async function POST(req: NextRequest) {
             "day": 1, // 1 = Monday, 2 = Tuesday, ... 6 = Saturday, 0 = Sunday
             "start": "HH:MM",
             "end": "HH:MM",
-            "title": "Study: [Subject Name] or [Activity Name] or [Break Title]",
+            "title": "Study: [Subject Name]" or "Course: [Course Name]" or "Solve 1 LeetCode Problem" or "[Activity Name]" or "[Break Title]",
             "type": "class" | "study" | "extracurricular" | "break",
             "color": "border-l-4 border-primary bg-primary-fixed text-on-surface" (use cyan for class, purple for study, pink for extracurricular, emerald for break),
             "subjectCode": "optional course code",
-            "details": "quick context/tip for student"
+            "details": "encouraging personalized mentor tip/advice"
           }
         ]
       }
