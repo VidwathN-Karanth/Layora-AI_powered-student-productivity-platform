@@ -401,15 +401,18 @@ export default function ResourcesPage() {
                     </div>
                     <div>
                       <label className="block text-[10px] font-mono text-white/50 mb-1">Credits</label>
-                      <input
-                        type="number"
-                        required
-                        min={1}
-                        max={6}
+                      <select
                         value={subCredits}
                         onChange={(e) => setSubCredits(parseInt(e.target.value) || 3)}
                         className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyber-purple"
-                      />
+                      >
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                      </select>
                     </div>
                   </div>
 

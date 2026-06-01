@@ -373,14 +373,18 @@ export default function OnboardingModal() {
                         </div>
                         <div>
                           <label className="block text-[9px] font-mono text-outline mb-0.5">Credits</label>
-                          <input 
-                            type="number" 
+                          <select 
                             value={newSubCredits} 
                             onChange={(e) => setNewSubCredits(parseInt(e.target.value) || 3)}
-                            min={1} 
-                            max={6}
-                            className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-center text-on-surface"
-                          />
+                            className="w-full bg-surface-container border border-outline-variant rounded-lg px-2 py-1.5 text-xs text-on-surface"
+                          >
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                          </select>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
