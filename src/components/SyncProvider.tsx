@@ -12,6 +12,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pendingStateRef = useRef<any>(null);
   const lastSavedSerializedRef = useRef<string>('');
+  const inFlightWrites = useRef(0);
 
   const sanitizeStateForFirestore = (state: any) => {
     return JSON.parse(JSON.stringify(state));
@@ -47,9 +48,10 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           if (data && data.state) {
             console.log('SyncProvider - real-time state loaded from Firebase');
             
-            // Ignore snapshot if there are pending local writes to prevent overwriting new local state
-            if (pendingStateRef.current !== null) {
-              console.log('SyncProvider - ignoring snapshot because there are pending local writes');
+            // Ignore snapshot if there are pending local writes, in-flight writes, or scheduled debounce timeouts
+            // to prevent older server state from overwriting a newer local state.
+            if (pendingStateRef.current !== null || inFlightWrites.current > 0 || syncTimeoutRef.current !== null) {
+              console.log('SyncProvider - ignoring snapshot because there are pending or in-flight writes');
               return;
             }
             
@@ -244,7 +246,9 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       }
 
       syncTimeoutRef.current = setTimeout(async () => {
+        syncTimeoutRef.current = null;
         try {
+          inFlightWrites.current++;
           const docRef = doc(currentDb, 'user_states', user.id);
           await setDoc(docRef, {
             state: sanitizeStateForFirestore(stateToSave),
@@ -256,7 +260,10 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         } catch (err) {
           console.error('Failed to sync state to Firebase:', err);
         } finally {
-          pendingStateRef.current = null;
+          inFlightWrites.current--;
+          if (pendingStateRef.current === state) {
+            pendingStateRef.current = null;
+          }
         }
       }, 200); // 200ms debounce
     });
@@ -299,6 +306,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             calendarSynced, is24HourFormat, chatHistory, proactiveRecommendations
           };
 
+          inFlightWrites.current++;
           const docRef = doc(currentDb, 'user_states', user.id);
           await setDoc(docRef, {
             state: sanitizeStateForFirestore(stateToSave),
@@ -308,6 +316,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           console.log('SyncProvider - successfully flushed pending state on visibility change/unload');
         } catch (err) {
           console.error('Failed to flush state on visibility change/unload:', err);
+        } finally {
+          inFlightWrites.current--;
         }
       }
     };
