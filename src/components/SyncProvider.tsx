@@ -47,6 +47,12 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           if (data && data.state) {
             console.log('SyncProvider - real-time state loaded from Firebase');
             
+            // Ignore snapshot if there are pending local writes to prevent overwriting new local state
+            if (pendingStateRef.current !== null) {
+              console.log('SyncProvider - ignoring snapshot because there are pending local writes');
+              return;
+            }
+            
             // Smart merge on initial load:
             // If the local state is already populated (e.g. has active schedule or subjects)
             // but the incoming Firebase state's timetable is empty/missing, we should merge
@@ -246,10 +252,11 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           }, { merge: true });
           
           lastSavedSerializedRef.current = serialized;
-          pendingStateRef.current = null;
           console.log('SyncProvider - successfully pushed state to Firebase');
         } catch (err) {
           console.error('Failed to sync state to Firebase:', err);
+        } finally {
+          pendingStateRef.current = null;
         }
       }, 200); // 200ms debounce
     });
