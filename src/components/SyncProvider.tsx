@@ -18,6 +18,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   };
   
   const themeAccent = useStore((state) => state.themeAccent);
+  const hasHydrated = useStore((state) => state.hasHydrated);
 
   // 0. Update DOM theme dynamically when state changes
   useEffect(() => {
@@ -29,7 +30,10 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
   // 1. Listen to Real-Time Updates from Firebase
   useEffect(() => {
-    console.log('SyncProvider - checking Firebase config:', { isFirebaseConfigured, hasUser: !!user });
+    console.log('SyncProvider - checking Firebase config:', { isFirebaseConfigured, hasUser: !!user, hasHydrated });
+    if (!hasHydrated) {
+      return;
+    }
     if (!isLoaded || !user || !isFirebaseConfigured || !db) {
       return;
     }
@@ -88,35 +92,60 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
               useStore.getState().setFullState(stateToSave);
               lastSavedSerializedRef.current = JSON.stringify(stateToSave);
             } else {
-              // Regular path: overwrite local state with what is in Firestore
+              // Regular path: overwrite local state with Firestore state, but merge resources to prevent file loss
               isHydrated.current = false;
-              useStore.getState().setFullState(firebaseState);
-              lastSavedSerializedRef.current = JSON.stringify(firebaseState);
+              
+              const localState = useStore.getState();
+              
+              // Merge resources (documents)
+              const mergedResources = { ...(firebaseState.resources || {}) };
+              for (const subId in localState.resources) {
+                const localFiles = localState.resources[subId] || [];
+                const firebaseFiles = mergedResources[subId] || [];
+                const combined = [...firebaseFiles];
+                for (const lf of localFiles) {
+                  if (!combined.some(ff => ff.id === lf.id || (ff.name === lf.name && ff.url === lf.url))) {
+                    combined.push(lf);
+                  }
+                }
+                mergedResources[subId] = combined;
+              }
+
+              const mergedState = {
+                ...firebaseState,
+                resources: mergedResources
+              };
+
+              useStore.getState().setFullState(mergedState);
+              lastSavedSerializedRef.current = JSON.stringify(mergedState);
 
               // If the store's merged user profile is richer (has higher streak or study hours)
-              // than what was stored in Firestore, immediately push the update back to Firestore
-              const mergedState = useStore.getState();
-              if (mergedState.user && firebaseState.user && 
-                  (mergedState.user.streakCount !== firebaseState.user.streakCount ||
-                   mergedState.user.totalStudyHours !== firebaseState.user.totalStudyHours)) {
-                
-                console.log('SyncProvider - merged state is richer than Firestore, pushing update back to Firestore');
+              // than what was stored in Firestore, or if resources were merged/updated,
+              // immediately push the update back to Firestore
+              const mergedStateStore = useStore.getState();
+              const resourcesMergedAndChanged = JSON.stringify(mergedResources) !== JSON.stringify(firebaseState.resources || {});
+              const profileChanged = mergedStateStore.user && firebaseState.user && 
+                  (mergedStateStore.user.streakCount !== firebaseState.user.streakCount ||
+                   mergedStateStore.user.totalStudyHours !== firebaseState.user.totalStudyHours);
+
+              if (profileChanged || resourcesMergedAndChanged) {
+                console.log('SyncProvider - merged state has richer profile or new resources, pushing update back to Firestore');
                 const stateToSave = {
-                  user: mergedState.user,
-                  subjects: mergedState.subjects,
-                  resources: mergedState.resources,
-                  activities: mergedState.activities,
-                  websites: mergedState.websites,
-                  courses: mergedState.courses,
-                  tasks: mergedState.tasks,
-                  timetable: mergedState.timetable,
-                  themeAccent: mergedState.themeAccent,
-                  apiKeys: mergedState.apiKeys,
-                  selectedModel: mergedState.selectedModel,
-                  calendarSynced: mergedState.calendarSynced,
-                  is24HourFormat: mergedState.is24HourFormat,
-                  chatHistory: mergedState.chatHistory,
-                  proactiveRecommendations: mergedState.proactiveRecommendations
+                  user: mergedStateStore.user,
+                  subjects: mergedStateStore.subjects,
+                  resources: mergedStateStore.resources,
+                  activities: mergedStateStore.activities,
+                  websites: mergedStateStore.websites,
+                  courses: mergedStateStore.courses,
+                  tasks: mergedStateStore.tasks,
+                  timetable: mergedStateStore.timetable,
+                  themeAccent: mergedStateStore.themeAccent,
+                  apiKeys: mergedStateStore.apiKeys,
+                  selectedModel: mergedStateStore.selectedModel,
+                  calendarSynced: mergedStateStore.calendarSynced,
+                  is24HourFormat: mergedStateStore.is24HourFormat,
+                  chatHistory: mergedStateStore.chatHistory,
+                  proactiveRecommendations: mergedStateStore.proactiveRecommendations
                 };
                 
                 const docRef = doc(currentDb, 'user_states', user.id);
@@ -170,10 +199,11 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     return () => {
       unsubscribeSnapshot();
     };
-  }, [isLoaded, user?.id]);
+  }, [isLoaded, user?.id, hasHydrated]);
 
   // 2. Subscribe to Store Changes and Sync
   useEffect(() => {
+    if (!hasHydrated) return;
     if (!isLoaded || !user || !isFirebaseConfigured || !db) {
       return;
     }
@@ -228,10 +258,11 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       unsubscribe();
       if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
     };
-  }, [isLoaded, user?.id]);
+  }, [isLoaded, user?.id, hasHydrated]);
 
   // 3. Force Flush Pending State on Unload/Visibility Change
   useEffect(() => {
+    if (!hasHydrated) return;
     if (!isLoaded || !user || !isFirebaseConfigured || !db) {
       return;
     }
@@ -295,7 +326,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         window.removeEventListener('beforeunload', handleBeforeUnload);
       }
     };
-  }, [isLoaded, user?.id]);
+  }, [isLoaded, user?.id, hasHydrated]);
 
   return <>{children}</>;
 }
