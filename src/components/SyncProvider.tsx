@@ -88,75 +88,35 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
               useStore.getState().setFullState(stateToSave);
               lastSavedSerializedRef.current = JSON.stringify(stateToSave);
             } else {
-              // Regular path: merge local state with Firestore state to prevent loss of local files/data
+              // Regular path: overwrite local state with what is in Firestore
               isHydrated.current = false;
-              
-              const localState = useStore.getState();
-              
-              // 1. Merge resources (documents)
-              const mergedResources = { ...(firebaseState.resources || {}) };
-              for (const subId in localState.resources) {
-                const localFiles = localState.resources[subId] || [];
-                const firebaseFiles = mergedResources[subId] || [];
-                const combined = [...firebaseFiles];
-                for (const lf of localFiles) {
-                  if (!combined.some(ff => ff.id === lf.id || (ff.name === lf.name && ff.url === lf.url))) {
-                    combined.push(lf);
-                  }
-                }
-                mergedResources[subId] = combined;
-              }
-              
-              // 2. Merge subjects
-              const mergedSubjects = [...(firebaseState.subjects || [])];
-              for (const ls of localState.subjects) {
-                if (!mergedSubjects.some(fs => fs.id === ls.id)) {
-                  mergedSubjects.push(ls);
-                }
-              }
-
-              // 3. Merge tasks
-              const mergedTasks = [...(firebaseState.tasks || [])];
-              for (const lt of localState.tasks) {
-                if (!mergedTasks.some(ft => ft.id === lt.id)) {
-                  mergedTasks.push(lt);
-                }
-              }
-
-              const mergedState = {
-                ...firebaseState,
-                resources: mergedResources,
-                subjects: mergedSubjects,
-                tasks: mergedTasks
-              };
-
-              useStore.getState().setFullState(mergedState);
-              lastSavedSerializedRef.current = JSON.stringify(mergedState);
+              useStore.getState().setFullState(firebaseState);
+              lastSavedSerializedRef.current = JSON.stringify(firebaseState);
 
               // If the store's merged user profile is richer (has higher streak or study hours)
               // than what was stored in Firestore, immediately push the update back to Firestore
-              const mergedStateStore = useStore.getState();
-              if (mergedStateStore.user && firebaseState.user && 
-                  (mergedStateStore.user.streakCount !== firebaseState.user.streakCount ||
-                   mergedStateStore.user.totalStudyHours !== firebaseState.user.totalStudyHours)) {
+              const mergedState = useStore.getState();
+              if (mergedState.user && firebaseState.user && 
+                  (mergedState.user.streakCount !== firebaseState.user.streakCount ||
+                   mergedState.user.totalStudyHours !== firebaseState.user.totalStudyHours)) {
                 
                 console.log('SyncProvider - merged state is richer than Firestore, pushing update back to Firestore');
                 const stateToSave = {
-                  user: mergedStateStore.user,
-                  subjects: mergedStateStore.subjects,
-                  resources: mergedStateStore.resources,
-                  activities: mergedStateStore.activities,
-                  websites: mergedStateStore.websites,
-                  courses: mergedStateStore.courses,
-                  tasks: mergedStateStore.tasks,
-                  timetable: mergedStateStore.timetable,
-                  themeAccent: mergedStateStore.themeAccent,
-                  apiKeys: mergedStateStore.apiKeys,
-                  selectedModel: mergedStateStore.selectedModel,
-                  calendarSynced: mergedStateStore.calendarSynced,
-                  is24HourFormat: mergedStateStore.is24HourFormat,
-                  chatHistory: mergedStateStore.chatHistory,
-                  proactiveRecommendations: mergedStateStore.proactiveRecommendations
+                  user: mergedState.user,
+                  subjects: mergedState.subjects,
+                  resources: mergedState.resources,
+                  activities: mergedState.activities,
+                  websites: mergedState.websites,
+                  courses: mergedState.courses,
+                  tasks: mergedState.tasks,
+                  timetable: mergedState.timetable,
+                  themeAccent: mergedState.themeAccent,
+                  apiKeys: mergedState.apiKeys,
+                  selectedModel: mergedState.selectedModel,
+                  calendarSynced: mergedState.calendarSynced,
+                  is24HourFormat: mergedState.is24HourFormat,
+                  chatHistory: mergedState.chatHistory,
+                  proactiveRecommendations: mergedState.proactiveRecommendations
                 };
                 
                 const docRef = doc(currentDb, 'user_states', user.id);

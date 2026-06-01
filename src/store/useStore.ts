@@ -581,6 +581,8 @@ export const useStore = create<AppState>()(
         set((state) => {
           const remainingSubjects = state.subjects.filter((s) => s.id !== id);
           const updatedTasks = state.tasks.filter((t) => t.subjectId !== id);
+          const updatedResources = { ...state.resources };
+          delete updatedResources[id];
           
           let updatedTimetable = state.timetable;
           if (deletedSubject) {
@@ -595,6 +597,7 @@ export const useStore = create<AppState>()(
           return {
             subjects: remainingSubjects,
             tasks: updatedTasks,
+            resources: updatedResources,
             timetable: updatedTimetable
           };
         });
