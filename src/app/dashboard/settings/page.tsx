@@ -51,15 +51,18 @@ export default function SettingsPage() {
       }
     } catch (err: any) {
       console.error('Purge API error:', err);
-      // Continue with signout even if API call fails
+      // Continue regardless — still need to clear local data and sign out
     }
 
-    // DO NOT call resetStore() here — it would trigger SyncProvider to
-    // immediately write the empty state back to Firestore, recreating the
-    // document we just deleted. The page is about to be destroyed anyway.
-    //
-    // signOut() works cleanly because the Clerk account still exists.
-    // It properly clears the session and redirects, preventing any reload loop.
+    // Directly wipe localStorage — this bypasses Zustand's set() entirely,
+    // so SyncProvider's store subscriber never fires and cannot recreate
+    // the Firestore document we just deleted.
+    // (calling resetStore() would trigger set() → SyncProvider → setDoc → data resurrection)
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('layora-productivity-store');
+    }
+
+    // signOut works cleanly (Clerk account still exists) and handles the redirect.
     await signOut({ redirectUrl: '/' });
   };
 
