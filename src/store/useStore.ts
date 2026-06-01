@@ -963,10 +963,56 @@ export const useStore = create<AppState>()(
             };
           }
         }
+        // Apply completed task and timetable block cleanup on state hydration/merge
+        let tasks = newState.tasks !== undefined ? newState.tasks : state.tasks;
+        let timetable = newState.timetable !== undefined ? newState.timetable : state.timetable;
+
+        if (mergedUser && mergedUser.lastActiveDate) {
+          const todayStr = new Date().toLocaleDateString('en-CA');
+          const todayNum = new Date().getDay();
+
+          const isPreviousDay = (dateStr: string | undefined) => {
+            if (!dateStr) return true;
+            try {
+              const completedDate = new Date(dateStr);
+              const today = new Date();
+              return (
+                completedDate.getFullYear() < today.getFullYear() ||
+                (completedDate.getFullYear() === today.getFullYear() && completedDate.getMonth() < today.getMonth()) ||
+                (completedDate.getFullYear() === today.getFullYear() && completedDate.getMonth() === today.getMonth() && completedDate.getDate() < today.getDate())
+              );
+            } catch (e) {
+              return true;
+            }
+          };
+
+          if (mergedUser.lastActiveDate !== todayStr) {
+            tasks = tasks.filter((t) => t.status !== 'completed');
+            timetable = timetable.map((b) => ({ ...b, completed: false }));
+          } else {
+            tasks = tasks.filter((t) => !(t.status === 'completed' && isPreviousDay(t.completedAt)));
+            
+            const oldCompletedBlockIds = new Set(
+              tasks
+                .filter((t) => t.status === 'completed' && isPreviousDay(t.completedAt) && t.id.startsWith('task-from-block-'))
+                .map((t) => t.id.replace('task-from-block-', ''))
+            );
+
+            timetable = timetable.map((b) => {
+              if (b.day !== todayNum || oldCompletedBlockIds.has(b.id)) {
+                return { ...b, completed: false };
+              }
+              return b;
+            });
+          }
+        }
+
         return {
           ...state,
           ...newState,
-          user: mergedUser
+          user: mergedUser,
+          tasks,
+          timetable
         };
       })
     }),
