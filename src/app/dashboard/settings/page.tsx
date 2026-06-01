@@ -43,7 +43,7 @@ export default function SettingsPage() {
 
     setIsPurging(true);
     try {
-      // Delete Firestore data + Clerk account server-side
+      // Delete Firestore data server-side
       const res = await fetch('/api/user/purge', { method: 'DELETE' });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -51,16 +51,16 @@ export default function SettingsPage() {
       }
     } catch (err: any) {
       console.error('Purge API error:', err);
-      // Still clear local data even if server call fails
-    } finally {
-      // Clear local store
-      store.resetStore();
-      // Fire signOut non-blocking — the account is already deleted server-side
-      // so the promise may hang; don't await it
-      try { signOut().catch(() => {}); } catch (_) {}
-      // Hard replace so the redirect is guaranteed regardless of signOut state
-      window.location.replace('/');
+      // Continue with signout even if API call fails
     }
+
+    // DO NOT call resetStore() here — it would trigger SyncProvider to
+    // immediately write the empty state back to Firestore, recreating the
+    // document we just deleted. The page is about to be destroyed anyway.
+    //
+    // signOut() works cleanly because the Clerk account still exists.
+    // It properly clears the session and redirects, preventing any reload loop.
+    await signOut({ redirectUrl: '/' });
   };
 
   const themeAccents = [
