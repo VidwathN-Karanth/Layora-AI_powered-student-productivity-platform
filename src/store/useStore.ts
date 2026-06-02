@@ -174,56 +174,7 @@ const DEFAULT_COURSES: Course[] = [];
 
 const DEFAULT_TASKS: Task[] = [];
 
-const DEFAULT_REGISTERED_USERS: RegisteredUser[] = [
-  {
-    email: 'vidwan@gmail.com',
-    name: 'Vidwan',
-    passwordVal: 'password123',
-    subjects: DEFAULT_SUBJECTS,
-    resources: DEFAULT_RESOURCES,
-    activities: DEFAULT_ACTIVITIES,
-    websites: DEFAULT_WEBSITES,
-    courses: DEFAULT_COURSES,
-    tasks: DEFAULT_TASKS,
-    timetable: [],
-    totalStudyHours: 12.5,
-    streakCount: 5,
-    isOnboarded: false,
-    wakeTime: '06:00',
-    sleepTime: '22:00',
-    collegeStart: '09:00',
-    collegeEnd: '16:00',
-    freeBlocks: [
-      { id: 'free-1', start: '17:00', end: '19:00', label: 'Evening Study' },
-      { id: 'free-2', start: '20:00', end: '22:00', label: 'Night Review' }
-    ],
-    lastActiveDate: '2026-05-29'
-  },
-  {
-    email: 'alex.mercer@gmail.com',
-    name: 'Alex Mercer',
-    passwordVal: 'password123',
-    subjects: DEFAULT_SUBJECTS,
-    resources: DEFAULT_RESOURCES,
-    activities: DEFAULT_ACTIVITIES,
-    websites: DEFAULT_WEBSITES,
-    courses: DEFAULT_COURSES,
-    tasks: DEFAULT_TASKS,
-    timetable: [],
-    totalStudyHours: 12.5,
-    streakCount: 5,
-    isOnboarded: false,
-    wakeTime: '06:00',
-    sleepTime: '22:00',
-    collegeStart: '09:00',
-    collegeEnd: '16:00',
-    freeBlocks: [
-      { id: 'free-1', start: '17:00', end: '19:00', label: 'Evening Study' },
-      { id: 'free-2', start: '20:00', end: '22:00', label: 'Night Review' }
-    ],
-    lastActiveDate: '2026-05-29'
-  }
-];
+const DEFAULT_REGISTERED_USERS: RegisteredUser[] = [];
 
 export const useStore = create<AppState>()(
   persist(
