@@ -3,14 +3,11 @@
 import React, { useEffect, useRef } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useStore } from '@/store/useStore';
-import { db, isFirebaseConfigured } from '@/lib/firebaseClient';
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
 
-// Module-level flag to suppress ALL Firestore writes during a purge.
-// Set via suppressFirestoreSync() before deleting the Firestore doc so the
-// onSnapshot listener cannot recreate it from local state the moment it fires.
+// Module-level flag to suppress ALL database writes during a purge.
 let suppressSync = false;
-export function suppressFirestoreSync() { suppressSync = true; }
+export function suppressSupabaseSync() { suppressSync = true; }
 
 export function SyncProvider({ children }: { children: React.ReactNode }) {
   const { user, isLoaded } = useUser();
@@ -21,8 +18,6 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const lastSavedSubjectsRef = useRef<any[]>([]);
   const lastSavedResourcesRef = useRef<any>({});
   const inFlightWrites = useRef(0);
-  // After a successful write we ignore the Firestore echo snapshot for a short
-  // window to prevent the round-trip from clobbering a just-saved local state.
   const ignoreSnapshotUntilRef = useRef<number>(0);
 
   const sanitizeStateForFirestore = (state: any) => {
@@ -40,265 +35,262 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     }
   }, [themeAccent]);
 
-  // 1. Listen to Real-Time Updates from Firebase
-  useEffect(() => {
-    console.log('SyncProvider - checking Firebase config:', { isFirebaseConfigured, hasUser: !!user, hasHydrated });
-    if (!hasHydrated) {
+  // Helper to merge local state and incoming cloud state
+  const mergeLocalAndCloudState = (incomingState: any, localState: any) => {
+    // Merge resources (documents)
+    const mergedResources = { ...(incomingState.resources || {}) };
+    for (const subId in localState.resources) {
+      const localFiles = localState.resources[subId] || [];
+      const cloudFiles = mergedResources[subId] || [];
+      const combined = [...cloudFiles];
+      for (const lf of localFiles) {
+        if (!combined.some(cf => cf.id === lf.id || (cf.name === lf.name && cf.url === lf.url))) {
+          combined.push(lf);
+        }
+      }
+      mergedResources[subId] = combined;
+    }
+
+    // Merge subjects
+    const mergedSubjects = [...(incomingState.subjects || [])];
+    for (const ls of localState.subjects || []) {
+      if (!mergedSubjects.some(fs => fs.id === ls.id || (fs.code === ls.code && fs.name === ls.name))) {
+        mergedSubjects.push(ls);
+      }
+    }
+
+    // Merge tasks
+    const mergedTasks = [...(incomingState.tasks || [])];
+    for (const lt of localState.tasks || []) {
+      if (!mergedTasks.some(ft => ft.id === lt.id)) {
+        mergedTasks.push(lt);
+      }
+    }
+
+    // Merge timetable
+    const mergedTimetable = [...(incomingState.timetable || [])];
+    for (const lb of localState.timetable || []) {
+      if (!mergedTimetable.some(fb => fb.id === lb.id)) {
+        mergedTimetable.push(lb);
+      }
+    }
+
+    // Merge courses
+    const mergedCourses = [...(incomingState.courses || [])];
+    for (const lc of localState.courses || []) {
+      if (!mergedCourses.some(fc => fc.id === lc.id)) {
+        mergedCourses.push(lc);
+      }
+    }
+
+    // Merge activities
+    const mergedActivities = [...(incomingState.activities || [])];
+    for (const la of localState.activities || []) {
+      if (!mergedActivities.some(fa => fa.id === la.id)) {
+        mergedActivities.push(la);
+      }
+    }
+
+    // Merge websites
+    const mergedWebsites = [...(incomingState.websites || [])];
+    for (const lw of localState.websites || []) {
+      if (!mergedWebsites.some(fw => fw.id === lw.id)) {
+        mergedWebsites.push(lw);
+      }
+    }
+
+    return {
+      ...incomingState,
+      resources: mergedResources,
+      subjects: mergedSubjects,
+      tasks: mergedTasks,
+      timetable: mergedTimetable,
+      courses: mergedCourses,
+      activities: mergedActivities,
+      websites: mergedWebsites
+    };
+  };
+
+  const processIncomingCloudState = async (cloudState: any, source: 'supabase') => {
+    if (suppressSync) return;
+    
+    // Ignore snapshot if there are pending local writes, in-flight writes, or scheduled debounce timeouts
+    if (pendingStateRef.current !== null || inFlightWrites.current > 0 || syncTimeoutRef.current !== null) {
+      console.log(`SyncProvider - ignoring ${source} snapshot due to pending/in-flight writes`);
       return;
     }
-    if (!isLoaded || !user || !isFirebaseConfigured || !db) {
+
+    // Ignore snapshot echo cooldown
+    if (Date.now() < ignoreSnapshotUntilRef.current) {
+      console.log(`SyncProvider - ignoring ${source} snapshot echo (post-write cooldown)`);
       return;
     }
 
-    const currentDb = db;
+    const localState = useStore.getState();
+    const localHasData = (localState.timetable && localState.timetable.length > 0) || 
+                         (localState.subjects && localState.subjects.length > 0) || 
+                         (localState.user && localState.user.isOnboarded);
+    const cloudIsEmpty = !cloudState.user || !cloudState.user.isOnboarded;
 
-    const unsubscribeSnapshot = onSnapshot(doc(currentDb, 'user_states', user.id), (docSnap) => {
-      try {
-        if (suppressSync) return; // Purge in progress — do not read or write Firestore
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data && data.state) {
-            console.log('SyncProvider - real-time state loaded from Firebase');
-            
-            // Ignore snapshot if there are pending local writes, in-flight writes, or scheduled debounce timeouts
-            // to prevent older server state from overwriting a newer local state.
-            if (pendingStateRef.current !== null || inFlightWrites.current > 0 || syncTimeoutRef.current !== null) {
-              console.log('SyncProvider - ignoring snapshot because there are pending or in-flight writes');
-              return;
-            }
+    if (localHasData && cloudIsEmpty) {
+      console.log(`SyncProvider - local state has active data but ${source} is empty, initializing cloud database`);
+      const stateToSave = {
+        user: localState.user,
+        subjects: localState.subjects,
+        resources: localState.resources,
+        activities: localState.activities,
+        websites: localState.websites,
+        courses: localState.courses,
+        tasks: localState.tasks,
+        timetable: localState.timetable,
+        themeAccent: localState.themeAccent || 'purple',
+        apiKeys: localState.apiKeys,
+        selectedModel: localState.selectedModel || 'groq',
+        calendarSynced: localState.calendarSynced || false,
+        is24HourFormat: localState.is24HourFormat || false,
+        chatHistory: localState.chatHistory,
+        proactiveRecommendations: localState.proactiveRecommendations
+      };
 
-            // Ignore the echo snapshot that Firestore sends back right after our
-            // own write — it may still carry the pre-write server state.
-            if (Date.now() < ignoreSnapshotUntilRef.current) {
-              console.log('SyncProvider - ignoring snapshot echo (post-write cooldown active)');
-              return;
-            }
-            
-            // Smart merge on initial load:
-            // If the local state is already populated (e.g. has active schedule or subjects)
-            // but the incoming Firebase state's timetable is empty/missing, we should merge
-            // and push the local state to Firebase to prevent wiping out the active device's data.
-            const localState = useStore.getState();
-            const firebaseState = data.state;
-            
-            const localHasData = (localState.timetable && localState.timetable.length > 0) || 
-                                 (localState.subjects && localState.subjects.length > 0) || 
-                                 (localState.user && localState.user.isOnboarded);
-            const firebaseIsEmpty = !firebaseState.user || !firebaseState.user.isOnboarded;
-            
-            if (localHasData && firebaseIsEmpty) {
-              console.log('SyncProvider - local state has active data but Firestore is empty/default, merging and initializing Firestore');
-              
-              const stateToSave = {
-                user: localState.user,
-                subjects: localState.subjects.length > 0 ? localState.subjects : (firebaseState.subjects || []),
-                resources: localState.resources,
-                activities: localState.activities.length > 0 ? localState.activities : (firebaseState.activities || []),
-                websites: localState.websites.length > 0 ? localState.websites : (firebaseState.websites || []),
-                courses: localState.courses.length > 0 ? localState.courses : (firebaseState.courses || []),
-                tasks: localState.tasks.length > 0 ? localState.tasks : (firebaseState.tasks || []),
-                timetable: localState.timetable.length > 0 ? localState.timetable : (firebaseState.timetable || []),
-                themeAccent: localState.themeAccent || firebaseState.themeAccent || 'purple',
-                apiKeys: { ...firebaseState.apiKeys, ...localState.apiKeys },
-                selectedModel: localState.selectedModel || firebaseState.selectedModel || 'groq',
-                calendarSynced: localState.calendarSynced || firebaseState.calendarSynced || false,
-                is24HourFormat: localState.is24HourFormat || firebaseState.is24HourFormat || false,
-                chatHistory: localState.chatHistory.length > 1 ? localState.chatHistory : (firebaseState.chatHistory || []),
-                proactiveRecommendations: localState.proactiveRecommendations || firebaseState.proactiveRecommendations || null
-              };
+      isHydrated.current = true;
 
-              isHydrated.current = true;
-              const docRef = doc(currentDb, 'user_states', user.id);
-              setDoc(docRef, {
-                state: sanitizeStateForFirestore(stateToSave),
-                updated_at: new Date().toISOString()
-              }).catch((err) => {
-                console.error('SyncProvider - failed to merge/initialize Firestore:', err);
-              });
-              
-              useStore.getState().setFullState(stateToSave);
-              lastSavedSerializedRef.current = JSON.stringify(stateToSave);
-              lastSavedSubjectsRef.current = stateToSave.subjects || [];
-              lastSavedResourcesRef.current = stateToSave.resources || {};
-            } else {
-              // Regular path: overwrite local state with Firestore state, but merge lists/resources to prevent data loss
-              isHydrated.current = false;
-              
-              const localState = useStore.getState();
-              
-              // Merge resources (documents)
-              const mergedResources = { ...(firebaseState.resources || {}) };
-              for (const subId in localState.resources) {
-                const localFiles = localState.resources[subId] || [];
-                const firebaseFiles = mergedResources[subId] || [];
-                const combined = [...firebaseFiles];
-                for (const lf of localFiles) {
-                  if (!combined.some(ff => ff.id === lf.id || (ff.name === lf.name && ff.url === lf.url))) {
-                    combined.push(lf);
-                  }
-                }
-                mergedResources[subId] = combined;
-              }
+      if (isSupabaseConfigured && supabase) {
+        supabase.from('user_states').upsert({
+          id: user!.id,
+          state: sanitizeStateForFirestore(stateToSave),
+          updated_at: new Date().toISOString()
+        }).then(({ error }) => {
+          if (error) console.error('Failed to merge initialize Supabase:', error);
+        });
+      }
 
-              // Merge subjects
-              const mergedSubjects = [...(firebaseState.subjects || [])];
-              for (const ls of localState.subjects || []) {
-                if (!mergedSubjects.some(fs => fs.id === ls.id || (fs.code === ls.code && fs.name === ls.name))) {
-                  mergedSubjects.push(ls);
-                }
-              }
+      useStore.getState().setFullState(stateToSave);
+      lastSavedSerializedRef.current = JSON.stringify(stateToSave);
+      lastSavedSubjectsRef.current = stateToSave.subjects || [];
+      lastSavedResourcesRef.current = stateToSave.resources || {};
+    } else {
+      isHydrated.current = false;
+      const mergedState = mergeLocalAndCloudState(cloudState, localState);
 
-              // Merge tasks
-              const mergedTasks = [...(firebaseState.tasks || [])];
-              for (const lt of localState.tasks || []) {
-                if (!mergedTasks.some(ft => ft.id === lt.id)) {
-                  mergedTasks.push(lt);
-                }
-              }
+      useStore.getState().setFullState(mergedState);
+      lastSavedSerializedRef.current = JSON.stringify(mergedState);
+      lastSavedSubjectsRef.current = mergedState.subjects || [];
+      lastSavedResourcesRef.current = mergedState.resources || {};
 
-              // Merge timetable
-              const mergedTimetable = [...(firebaseState.timetable || [])];
-              for (const lb of localState.timetable || []) {
-                if (!mergedTimetable.some(fb => fb.id === lb.id)) {
-                  mergedTimetable.push(lb);
-                }
-              }
+      // If profile changed or merged changes exist, push back to keep aligned
+      const mergedStateStore = useStore.getState();
+      const profileChanged = mergedStateStore.user && cloudState.user && 
+          (mergedStateStore.user.streakCount !== cloudState.user.streakCount ||
+           mergedStateStore.user.totalStudyHours !== cloudState.user.totalStudyHours);
+      const resourcesMergedAndChanged = JSON.stringify(mergedState.resources) !== JSON.stringify(cloudState.resources || {});
 
-              // Merge courses
-              const mergedCourses = [...(firebaseState.courses || [])];
-              for (const lc of localState.courses || []) {
-                if (!mergedCourses.some(fc => fc.id === lc.id)) {
-                  mergedCourses.push(lc);
-                }
-              }
+      if (profileChanged || resourcesMergedAndChanged) {
+        console.log(`SyncProvider - merged state has richer profile/resources, pushing updates to ${source}`);
+        const stateToSave = {
+          user: mergedStateStore.user,
+          subjects: mergedStateStore.subjects,
+          resources: mergedStateStore.resources,
+          activities: mergedStateStore.activities,
+          websites: mergedStateStore.websites,
+          courses: mergedStateStore.courses,
+          tasks: mergedStateStore.tasks,
+          timetable: mergedStateStore.timetable,
+          themeAccent: mergedStateStore.themeAccent,
+          apiKeys: mergedStateStore.apiKeys,
+          selectedModel: mergedStateStore.selectedModel,
+          calendarSynced: mergedStateStore.calendarSynced,
+          is24HourFormat: mergedStateStore.is24HourFormat,
+          chatHistory: mergedStateStore.chatHistory,
+          proactiveRecommendations: mergedStateStore.proactiveRecommendations
+        };
 
-              // Merge activities
-              const mergedActivities = [...(firebaseState.activities || [])];
-              for (const la of localState.activities || []) {
-                if (!mergedActivities.some(fa => fa.id === la.id)) {
-                  mergedActivities.push(la);
-                }
-              }
-
-              // Merge websites
-              const mergedWebsites = [...(firebaseState.websites || [])];
-              for (const lw of localState.websites || []) {
-                if (!mergedWebsites.some(fw => fw.id === lw.id)) {
-                  mergedWebsites.push(lw);
-                }
-              }
-
-              const mergedState = {
-                ...firebaseState,
-                resources: mergedResources,
-                subjects: mergedSubjects,
-                tasks: mergedTasks,
-                timetable: mergedTimetable,
-                courses: mergedCourses,
-                activities: mergedActivities,
-                websites: mergedWebsites
-              };
-
-              useStore.getState().setFullState(mergedState);
-              lastSavedSerializedRef.current = JSON.stringify(mergedState);
-              lastSavedSubjectsRef.current = mergedState.subjects || [];
-              lastSavedResourcesRef.current = mergedState.resources || {};
-
-              // If the store's merged user profile is richer (has higher streak or study hours)
-              // than what was stored in Firestore, or if resources were merged/updated,
-              // immediately push the update back to Firestore
-              const mergedStateStore = useStore.getState();
-              const resourcesMergedAndChanged = JSON.stringify(mergedResources) !== JSON.stringify(firebaseState.resources || {});
-              const profileChanged = mergedStateStore.user && firebaseState.user && 
-                  (mergedStateStore.user.streakCount !== firebaseState.user.streakCount ||
-                   mergedStateStore.user.totalStudyHours !== firebaseState.user.totalStudyHours);
-
-              if (profileChanged || resourcesMergedAndChanged) {
-                console.log('SyncProvider - merged state has richer profile or new resources, pushing update back to Firestore');
-                const stateToSave = {
-                  user: mergedStateStore.user,
-                  subjects: mergedStateStore.subjects,
-                  resources: mergedStateStore.resources,
-                  activities: mergedStateStore.activities,
-                  websites: mergedStateStore.websites,
-                  courses: mergedStateStore.courses,
-                  tasks: mergedStateStore.tasks,
-                  timetable: mergedStateStore.timetable,
-                  themeAccent: mergedStateStore.themeAccent,
-                  apiKeys: mergedStateStore.apiKeys,
-                  selectedModel: mergedStateStore.selectedModel,
-                  calendarSynced: mergedStateStore.calendarSynced,
-                  is24HourFormat: mergedStateStore.is24HourFormat,
-                  chatHistory: mergedStateStore.chatHistory,
-                  proactiveRecommendations: mergedStateStore.proactiveRecommendations
-                };
-                
-                const docRef = doc(currentDb, 'user_states', user.id);
-                setDoc(docRef, {
-                  state: sanitizeStateForFirestore(stateToSave),
-                  updated_at: new Date().toISOString()
-                }).catch((err) => {
-                  console.error('SyncProvider - failed to push merged state:', err);
-                });
-                lastSavedSerializedRef.current = JSON.stringify(stateToSave);
-                lastSavedSubjectsRef.current = stateToSave.subjects || [];
-                lastSavedResourcesRef.current = stateToSave.resources || {};
-              }
-            }
-          }
-          isHydrated.current = true;
-        } else {
-          console.log('SyncProvider - no state found in Firebase for user, initializing with local state');
-          isHydrated.current = true;
-          
-          const state = useStore.getState();
-          const {
-            user: storeUser, subjects, resources, activities, websites, courses, tasks,
-            timetable, themeAccent, apiKeys, selectedModel,
-            calendarSynced, is24HourFormat, chatHistory, proactiveRecommendations
-          } = state;
-
-          const stateToSave = {
-            user: storeUser,
-            subjects, resources, activities, websites, courses, tasks,
-            timetable, themeAccent, apiKeys, selectedModel,
-            calendarSynced, is24HourFormat, chatHistory, proactiveRecommendations
-          };
-
-          const docRef = doc(currentDb, 'user_states', user.id);
-          setDoc(docRef, {
+        if (isSupabaseConfigured && supabase) {
+          supabase.from('user_states').upsert({
+            id: user!.id,
             state: sanitizeStateForFirestore(stateToSave),
             updated_at: new Date().toISOString()
-          }).catch((err) => {
-            console.error('SyncProvider - failed to initialize Firestore:', err);
+          }).then(({ error }) => {
+            if (error) console.error('Failed to push Supabase merge back:', error);
           });
-          lastSavedSerializedRef.current = JSON.stringify(stateToSave);
-          lastSavedSubjectsRef.current = stateToSave.subjects || [];
-          lastSavedResourcesRef.current = stateToSave.resources || {};
         }
-      } catch (err) {
-        console.error('Failed to process real-time state update:', err);
-        isHydrated.current = true;
+        lastSavedSerializedRef.current = JSON.stringify(stateToSave);
+        lastSavedSubjectsRef.current = stateToSave.subjects || [];
+        lastSavedResourcesRef.current = stateToSave.resources || {};
       }
-    }, (err) => {
-      console.error('Failed to listen to state:', err);
-      alert('Failed to listen to Firebase state: ' + err.message);
-      isHydrated.current = true;
+    }
+    isHydrated.current = true;
+  };
+
+  // 1. Listen to Real-Time Updates from Supabase
+  useEffect(() => {
+    if (!hasHydrated || !isLoaded || !user) return;
+
+    let supabaseChannel: any = null;
+
+    console.log('SyncProvider - checking db configurations:', {
+      isSupabaseConfigured,
+      hasUser: !!user,
+      hasHydrated
     });
 
+    if (isSupabaseConfigured && supabase) {
+      const client = supabase;
+      const loadInitialSupabaseState = async () => {
+        try {
+          const { data, error } = await client
+            .from('user_states')
+            .select('state')
+            .eq('id', user.id)
+            .single();
+
+          if (error && error.code !== 'PGRST116') {
+            throw error;
+          }
+
+          if (data && data.state) {
+            console.log('SyncProvider - initial state loaded from Supabase');
+            processIncomingCloudState(data.state, 'supabase');
+          } else {
+            console.log('SyncProvider - initializing state on Supabase...');
+            processIncomingCloudState({}, 'supabase');
+          }
+        } catch (err) {
+          console.error('Failed to load initial Supabase state:', err);
+        }
+      };
+
+      loadInitialSupabaseState();
+
+      // Subscribe to real-time table modifications for this row
+      supabaseChannel = client
+        .channel(`realtime:user_states:id=eq.${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'user_states',
+            filter: `id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('SyncProvider - real-time update received from Supabase');
+            const newState = (payload.new as any)?.state;
+            if (newState) {
+              processIncomingCloudState(newState, 'supabase');
+            }
+          }
+        )
+        .subscribe();
+    }
+
     return () => {
-      unsubscribeSnapshot();
+      if (supabaseChannel && supabase) supabase.removeChannel(supabaseChannel);
     };
   }, [isLoaded, user?.id, hasHydrated]);
 
-  // 2. Subscribe to Store Changes and Sync
+  // 2. Subscribe to local Store Changes and sync (writes to both)
   useEffect(() => {
-    if (!hasHydrated) return;
-    if (!isLoaded || !user || !isFirebaseConfigured || !db) {
-      return;
-    }
-
-    const currentDb = db;
+    if (!hasHydrated || !isLoaded || !user) return;
 
     const unsubscribe = useStore.subscribe((state) => {
       if (!isHydrated.current) return;
@@ -317,11 +309,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       };
 
       const serialized = JSON.stringify(stateToSave);
-      if (serialized === lastSavedSerializedRef.current) {
-        return; // No meaningful change to save
-      }
+      if (serialized === lastSavedSerializedRef.current) return;
 
-      // Check if it is a structural change (subjects or resources list changed)
       const lastSubjects = lastSavedSubjectsRef.current || [];
       const lastResources = lastSavedResourcesRef.current || {};
       const subjectsChanged = JSON.stringify(subjects) !== JSON.stringify(lastSubjects);
@@ -336,24 +325,30 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       }
 
       const performSync = async () => {
-        if (suppressSync) return; // Purge in progress — skip write
+        if (suppressSync) return;
         try {
           inFlightWrites.current++;
-          const docRef = doc(currentDb, 'user_states', user.id);
-          await setDoc(docRef, {
-            state: sanitizeStateForFirestore(stateToSave),
-            updated_at: new Date().toISOString()
-          });
-          
+          const updateTime = new Date().toISOString();
+
+          // Sync to Supabase
+          if (isSupabaseConfigured && supabase) {
+            const { error } = await supabase
+              .from('user_states')
+              .upsert({
+                id: user.id,
+                state: sanitizeStateForFirestore(stateToSave),
+                updated_at: updateTime
+              });
+            if (error) throw error;
+            console.log('SyncProvider - successfully saved to Supabase');
+          }
+
           lastSavedSerializedRef.current = serialized;
           lastSavedSubjectsRef.current = subjects || [];
           lastSavedResourcesRef.current = resources || {};
-          // Suppress the Firestore echo for 3 s to prevent round-trip overwrites.
           ignoreSnapshotUntilRef.current = Date.now() + 3000;
-          console.log('SyncProvider - successfully pushed state to Firebase');
         } catch (err: any) {
-          console.error('Failed to sync state to Firebase:', err);
-          alert('Failed to sync state to Firebase: ' + err.message);
+          console.error('SyncProvider - failed to save states:', err);
         } finally {
           inFlightWrites.current--;
           if (pendingStateRef.current === state) {
@@ -377,15 +372,10 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
   // 3. Force Flush Pending State on Unload/Visibility Change
   useEffect(() => {
-    if (!hasHydrated) return;
-    if (!isLoaded || !user || !isFirebaseConfigured || !db) {
-      return;
-    }
-
-    const currentDb = db;
+    if (!hasHydrated || !isLoaded || !user) return;
 
     const flushSync = async () => {
-      if (suppressSync) return; // Purge in progress — skip flush
+      if (suppressSync) return;
       if (syncTimeoutRef.current) {
         clearTimeout(syncTimeoutRef.current);
         syncTimeoutRef.current = null;
@@ -409,16 +399,19 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           };
 
           inFlightWrites.current++;
-          const docRef = doc(currentDb, 'user_states', user.id);
-          await setDoc(docRef, {
-            state: sanitizeStateForFirestore(stateToSave),
-            updated_at: new Date().toISOString()
-          });
-          // Suppress the Firestore echo after a flush write too.
+          const updateTime = new Date().toISOString();
+
+          if (isSupabaseConfigured && supabase) {
+            await supabase.from('user_states').upsert({
+              id: user.id,
+              state: sanitizeStateForFirestore(stateToSave),
+              updated_at: updateTime
+            });
+          }
           ignoreSnapshotUntilRef.current = Date.now() + 3000;
-          console.log('SyncProvider - successfully flushed pending state on visibility change/unload');
+          console.log('SyncProvider - successfully flushed state on unload');
         } catch (err) {
-          console.error('Failed to flush state on visibility change/unload:', err);
+          console.error('Failed to flush state on unload:', err);
         } finally {
           inFlightWrites.current--;
         }

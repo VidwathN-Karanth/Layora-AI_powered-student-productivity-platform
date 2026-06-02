@@ -3,8 +3,7 @@
 import React, { useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { useUser } from '@clerk/nextjs';
-import { storage } from '@/lib/firebaseClient';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
 import { 
   FolderLock, UploadCloud, File, BookOpen, Plus, 
   Trash, Download, FileText, ExternalLink 
@@ -21,7 +20,7 @@ export default function ResourcesPage() {
   const [activeTab, setActiveTab] = useState<'upload' | 'subject'>('upload');
 
   // Form states - Upload Resource
-  const [uploadMethod, setUploadMethod] = useState<'drive' | 'link'>('drive');
+  const [uploadMethod, setUploadMethod] = useState<'supabase' | 'drive' | 'link'>('supabase');
   const [linkUrl, setLinkUrl] = useState('');
   const [activeSubjectId, setActiveSubjectId] = useState(subjects[0]?.id || '');
   const [fileName, setFileName] = useState('');
@@ -156,24 +155,33 @@ export default function ResourcesPage() {
       return;
     }
 
-    // Default Firebase Storage flow
+    // Default Supabase Storage flow
     try {
-      const activeStorage = storage;
-      if (!activeStorage) {
-        throw new Error("Firebase Storage is not configured.");
+      if (!isSupabaseConfigured || !supabase) {
+        throw new Error("Supabase is not configured.");
       }
       const userId = user?.id || 'anonymous';
       const timestamp = Date.now();
       const safeName = (fileName || fileData.name).replace(/[^a-zA-Z0-9.-]/g, '_');
       const storagePath = `users/${userId}/subjects/${targetSubjectId}/${timestamp}_${safeName}`;
-      const fileRef = ref(activeStorage, storagePath);
 
-      const snapshot = await uploadBytes(fileRef, fileData);
-      const downloadURL = await getDownloadURL(snapshot.ref);
+      const { data, error } = await supabase.storage
+        .from('resources')
+        .upload(storagePath, fileData, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (error) throw error;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('resources')
+        .getPublicUrl(storagePath);
 
       store.uploadResource(targetSubjectId, {
         name: fileName || fileData.name,
-        url: downloadURL,
+        url: publicUrl,
         type: fileType
       });
       
@@ -314,7 +322,21 @@ export default function ResourcesPage() {
                     {/* Storage / Upload Location Selector */}
                     <div>
                       <label className="block text-[10px] font-mono text-white/50 mb-1">Storage Destination</label>
-                      <div className="grid grid-cols-2 gap-1.5 p-1 bg-white/5 border border-white/10 rounded-xl">
+                      <div className="grid grid-cols-3 gap-1.5 p-1 bg-white/5 border border-white/10 rounded-xl">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUploadMethod('supabase');
+                            setFileType('pdf');
+                          }}
+                          className={`py-1.5 text-[9px] font-mono font-bold rounded-lg flex items-center justify-center gap-1 transition cursor-pointer ${
+                            uploadMethod === 'supabase'
+                              ? 'bg-cyber-blue/20 text-cyber-blue border border-cyber-blue/30'
+                              : 'text-white/50 hover:text-white hover:bg-white/5 border border-transparent'
+                          }`}
+                        >
+                          Supabase Storage
+                        </button>
                         <button
                           type="button"
                           onClick={() => {
@@ -323,7 +345,7 @@ export default function ResourcesPage() {
                           }}
                           className={`py-1.5 text-[9px] font-mono font-bold rounded-lg flex items-center justify-center gap-1 transition cursor-pointer ${
                             uploadMethod === 'drive'
-                              ? 'bg-cyber-blue/20 text-cyber-blue border border-cyber-blue/30'
+                              ? 'bg-cyber-purple/20 text-cyber-purple border border-cyber-purple/30'
                               : 'text-white/50 hover:text-white hover:bg-white/5 border border-transparent'
                           }`}
                         >
@@ -614,12 +636,16 @@ export default function ResourcesPage() {
                                   e.stopPropagation();
                                   if (confirm(`Are you sure you want to delete the file "${file.name}"?`)) {
                                     try {
-                                      const activeStorage = storage;
-                                      if (activeStorage && file.url && file.url.startsWith('https://firebasestorage.googleapis.com')) {
-                                        const fileRef = ref(activeStorage, file.url);
-                                        await deleteObject(fileRef).catch(err => {
-                                          console.warn("Failed to delete object from Storage:", err);
-                                        });
+                                      if (supabase && file.url && file.url.includes('/storage/v1/object/public/resources/')) {
+                                        const storagePath = file.url.split('/storage/v1/object/public/resources/')[1];
+                                        if (storagePath) {
+                                          const { error } = await supabase.storage
+                                            .from('resources')
+                                            .remove([storagePath]);
+                                          if (error) {
+                                            console.warn("Failed to delete object from Supabase Storage:", error);
+                                          }
+                                        }
                                       }
                                     } catch (err) {
                                       console.error("Storage delete error:", err);
