@@ -21,6 +21,9 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const lastSavedSubjectsRef = useRef<any[]>([]);
   const lastSavedResourcesRef = useRef<any>({});
   const inFlightWrites = useRef(0);
+  // After a successful write we ignore the Firestore echo snapshot for a short
+  // window to prevent the round-trip from clobbering a just-saved local state.
+  const ignoreSnapshotUntilRef = useRef<number>(0);
 
   const sanitizeStateForFirestore = (state: any) => {
     return JSON.parse(JSON.stringify(state));
@@ -61,6 +64,13 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             // to prevent older server state from overwriting a newer local state.
             if (pendingStateRef.current !== null || inFlightWrites.current > 0 || syncTimeoutRef.current !== null) {
               console.log('SyncProvider - ignoring snapshot because there are pending or in-flight writes');
+              return;
+            }
+
+            // Ignore the echo snapshot that Firestore sends back right after our
+            // own write — it may still carry the pre-write server state.
+            if (Date.now() < ignoreSnapshotUntilRef.current) {
+              console.log('SyncProvider - ignoring snapshot echo (post-write cooldown active)');
               return;
             }
             
@@ -284,6 +294,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           lastSavedSerializedRef.current = serialized;
           lastSavedSubjectsRef.current = subjects || [];
           lastSavedResourcesRef.current = resources || {};
+          // Suppress the Firestore echo for 3 s to prevent round-trip overwrites.
+          ignoreSnapshotUntilRef.current = Date.now() + 3000;
           console.log('SyncProvider - successfully pushed state to Firebase');
         } catch (err: any) {
           console.error('Failed to sync state to Firebase:', err);
@@ -348,7 +360,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             state: sanitizeStateForFirestore(stateToSave),
             updated_at: new Date().toISOString()
           });
-          
+          // Suppress the Firestore echo after a flush write too.
+          ignoreSnapshotUntilRef.current = Date.now() + 3000;
           console.log('SyncProvider - successfully flushed pending state on visibility change/unload');
         } catch (err) {
           console.error('Failed to flush state on visibility change/unload:', err);
