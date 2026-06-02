@@ -470,10 +470,9 @@ export default function ResourcesPage() {
                       <label className="block text-[10px] font-mono text-white/50 mb-1">Subject Code</label>
                       <input
                         type="text"
-                        required
                         value={subCode}
                         onChange={(e) => setSubCode(e.target.value)}
-                        placeholder="Course Code"
+                        placeholder="Course Code (e.g. SUB101)"
                         className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyber-purple"
                       />
                     </div>
