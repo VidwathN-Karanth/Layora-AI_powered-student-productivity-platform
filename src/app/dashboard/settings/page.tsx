@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useClerk } from '@clerk/nextjs';
+import { useClerk, useUser } from '@clerk/nextjs';
 import { suppressFirestoreSync } from '@/components/SyncProvider';
 import { useStore } from '@/store/useStore';
+import { db } from '@/lib/firebaseClient';
+import { doc, deleteDoc } from 'firebase/firestore';
 import { 
   Settings, Key, Eye, EyeOff, Check, Sparkles, 
   User, Bell, Calendar, ShieldCheck, RefreshCw,
@@ -13,6 +15,7 @@ import {
 export default function SettingsPage() {
   const store = useStore();
   const { signOut } = useClerk();
+  const { user: clerkUser } = useUser();
 
   // Local profile states
   const [name, setName] = useState(store.user?.name || '');
@@ -44,35 +47,33 @@ export default function SettingsPage() {
 
     setIsPurging(true);
 
-    // STEP 1: Silence SyncProvider BEFORE touching anything.
-    // This blocks the onSnapshot listener from recreating the Firestore doc
-    // and blocks the store subscriber from pushing state to Firestore.
+    // STEP 1: Silence SyncProvider — must happen before anything else.
+    // The onSnapshot listener fires the instant a doc is deleted and would
+    // recreate it from local state. suppressSync blocks all Firestore writes.
     suppressFirestoreSync();
 
-    // STEP 2: Wipe localStorage (bypasses Zustand set(), no subscriber fires).
-    if (typeof window !== 'undefined') {
-      window.localStorage.removeItem('layora-productivity-store');
-    }
+    // STEP 2: Wipe localStorage directly (no Zustand set(), no subscriber fires).
+    window.localStorage.removeItem('layora-productivity-store');
 
-    // STEP 3: Clear in-memory Zustand state. Safe now because suppressSync
-    // is true, so SyncProvider's subscriber fires but does nothing.
+    // STEP 3: Clear in-memory Zustand state.
+    // Safe now — SyncProvider subscriber fires but suppressSync blocks the write.
     store.resetStore();
 
-    // STEP 4: Delete Firestore data server-side.
-    // onSnapshot will fire when the doc is deleted, but suppressSync blocks it.
-    try {
-      await fetch('/api/user/purge', { method: 'DELETE' });
-    } catch (err: any) {
-      console.error('Purge API error:', err);
-      // Continue regardless — local data is already cleared
+    // STEP 4: Delete Firestore doc directly from the CLIENT.
+    // The server-side API route was using the Firebase Client SDK without a
+    // Firebase auth token, so security rules silently rejected the delete.
+    // Using the client SDK here (same as SyncProvider does) is the proven path.
+    if (db && clerkUser?.id) {
+      try {
+        await deleteDoc(doc(db, 'user_states', clerkUser.id));
+        console.log('Purge: Firestore doc deleted for', clerkUser.id);
+      } catch (err: any) {
+        console.error('Firestore deleteDoc failed:', err);
+      }
     }
 
-    // STEP 5: Sign out of Clerk, then force a full hard reload.
-    // window.location.replace ensures a full page reload (not SPA navigation)
-    // so all module-level state (including suppressSync) resets cleanly.
-    try {
-      await signOut();
-    } catch (_) {}
+    // STEP 5: Sign out + hard reload to reset all module-level state.
+    try { await signOut(); } catch (_) {}
     window.location.replace('/');
   };
 
