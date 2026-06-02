@@ -4,8 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useAuth } from '@clerk/nextjs';
 import { motion, AnimatePresence } from 'framer-motion';
-import { db } from '@/lib/firebaseClient';
-import { collection, getDocs, doc, deleteDoc, setDoc } from 'firebase/firestore';
+import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
 import { 
   Users, Clock, Flame, BookOpen, Search, ArrowLeft, 
   Trash2, Settings, Activity, Calendar, ListTodo, 
@@ -78,10 +77,10 @@ export default function AdminPage() {
     }
   }, [isUserLoaded, isAuthLoaded, isSignedIn, user, router]);
 
-  // Fetch Firestore user states
+  // Fetch Supabase user states
   const fetchTelemetry = async () => {
-    if (!db) {
-      setErrorMsg("Firebase config is missing or local-mode is active. Telemetry could not be fetched.");
+    if (!isSupabaseConfigured || !supabase) {
+      setErrorMsg("Supabase config is missing or local-mode is active. Telemetry could not be fetched.");
       setLoadingData(false);
       return;
     }
@@ -89,22 +88,24 @@ export default function AdminPage() {
     try {
       setLoadingData(true);
       setErrorMsg('');
-      const querySnapshot = await getDocs(collection(db, 'user_states'));
-      const fetched: TelemetryUser[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        fetched.push({
-          id: doc.id,
-          state: data.state || {},
-          updated_at: data.updated_at || '',
-        });
-      });
+      const { data, error } = await supabase
+        .from('user_states')
+        .select('*');
+
+      if (error) throw error;
+
+      const fetched: TelemetryUser[] = (data || []).map((row: any) => ({
+        id: row.id,
+        state: row.state || {},
+        updated_at: row.updated_at || '',
+      }));
+
       // Sort by last active / updated time descending
       fetched.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
       setUsersList(fetched);
     } catch (err: any) {
       console.error("Failed to load telemetry:", err);
-      setErrorMsg(err.message || "Failed to sync user database states from Firestore.");
+      setErrorMsg(err.message || "Failed to sync user database states from Supabase.");
     } finally {
       setLoadingData(false);
     }
@@ -112,11 +113,17 @@ export default function AdminPage() {
 
   // Delete User Sync Record
   const handleDeleteRecord = async (userId: string) => {
-    if (!db) return;
+    if (!supabase) return;
     setShowDeleteConfirm(null);
     try {
       setLoadingData(true);
-      await deleteDoc(doc(db, 'user_states', userId));
+      const { error } = await supabase
+        .from('user_states')
+        .delete()
+        .eq('id', userId);
+      
+      if (error) throw error;
+
       setUsersList((prev) => prev.filter((u) => u.id !== userId));
       if (selectedUser?.id === userId) {
         setSelectedUser(null);
@@ -133,7 +140,7 @@ export default function AdminPage() {
 
   // Update User Telemetry Stats (Streak & Hours override)
   const handleUpdateUserStats = async () => {
-    if (!db || !selectedUser) return;
+    if (!supabase || !selectedUser) return;
     try {
       setIsSavingEdit(true);
       
@@ -148,11 +155,15 @@ export default function AdminPage() {
         user: updatedUser
       };
 
-      const docRef = doc(db, 'user_states', selectedUser.id);
-      await setDoc(docRef, {
-        state: updatedState,
-        updated_at: new Date().toISOString()
-      }, { merge: true });
+      const { error } = await supabase
+        .from('user_states')
+        .upsert({
+          id: selectedUser.id,
+          state: updatedState,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
 
       // Update local state list so it updates instantly in the UI table
       setUsersList((prev) => 
@@ -508,7 +519,7 @@ export default function AdminPage() {
                 <h3 className="text-base font-black tracking-wider uppercase">PURGE SYNC DATA</h3>
               </div>
               <p className="text-xs text-white/60 font-mono mt-3 leading-relaxed">
-                This operations deletes document <span className="text-red-400 font-semibold">{showDeleteConfirm}</span> from Firestore. All database sync keys and chat history for this user will be deleted.
+                This operations deletes document <span className="text-red-400 font-semibold">{showDeleteConfirm}</span> from Supabase. All database sync keys and chat history for this user will be deleted.
               </p>
               <div className="mt-6 flex justify-end gap-3">
                 <button

@@ -2,10 +2,9 @@
 
 import { useState } from 'react';
 import { useClerk, useUser } from '@clerk/nextjs';
-import { suppressFirestoreSync } from '@/components/SyncProvider';
+import { suppressSupabaseSync } from '@/components/SyncProvider';
 import { useStore } from '@/store/useStore';
-import { db } from '@/lib/firebaseClient';
-import { doc, deleteDoc } from 'firebase/firestore';
+import { supabase } from '@/lib/supabaseClient';
 import { 
   Settings, Key, Eye, EyeOff, Check, Sparkles, 
   User, Bell, Calendar, ShieldCheck, RefreshCw,
@@ -48,9 +47,9 @@ export default function SettingsPage() {
     setIsPurging(true);
 
     // STEP 1: Silence SyncProvider — must happen before anything else.
-    // The onSnapshot listener fires the instant a doc is deleted and would
-    // recreate it from local state. suppressSync blocks all Firestore writes.
-    suppressFirestoreSync();
+    // The realtime listener fires the instant a row is deleted and would
+    // recreate it from local state. suppressSync blocks all Supabase writes.
+    suppressSupabaseSync();
 
     // STEP 2: Wipe localStorage directly (no Zustand set(), no subscriber fires).
     window.localStorage.removeItem('layora-productivity-store');
@@ -59,16 +58,14 @@ export default function SettingsPage() {
     // Safe now — SyncProvider subscriber fires but suppressSync blocks the write.
     store.resetStore();
 
-    // STEP 4: Delete Firestore doc directly from the CLIENT.
-    // The server-side API route was using the Firebase Client SDK without a
-    // Firebase auth token, so security rules silently rejected the delete.
-    // Using the client SDK here (same as SyncProvider does) is the proven path.
-    if (db && clerkUser?.id) {
+    // STEP 4: Delete Supabase row directly from the CLIENT.
+    if (supabase && clerkUser?.id) {
       try {
-        await deleteDoc(doc(db, 'user_states', clerkUser.id));
-        console.log('Purge: Firestore doc deleted for', clerkUser.id);
+        const { error } = await supabase.from('user_states').delete().eq('id', clerkUser.id);
+        if (error) throw error;
+        console.log('Purge: Supabase row deleted for', clerkUser.id);
       } catch (err: any) {
-        console.error('Firestore deleteDoc failed:', err);
+        console.error('Supabase delete failed:', err);
       }
     }
 

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { db, isFirebaseConfigured } from '@/lib/firebaseClient';
-import { doc, deleteDoc } from 'firebase/firestore';
+import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
 
 export async function DELETE() {
   try {
@@ -11,15 +10,14 @@ export async function DELETE() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Delete Firestore user data.
-    // NOTE: We do NOT delete the Clerk account here because doing so causes
-    // the client-side signOut() to hang (the session references a deleted account).
-    // Firestore data deletion is the critical step — the Clerk account can be
-    // left intact so signOut() completes cleanly and redirects properly.
-    if (isFirebaseConfigured && db) {
-      const docRef = doc(db, 'user_states', userId);
-      await deleteDoc(docRef);
-      console.log(`Purge: Deleted Firestore document for user ${userId}`);
+    // Delete Supabase user data
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase
+        .from('user_states')
+        .delete()
+        .eq('id', userId);
+      if (error) throw error;
+      console.log(`Purge: Deleted Supabase document for user ${userId}`);
     }
 
     return NextResponse.json({ success: true });
