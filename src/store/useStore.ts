@@ -190,6 +190,7 @@ export const useStore = create<AppState>()(
         const { registeredUsers, user: currentUser } = get();
         const normalizedEmail = email.trim().toLowerCase();
 
+        // If already authenticated as this user, no-op
         if (currentUser && currentUser.email.toLowerCase() === normalizedEmail) {
           set({ isAuthenticated: true });
           return;
@@ -198,6 +199,24 @@ export const useStore = create<AppState>()(
         const existing = registeredUsers.find(
           (u) => u.email.toLowerCase() === normalizedEmail
         );
+
+        // Build user profile from existing record OR create a minimal new one.
+        // IMPORTANT: We do NOT restore data arrays (subjects, tasks, etc.) from
+        // registeredUsers here — Supabase is the source of truth for those.
+        // SyncProvider will load them from Supabase after authentication.
+        const profileDefaults = {
+          streakCount: 0,
+          totalStudyHours: 0,
+          isOnboarded: false,
+          wakeTime: '06:00',
+          sleepTime: '22:00',
+          collegeStart: '09:00',
+          collegeEnd: '16:00',
+          freeBlocks: [
+            { id: 'free-1', start: '17:00', end: '19:00', label: 'Evening Study' },
+            { id: 'free-2', start: '20:00', end: '22:00', label: 'Night Review' }
+          ]
+        };
 
         if (existing) {
           set({
@@ -214,38 +233,22 @@ export const useStore = create<AppState>()(
               collegeEnd: existing.collegeEnd,
               freeBlocks: existing.freeBlocks,
               lastActiveDate: existing.lastActiveDate
-            },
-            subjects: existing.subjects || [],
-            resources: existing.resources || {},
-            activities: existing.activities || [],
-            websites: existing.websites || [],
-            courses: existing.courses || [],
-            tasks: existing.tasks || [],
-            timetable: existing.timetable || []
+            }
+            // No data arrays — SyncProvider loads those from Supabase
           });
         } else {
           const newGoogleUser: RegisteredUser = {
             email: normalizedEmail,
             name: name || normalizedEmail.split('@')[0],
             passwordVal: 'google-sso',
-            subjects: DEFAULT_SUBJECTS,
-            resources: DEFAULT_RESOURCES,
-            activities: DEFAULT_ACTIVITIES,
-            websites: DEFAULT_WEBSITES,
-            courses: DEFAULT_COURSES,
-            tasks: DEFAULT_TASKS,
+            subjects: [],
+            resources: {},
+            activities: [],
+            websites: [],
+            courses: [],
+            tasks: [],
             timetable: [],
-            totalStudyHours: 0,
-            streakCount: 0,
-            isOnboarded: false,
-            wakeTime: '06:00',
-            sleepTime: '22:00',
-            collegeStart: '09:00',
-            collegeEnd: '16:00',
-            freeBlocks: [
-              { id: 'free-1', start: '17:00', end: '19:00', label: 'Evening Study' },
-              { id: 'free-2', start: '20:00', end: '22:00', label: 'Night Review' }
-            ]
+            ...profileDefaults
           };
 
           set({
@@ -263,14 +266,8 @@ export const useStore = create<AppState>()(
               collegeEnd: newGoogleUser.collegeEnd,
               freeBlocks: newGoogleUser.freeBlocks,
               lastActiveDate: newGoogleUser.lastActiveDate
-            },
-            subjects: newGoogleUser.subjects,
-            resources: newGoogleUser.resources,
-            activities: newGoogleUser.activities,
-            websites: newGoogleUser.websites,
-            courses: newGoogleUser.courses,
-            tasks: newGoogleUser.tasks,
-            timetable: newGoogleUser.timetable
+            }
+            // No data arrays — SyncProvider loads those from Supabase
           });
         }
       },
@@ -296,6 +293,7 @@ export const useStore = create<AppState>()(
           return { success: true };
         }
 
+        // Only restore profile metadata — data arrays come from Supabase via SyncProvider
         set({
           isAuthenticated: true,
           user: {
@@ -310,14 +308,8 @@ export const useStore = create<AppState>()(
             collegeEnd: matched.collegeEnd,
             freeBlocks: matched.freeBlocks,
             lastActiveDate: matched.lastActiveDate
-          },
-          subjects: matched.subjects || [],
-          resources: matched.resources || {},
-          activities: matched.activities || [],
-          websites: matched.websites || [],
-          courses: matched.courses || [],
-          tasks: matched.tasks || [],
-          timetable: matched.timetable || []
+          }
+          // No data arrays — SyncProvider loads those from Supabase
         });
 
         return { success: true };
@@ -1014,22 +1006,20 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'layora-productivity-store',
+      // Only persist lightweight/settings data in localStorage.
+      // Data arrays (subjects, tasks, timetable, etc.) are Supabase-authoritative
+      // and are loaded by SyncProvider on every login — persisting them here
+      // causes stale-local-wins bugs across devices.
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
         registeredUsers: state.registeredUsers,
-        subjects: state.subjects,
-        resources: state.resources,
-        activities: state.activities,
-        websites: state.websites,
-        courses: state.courses,
-        tasks: state.tasks,
-        timetable: state.timetable,
         themeAccent: state.themeAccent,
         apiKeys: state.apiKeys,
         selectedModel: state.selectedModel,
         calendarSynced: state.calendarSynced,
         is24HourFormat: state.is24HourFormat,
+        // chatHistory is device-local (each device has its own session)
         chatHistory: state.chatHistory,
         proactiveRecommendations: state.proactiveRecommendations
       }),

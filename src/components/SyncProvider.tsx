@@ -35,81 +35,12 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     }
   }, [themeAccent]);
 
-  // Helper to merge local state and incoming cloud state
-  const mergeLocalAndCloudState = (incomingState: any, localState: any) => {
-    // Merge resources (documents)
-    const mergedResources = { ...(incomingState.resources || {}) };
-    for (const subId in localState.resources) {
-      const localFiles = localState.resources[subId] || [];
-      const cloudFiles = mergedResources[subId] || [];
-      const combined = [...cloudFiles];
-      for (const lf of localFiles) {
-        if (!combined.some(cf => cf.id === lf.id || (cf.name === lf.name && cf.url === lf.url))) {
-          combined.push(lf);
-        }
-      }
-      mergedResources[subId] = combined;
-    }
-
-    // Merge subjects
-    const mergedSubjects = [...(incomingState.subjects || [])];
-    for (const ls of localState.subjects || []) {
-      if (!mergedSubjects.some(fs => fs.id === ls.id || (fs.code === ls.code && fs.name === ls.name))) {
-        mergedSubjects.push(ls);
-      }
-    }
-
-    // Merge tasks
-    const mergedTasks = [...(incomingState.tasks || [])];
-    for (const lt of localState.tasks || []) {
-      if (!mergedTasks.some(ft => ft.id === lt.id)) {
-        mergedTasks.push(lt);
-      }
-    }
-
-    // Merge timetable
-    const mergedTimetable = [...(incomingState.timetable || [])];
-    for (const lb of localState.timetable || []) {
-      if (!mergedTimetable.some(fb => fb.id === lb.id)) {
-        mergedTimetable.push(lb);
-      }
-    }
-
-    // Merge courses
-    const mergedCourses = [...(incomingState.courses || [])];
-    for (const lc of localState.courses || []) {
-      if (!mergedCourses.some(fc => fc.id === lc.id)) {
-        mergedCourses.push(lc);
-      }
-    }
-
-    // Merge activities
-    const mergedActivities = [...(incomingState.activities || [])];
-    for (const la of localState.activities || []) {
-      if (!mergedActivities.some(fa => fa.id === la.id)) {
-        mergedActivities.push(la);
-      }
-    }
-
-    // Merge websites
-    const mergedWebsites = [...(incomingState.websites || [])];
-    for (const lw of localState.websites || []) {
-      if (!mergedWebsites.some(fw => fw.id === lw.id)) {
-        mergedWebsites.push(lw);
-      }
-    }
-
-    return {
-      ...incomingState,
-      resources: mergedResources,
-      subjects: mergedSubjects,
-      tasks: mergedTasks,
-      timetable: mergedTimetable,
-      courses: mergedCourses,
-      activities: mergedActivities,
-      websites: mergedWebsites
-    };
-  };
+  // Cloud-wins: Supabase is the authoritative source of truth for all data arrays.
+  // We no longer merge local data into cloud data — that was causing stale local subjects/tasks
+  // to contaminate fresh cloud data when opening on a new device.
+  //
+  // The only exception: if Supabase has NO data yet (first login / empty cloud),
+  // we upload the local state to initialise the cloud record (one-time migration).
 
   const processIncomingCloudState = async (cloudState: any, source: 'supabase') => {
     if (suppressSync) return;
@@ -133,7 +64,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     const cloudIsEmpty = !cloudState.user || !cloudState.user.isOnboarded;
 
     if (localHasData && cloudIsEmpty) {
-      console.log(`SyncProvider - local state has active data but ${source} is empty, initializing cloud database`);
+      // First-time migration: upload local state to Supabase to seed the cloud record.
+      console.log(`SyncProvider - cloud is empty, uploading local state to ${source}`);
       const stateToSave = {
         user: localState.user,
         subjects: localState.subjects,
@@ -160,7 +92,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           state: sanitizeStateForFirestore(stateToSave),
           updated_at: new Date().toISOString()
         }).then(({ error }) => {
-          if (error) console.error('Failed to merge initialize Supabase:', error);
+          if (error) console.error('Failed to initialise Supabase state:', error);
         });
       }
 
@@ -169,54 +101,33 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       lastSavedSubjectsRef.current = stateToSave.subjects || [];
       lastSavedResourcesRef.current = stateToSave.resources || {};
     } else {
-      isHydrated.current = false;
-      const mergedState = mergeLocalAndCloudState(cloudState, localState);
+      // CLOUD-WINS: Apply Supabase data directly — no local merge.
+      // All data arrays (subjects, tasks, timetable, courses, activities, websites, resources)
+      // come exclusively from Supabase. This guarantees cross-device consistency.
+      console.log(`SyncProvider - applying ${source} cloud state (cloud-wins)`);
 
-      useStore.getState().setFullState(mergedState);
-      lastSavedSerializedRef.current = JSON.stringify(mergedState);
-      lastSavedSubjectsRef.current = mergedState.subjects || [];
-      lastSavedResourcesRef.current = mergedState.resources || {};
+      const cloudStateToApply = {
+        ...cloudState,
+        // Merge user profile: take the best values from both
+        user: cloudState.user ? {
+          ...cloudState.user,
+          streakCount: Math.max(cloudState.user.streakCount ?? 0, localState.user?.streakCount ?? 0),
+          totalStudyHours: Math.max(cloudState.user.totalStudyHours ?? 0, localState.user?.totalStudyHours ?? 0),
+        } : localState.user,
+        // Settings: prefer cloud, fall back to device-local localStorage value
+        themeAccent: cloudState.themeAccent || localState.themeAccent || 'purple',
+        selectedModel: cloudState.selectedModel || localState.selectedModel || 'groq',
+        is24HourFormat: cloudState.is24HourFormat ?? localState.is24HourFormat ?? false,
+        calendarSynced: cloudState.calendarSynced ?? localState.calendarSynced ?? false,
+        apiKeys: { ...(localState.apiKeys || {}), ...(cloudState.apiKeys || {}) },
+        // chatHistory is device-local — don't overwrite with cloud version
+        chatHistory: localState.chatHistory,
+      };
 
-      // If profile changed or merged changes exist, push back to keep aligned
-      const mergedStateStore = useStore.getState();
-      const profileChanged = mergedStateStore.user && cloudState.user && 
-          (mergedStateStore.user.streakCount !== cloudState.user.streakCount ||
-           mergedStateStore.user.totalStudyHours !== cloudState.user.totalStudyHours);
-      const resourcesMergedAndChanged = JSON.stringify(mergedState.resources) !== JSON.stringify(cloudState.resources || {});
-
-      if (profileChanged || resourcesMergedAndChanged) {
-        console.log(`SyncProvider - merged state has richer profile/resources, pushing updates to ${source}`);
-        const stateToSave = {
-          user: mergedStateStore.user,
-          subjects: mergedStateStore.subjects,
-          resources: mergedStateStore.resources,
-          activities: mergedStateStore.activities,
-          websites: mergedStateStore.websites,
-          courses: mergedStateStore.courses,
-          tasks: mergedStateStore.tasks,
-          timetable: mergedStateStore.timetable,
-          themeAccent: mergedStateStore.themeAccent,
-          apiKeys: mergedStateStore.apiKeys,
-          selectedModel: mergedStateStore.selectedModel,
-          calendarSynced: mergedStateStore.calendarSynced,
-          is24HourFormat: mergedStateStore.is24HourFormat,
-          chatHistory: mergedStateStore.chatHistory,
-          proactiveRecommendations: mergedStateStore.proactiveRecommendations
-        };
-
-        if (isSupabaseConfigured && supabase) {
-          supabase.from('user_states').upsert({
-            id: user!.id,
-            state: sanitizeStateForFirestore(stateToSave),
-            updated_at: new Date().toISOString()
-          }).then(({ error }) => {
-            if (error) console.error('Failed to push Supabase merge back:', error);
-          });
-        }
-        lastSavedSerializedRef.current = JSON.stringify(stateToSave);
-        lastSavedSubjectsRef.current = stateToSave.subjects || [];
-        lastSavedResourcesRef.current = stateToSave.resources || {};
-      }
+      useStore.getState().setFullState(cloudStateToApply);
+      lastSavedSerializedRef.current = JSON.stringify(cloudStateToApply);
+      lastSavedSubjectsRef.current = cloudStateToApply.subjects || [];
+      lastSavedResourcesRef.current = cloudStateToApply.resources || {};
     }
     isHydrated.current = true;
   };
