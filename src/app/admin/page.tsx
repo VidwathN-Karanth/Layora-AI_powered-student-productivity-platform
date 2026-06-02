@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useUser, useAuth } from '@clerk/nextjs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
+import { useStore } from '@/store/useStore';
 import { 
   Users, Clock, Flame, BookOpen, Search, ArrowLeft, 
   Trash2, Settings, Activity, Calendar, ListTodo, 
@@ -48,6 +49,7 @@ export default function AdminPage() {
   const [selectedUser, setSelectedUser] = useState<TelemetryUser | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const [isLocalMode, setIsLocalMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'subjects' | 'tasks' | 'courses' | 'timetable' | 'chat'>('profile');
   const [editStreak, setEditStreak] = useState<number>(0);
   const [editHours, setEditHours] = useState<number>(0);
@@ -80,13 +82,51 @@ export default function AdminPage() {
   // Fetch Supabase user states
   const fetchTelemetry = async () => {
     if (!isSupabaseConfigured || !supabase) {
-      setErrorMsg("Supabase config is missing or local-mode is active. Telemetry could not be fetched.");
-      setLoadingData(false);
+      setIsLocalMode(true);
+      setErrorMsg('');
+      setLoadingData(true);
+      try {
+        const registeredUsers = useStore.getState().registeredUsers || [];
+        const fetched: TelemetryUser[] = registeredUsers.map((u: any) => ({
+          id: u.email,
+          updated_at: u.lastActiveDate ? new Date(u.lastActiveDate).toISOString() : new Date().toISOString(),
+          state: {
+            user: {
+              name: u.name,
+              email: u.email,
+              streakCount: u.streakCount,
+              totalStudyHours: u.totalStudyHours,
+              isOnboarded: u.isOnboarded,
+              wakeTime: u.wakeTime,
+              sleepTime: u.sleepTime,
+              collegeStart: u.collegeStart,
+              collegeEnd: u.collegeEnd,
+              freeBlocks: u.freeBlocks || []
+            },
+            subjects: u.subjects || [],
+            tasks: u.tasks || [],
+            timetable: u.timetable || [],
+            courses: u.courses || [],
+            websites: u.websites || [],
+            chatHistory: u.chatHistory || []
+          }
+        }));
+
+        // Sort by last active / updated time descending
+        fetched.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+        setUsersList(fetched);
+      } catch (err: any) {
+        console.error("Failed to load local telemetry:", err);
+        setErrorMsg("Failed to load local storage telemetry data.");
+      } finally {
+        setLoadingData(false);
+      }
       return;
     }
 
     try {
       setLoadingData(true);
+      setIsLocalMode(false);
       setErrorMsg('');
       const { data, error } = await supabase
         .from('user_states')
@@ -113,16 +153,22 @@ export default function AdminPage() {
 
   // Delete User Sync Record
   const handleDeleteRecord = async (userId: string) => {
-    if (!supabase) return;
     setShowDeleteConfirm(null);
     try {
       setLoadingData(true);
-      const { error } = await supabase
-        .from('user_states')
-        .delete()
-        .eq('id', userId);
-      
-      if (error) throw error;
+      if (isSupabaseConfigured && supabase) {
+        const { error } = await supabase
+          .from('user_states')
+          .delete()
+          .eq('id', userId);
+        
+        if (error) throw error;
+      } else {
+        // Local mode delete
+        const registeredUsers = useStore.getState().registeredUsers || [];
+        const updated = registeredUsers.filter((u) => u.email !== userId);
+        useStore.getState().setFullState({ registeredUsers: updated });
+      }
 
       setUsersList((prev) => prev.filter((u) => u.id !== userId));
       if (selectedUser?.id === userId) {
@@ -140,7 +186,7 @@ export default function AdminPage() {
 
   // Update User Telemetry Stats (Streak & Hours override)
   const handleUpdateUserStats = async () => {
-    if (!supabase || !selectedUser) return;
+    if (!selectedUser) return;
     try {
       setIsSavingEdit(true);
       
@@ -155,15 +201,31 @@ export default function AdminPage() {
         user: updatedUser
       };
 
-      const { error } = await supabase
-        .from('user_states')
-        .upsert({
-          id: selectedUser.id,
-          state: updatedState,
-          updated_at: new Date().toISOString()
-        });
+      if (isSupabaseConfigured && supabase) {
+        const { error } = await supabase
+          .from('user_states')
+          .upsert({
+            id: selectedUser.id,
+            state: updatedState,
+            updated_at: new Date().toISOString()
+          });
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        // Local mode update
+        const registeredUsers = useStore.getState().registeredUsers || [];
+        const updated = registeredUsers.map((u) => {
+          if (u.email === selectedUser.id) {
+            return {
+              ...u,
+              streakCount: Number(editStreak),
+              totalStudyHours: Number(editHours)
+            };
+          }
+          return u;
+        });
+        useStore.getState().setFullState({ registeredUsers: updated });
+      }
 
       // Update local state list so it updates instantly in the UI table
       setUsersList((prev) => 
@@ -298,10 +360,22 @@ export default function AdminPage() {
           </div>
         </header>
 
+        {isLocalMode && (
+          <div className="p-4 rounded-xl border border-cyber-purple/35 bg-cyber-purple/5 text-cyber-purple text-xs flex items-center justify-between gap-3 shadow-lg shadow-cyber-purple/5 backdrop-blur-md">
+            <div className="flex items-center gap-3">
+              <span className="w-2.5 h-2.5 rounded-full bg-cyber-purple animate-pulse shadow-glow"></span>
+              <span className="font-bold tracking-wide uppercase">LOCAL SYSTEM MODE: OFFLINE TELEMETRY ACTIVE</span>
+              <span className="text-[10px] text-white/50 lowercase">({usersList.length} client storage nodes loaded)</span>
+            </div>
+            <span className="px-2 py-0.5 rounded bg-cyber-purple/20 text-[10px] font-bold uppercase tracking-wider border border-cyber-purple/35">ZUSTAND SYNC</span>
+          </div>
+        )}
+
         {errorMsg && (
-          <div className="p-4 rounded-xl border border-red-500/20 bg-red-950/20 text-red-300 text-xs flex items-center gap-3">
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-            <span>SYSTEM FAILURE: {errorMsg}</span>
+          <div className="p-4 rounded-xl border border-red-500/25 bg-red-950/15 text-red-300 text-xs flex items-center gap-3 shadow-lg shadow-red-500/5">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+            <span className="font-bold">SYSTEM FAILURE:</span>
+            <span>{errorMsg}</span>
           </div>
         )}
 
