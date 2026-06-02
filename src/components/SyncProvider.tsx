@@ -121,7 +121,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
               lastSavedSubjectsRef.current = stateToSave.subjects || [];
               lastSavedResourcesRef.current = stateToSave.resources || {};
             } else {
-              // Regular path: overwrite local state with Firestore state, but merge resources to prevent file loss
+              // Regular path: overwrite local state with Firestore state, but merge lists/resources to prevent data loss
               isHydrated.current = false;
               
               const localState = useStore.getState();
@@ -140,9 +140,63 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
                 mergedResources[subId] = combined;
               }
 
+              // Merge subjects
+              const mergedSubjects = [...(firebaseState.subjects || [])];
+              for (const ls of localState.subjects || []) {
+                if (!mergedSubjects.some(fs => fs.id === ls.id || (fs.code === ls.code && fs.name === ls.name))) {
+                  mergedSubjects.push(ls);
+                }
+              }
+
+              // Merge tasks
+              const mergedTasks = [...(firebaseState.tasks || [])];
+              for (const lt of localState.tasks || []) {
+                if (!mergedTasks.some(ft => ft.id === lt.id)) {
+                  mergedTasks.push(lt);
+                }
+              }
+
+              // Merge timetable
+              const mergedTimetable = [...(firebaseState.timetable || [])];
+              for (const lb of localState.timetable || []) {
+                if (!mergedTimetable.some(fb => fb.id === lb.id)) {
+                  mergedTimetable.push(lb);
+                }
+              }
+
+              // Merge courses
+              const mergedCourses = [...(firebaseState.courses || [])];
+              for (const lc of localState.courses || []) {
+                if (!mergedCourses.some(fc => fc.id === lc.id)) {
+                  mergedCourses.push(lc);
+                }
+              }
+
+              // Merge activities
+              const mergedActivities = [...(firebaseState.activities || [])];
+              for (const la of localState.activities || []) {
+                if (!mergedActivities.some(fa => fa.id === la.id)) {
+                  mergedActivities.push(la);
+                }
+              }
+
+              // Merge websites
+              const mergedWebsites = [...(firebaseState.websites || [])];
+              for (const lw of localState.websites || []) {
+                if (!mergedWebsites.some(fw => fw.id === lw.id)) {
+                  mergedWebsites.push(lw);
+                }
+              }
+
               const mergedState = {
                 ...firebaseState,
-                resources: mergedResources
+                resources: mergedResources,
+                subjects: mergedSubjects,
+                tasks: mergedTasks,
+                timetable: mergedTimetable,
+                courses: mergedCourses,
+                activities: mergedActivities,
+                websites: mergedWebsites
               };
 
               useStore.getState().setFullState(mergedState);
