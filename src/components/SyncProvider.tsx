@@ -206,6 +206,12 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = useStore.subscribe((state) => {
       if (!isHydrated.current) return;
 
+      // Prevent syncing empty/null states during logout or unauthenticated phases
+      if (!state.isAuthenticated || !state.user) {
+        console.log('SyncProvider - store is unauthenticated or user is null, skipping sync');
+        return;
+      }
+
       const {
         user: storeUser, subjects, resources, activities, websites, courses, tasks,
         timetable, themeAccent, apiKeys, selectedModel,
