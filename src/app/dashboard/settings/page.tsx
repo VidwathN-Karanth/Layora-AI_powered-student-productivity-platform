@@ -44,30 +44,36 @@ export default function SettingsPage() {
 
     setIsPurging(true);
 
-    // Silence SyncProvider FIRST — before any deletion — so the onSnapshot
-    // listener cannot recreate the Firestore doc the moment we delete it.
+    // STEP 1: Silence SyncProvider BEFORE touching anything.
+    // This blocks the onSnapshot listener from recreating the Firestore doc
+    // and blocks the store subscriber from pushing state to Firestore.
     suppressFirestoreSync();
 
-    // Clear localStorage directly (bypasses Zustand set(), so SyncProvider
-    // subscriber never fires and cannot push old data back to Firestore).
+    // STEP 2: Wipe localStorage (bypasses Zustand set(), no subscriber fires).
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem('layora-productivity-store');
     }
 
+    // STEP 3: Clear in-memory Zustand state. Safe now because suppressSync
+    // is true, so SyncProvider's subscriber fires but does nothing.
+    store.resetStore();
+
+    // STEP 4: Delete Firestore data server-side.
+    // onSnapshot will fire when the doc is deleted, but suppressSync blocks it.
     try {
-      // Delete Firestore data server-side
-      const res = await fetch('/api/user/purge', { method: 'DELETE' });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `Server error ${res.status}`);
-      }
+      await fetch('/api/user/purge', { method: 'DELETE' });
     } catch (err: any) {
       console.error('Purge API error:', err);
-      // Continue regardless — still need to clear local data and sign out
+      // Continue regardless — local data is already cleared
     }
 
-    // signOut works cleanly (Clerk account still exists) and handles the redirect.
-    await signOut({ redirectUrl: '/' });
+    // STEP 5: Sign out of Clerk, then force a full hard reload.
+    // window.location.replace ensures a full page reload (not SPA navigation)
+    // so all module-level state (including suppressSync) resets cleanly.
+    try {
+      await signOut();
+    } catch (_) {}
+    window.location.replace('/');
   };
 
   const themeAccents = [
