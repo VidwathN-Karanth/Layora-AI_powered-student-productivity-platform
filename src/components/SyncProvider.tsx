@@ -246,12 +246,6 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       const serialized = JSON.stringify(stateToSave);
       if (serialized === lastSavedSerializedRef.current) return;
 
-      const lastSubjects = lastSavedSubjectsRef.current || [];
-      const lastResources = lastSavedResourcesRef.current || {};
-      const subjectsChanged = JSON.stringify(subjects) !== JSON.stringify(lastSubjects);
-      const resourcesChanged = JSON.stringify(resources) !== JSON.stringify(lastResources);
-      const isImmediate = subjectsChanged || resourcesChanged;
-
       pendingStateRef.current = state;
 
       if (syncTimeoutRef.current) {
@@ -259,13 +253,14 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         syncTimeoutRef.current = null;
       }
 
+      // Perform immediate sync for ALL changes (no debouncing) - Supabase is the only source of truth
       const performSync = async () => {
         if (suppressSync) return;
         try {
           inFlightWrites.current++;
           const updateTime = new Date().toISOString();
 
-          // Sync to Supabase
+          // Sync to Supabase immediately
           if (isSupabaseConfigured && supabase) {
             const { error } = await supabase
               .from('user_states')
@@ -274,8 +269,11 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
                 state: sanitizeStateForFirestore(stateToSave),
                 updated_at: updateTime
               });
-            if (error) throw error;
-            console.log('SyncProvider - successfully saved to Supabase');
+            if (error) {
+              console.error('SyncProvider - Supabase sync failed:', error);
+              throw error;
+            }
+            console.log('SyncProvider - ✓ Synced to Supabase:', { subjects: subjects?.length, tasks: stateToSave.tasks?.length, timestamp: updateTime });
           }
 
           lastSavedSerializedRef.current = serialized;
@@ -283,7 +281,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           lastSavedResourcesRef.current = resources || {};
           ignoreSnapshotUntilRef.current = Date.now() + 3000;
         } catch (err: any) {
-          console.error('SyncProvider - failed to save states:', err);
+          console.error('SyncProvider - CRITICAL: Failed to save to Supabase:', err);
+          // Don't swallow errors - log them loudly so user knows sync failed
         } finally {
           inFlightWrites.current--;
           if (pendingStateRef.current === state) {
@@ -292,11 +291,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         }
       };
 
-      if (isImmediate) {
-        performSync();
-      } else {
-        syncTimeoutRef.current = setTimeout(performSync, 200);
-      }
+      // Sync immediately - don't debounce, Supabase is the only source of truth
+      performSync();
     });
 
     return () => {
@@ -314,6 +310,13 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       if (syncTimeoutRef.current) {
         clearTimeout(syncTimeoutRef.current);
         syncTimeoutRef.current = null;
+      }
+
+      // Flush any pending state and wait for in-flight writes
+      const maxWaitTime = 5000; // Max 5 seconds
+      const startTime = Date.now();
+      while (inFlightWrites.current > 0 && Date.now() - startTime < maxWaitTime) {
+        await new Promise(resolve => setTimeout(resolve, 50));
       }
 
       if (pendingStateRef.current) {
@@ -337,16 +340,17 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           const updateTime = new Date().toISOString();
 
           if (isSupabaseConfigured && supabase) {
-            await supabase.from('user_states').upsert({
+            const { error } = await supabase.from('user_states').upsert({
               id: user.id,
               state: sanitizeStateForFirestore(stateToSave),
               updated_at: updateTime
             });
+            if (error) throw error;
           }
           ignoreSnapshotUntilRef.current = Date.now() + 3000;
-          console.log('SyncProvider - successfully flushed state on unload');
+          console.log('SyncProvider - ✓ Flushed & synced to Supabase on page unload');
         } catch (err) {
-          console.error('Failed to flush state on unload:', err);
+          console.error('SyncProvider - CRITICAL: Failed to flush state on unload:', err);
         } finally {
           inFlightWrites.current--;
         }
