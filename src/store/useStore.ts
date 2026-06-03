@@ -159,6 +159,8 @@ interface AppState {
   setFullState: (state: Partial<AppState>) => void;
   hasHydrated: boolean;
   setHasHydrated: (val: boolean) => void;
+  isCloudLoaded: boolean;
+  setIsCloudLoaded: (val: boolean) => void;
 }
 
 const DEFAULT_SUBJECTS: Subject[] = [];
@@ -183,6 +185,8 @@ export const useStore = create<AppState>()(
       registeredUsers: DEFAULT_REGISTERED_USERS,
       hasHydrated: false,
       setHasHydrated: (val) => set({ hasHydrated: val }),
+      isCloudLoaded: false,
+      setIsCloudLoaded: (val) => set({ isCloudLoaded: val }),
 
       login: (email, name) => {
         const { registeredUsers, user: currentUser } = get();
@@ -391,6 +395,7 @@ export const useStore = create<AppState>()(
         set({
           registeredUsers: updatedUsers,
           isAuthenticated: false,
+          isCloudLoaded: false,
           user: null,
           chatHistory: [],
           activeTaskId: null,
@@ -904,6 +909,7 @@ export const useStore = create<AppState>()(
         set({
           user: null,
           isAuthenticated: false,
+          isCloudLoaded: false,
           registeredUsers: updatedRegisteredUsers,
           subjects: [],
           resources: {},
