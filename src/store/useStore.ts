@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { 
   Subject, 
   Activity, 
@@ -177,8 +176,7 @@ const DEFAULT_TASKS: Task[] = [];
 const DEFAULT_REGISTERED_USERS: RegisteredUser[] = [];
 
 export const useStore = create<AppState>()(
-  persist(
-    (set, get) => ({
+  (set, get) => ({
       // Auth Default State
       user: null,
       isAuthenticated: false,
@@ -1003,29 +1001,5 @@ export const useStore = create<AppState>()(
           timetable
         };
       })
-    }),
-    {
-      name: 'layora-productivity-store',
-      // Only persist lightweight/settings data in localStorage.
-      // Data arrays (subjects, tasks, timetable, etc.) are Supabase-authoritative
-      // and are loaded by SyncProvider on every login — persisting them here
-      // causes stale-local-wins bugs across devices.
-      partialize: (state) => ({
-        user: state.user,
-        isAuthenticated: state.isAuthenticated,
-        registeredUsers: state.registeredUsers,
-        themeAccent: state.themeAccent,
-        apiKeys: state.apiKeys,
-        selectedModel: state.selectedModel,
-        calendarSynced: state.calendarSynced,
-        is24HourFormat: state.is24HourFormat,
-        // chatHistory is device-local (each device has its own session)
-        chatHistory: state.chatHistory,
-        proactiveRecommendations: state.proactiveRecommendations
-      }),
-      onRehydrateStorage: () => (state) => {
-        state?.setHasHydrated(true);
-      }
-    }
-  )
+    })
 );

@@ -20,12 +20,20 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const inFlightWrites = useRef(0);
   const ignoreSnapshotUntilRef = useRef<number>(0);
 
+  const themeAccent = useStore((state) => state.themeAccent);
+  const hasHydrated = useStore((state) => state.hasHydrated);
+
   const sanitizeStateForFirestore = (state: any) => {
     return JSON.parse(JSON.stringify(state));
   };
-  
-  const themeAccent = useStore((state) => state.themeAccent);
-  const hasHydrated = useStore((state) => state.hasHydrated);
+
+  // Set hasHydrated to true on client-side mount and clear old localStorage leftovers
+  useEffect(() => {
+    useStore.getState().setHasHydrated(true);
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('layora-productivity-store');
+    }
+  }, []);
 
   // 0. Update DOM theme dynamically when state changes
   useEffect(() => {
