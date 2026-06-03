@@ -22,6 +22,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
   const themeAccent = useStore((state) => state.themeAccent);
   const hasHydrated = useStore((state) => state.hasHydrated);
+  const isCloudLoaded = useStore((state) => state.isCloudLoaded);
 
   const sanitizeStateForFirestore = (state: any) => {
     return JSON.parse(JSON.stringify(state));
@@ -66,10 +67,18 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     }
 
     const localState = useStore.getState();
-    const localHasData = (localState.timetable && localState.timetable.length > 0) || 
-                         (localState.subjects && localState.subjects.length > 0) || 
+    const localHasData = (localState.timetable && localState.timetable.length > 0) ||
+                         (localState.subjects && localState.subjects.length > 0) ||
                          (localState.user && localState.user.isOnboarded);
-    const cloudIsEmpty = !cloudState.user || !cloudState.user.isOnboarded;
+
+    // Check if cloud has actual data (subjects, tasks, timetable, etc) - not just onboarding status
+    const cloudHasData = (cloudState.subjects && cloudState.subjects.length > 0) ||
+                         (cloudState.tasks && cloudState.tasks.length > 0) ||
+                         (cloudState.timetable && cloudState.timetable.length > 0) ||
+                         (cloudState.activities && cloudState.activities.length > 0) ||
+                         (cloudState.courses && cloudState.courses.length > 0) ||
+                         (cloudState.websites && cloudState.websites.length > 0);
+    const cloudIsEmpty = !cloudHasData && (!cloudState.user || !cloudState.user.isOnboarded);
 
     if (localHasData && cloudIsEmpty) {
       // First-time migration: upload local state to Supabase to seed the cloud record.
@@ -138,6 +147,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       lastSavedResourcesRef.current = cloudStateToApply.resources || {};
     }
     isHydrated.current = true;
+    useStore.getState().setIsCloudLoaded(true);
   };
 
   // 1. Listen to Real-Time Updates from Supabase
@@ -365,6 +375,45 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       }
     };
   }, [isLoaded, user?.id, hasHydrated]);
+
+  if (isLoaded && user && !isCloudLoaded) {
+    return (
+      <main className="min-h-screen bg-[#070709] text-white flex flex-col items-center justify-center relative overflow-hidden cyber-grid font-mono">
+        <div className="absolute w-[500px] h-[500px] bg-cyber-purple/15 -top-[10%] -right-[10%] rounded-full blur-[120px] animate-[pulse_8s_infinite_alternate] pointer-events-none"></div>
+        <div className="absolute w-[500px] h-[500px] bg-cyber-blue/15 -bottom-[10%] -left-[10%] rounded-full blur-[120px] animate-[pulse_10s_infinite_alternate] pointer-events-none"></div>
+
+        <div className="z-10 flex flex-col items-center gap-6">
+          <div className="relative w-20 h-20">
+            <div className="absolute inset-0 rounded-full border border-cyber-purple animate-ping"></div>
+            <div className="absolute inset-2 rounded-full border border-cyber-blue/50 animate-pulse"></div>
+            <div className="absolute inset-4 rounded-full bg-gradient-to-tr from-cyber-purple to-cyber-blue flex items-center justify-center shadow-lg shadow-cyber-purple/20">
+              <span className="text-white font-mono font-bold text-2xl tracking-tighter">L</span>
+            </div>
+          </div>
+          
+          <div className="text-center">
+            <h1 className="text-2xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyber-purple to-cyber-blue font-mono">
+              LAYORA
+            </h1>
+            <p className="text-xs text-cyber-blue/60 font-mono mt-1">
+              Synchronizing academic core...
+            </p>
+          </div>
+
+          <div className="w-48 h-1 bg-white/10 rounded-full overflow-hidden relative">
+            <div className="absolute left-0 top-0 h-full bg-gradient-to-r from-cyber-purple to-cyber-blue w-1/3 rounded-full animate-[loading-bar_1.5s_infinite_ease-in-out]"></div>
+          </div>
+        </div>
+        <style jsx global>{`
+          @keyframes loading-bar {
+            0% { left: -33%; width: 33%; }
+            50% { width: 50%; }
+            100% { left: 100%; width: 33%; }
+          }
+        `}</style>
+      </main>
+    );
+  }
 
   return <>{children}</>;
 }
