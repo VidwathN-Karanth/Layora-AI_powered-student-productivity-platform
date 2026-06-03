@@ -152,39 +152,53 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
   // 1. Listen to Real-Time Updates from Supabase
   useEffect(() => {
-    if (!hasHydrated || !isLoaded || !user) return;
+    if (!hasHydrated || !isLoaded || !user) {
+      console.log('SyncProvider - skipping, conditions not met:', { hasHydrated, isLoaded, hasUser: !!user });
+      return;
+    }
 
     let supabaseChannel: any = null;
 
-    console.log('SyncProvider - checking db configurations:', {
-      isSupabaseConfigured,
-      hasUser: !!user,
-      hasHydrated
+    console.log('SyncProvider - ✓ All conditions met, loading data from Supabase', {
+      userId: user.id,
+      isSupabaseConfigured
     });
 
     if (isSupabaseConfigured && supabase) {
       const client = supabase;
       const loadInitialSupabaseState = async () => {
         try {
+          console.log('SyncProvider - attempting to fetch user state from Supabase...');
           const { data, error } = await client
             .from('user_states')
             .select('state')
             .eq('id', user.id)
             .single();
 
-          if (error && error.code !== 'PGRST116') {
-            throw error;
-          }
-
-          if (data && data.state) {
-            console.log('SyncProvider - initial state loaded from Supabase');
+          if (error) {
+            if (error.code === 'PGRST116') {
+              // No data found - this is expected for first login
+              console.log('SyncProvider - no existing cloud data (first login), creating new state');
+              processIncomingCloudState({}, 'supabase');
+            } else {
+              console.error('SyncProvider - CRITICAL: Database query failed:', error);
+              throw error;
+            }
+          } else if (data && data.state) {
+            console.log('SyncProvider - ✓ Loaded existing state from Supabase:', {
+              isOnboarded: data.state.user?.isOnboarded,
+              subjects: data.state.subjects?.length || 0,
+              tasks: data.state.tasks?.length || 0
+            });
             processIncomingCloudState(data.state, 'supabase');
           } else {
-            console.log('SyncProvider - initializing state on Supabase...');
+            console.warn('SyncProvider - unexpected: no data but no error');
             processIncomingCloudState({}, 'supabase');
           }
         } catch (err) {
-          console.error('Failed to load initial Supabase state:', err);
+          console.error('SyncProvider - CRITICAL: Failed to load initial Supabase state:', err);
+          // Still mark as loaded even if failed to prevent infinite loops
+          useStore.getState().setIsCloudLoaded(true);
         }
       };
 
