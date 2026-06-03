@@ -128,7 +128,7 @@ export default function OnboardingPage() {
   };
 
   // Complete Onboarding Flow
-  const handleSaveAndRedirect = () => {
+  const handleSaveAndRedirect = async () => {
     // 1. Commit everything to global Zustand store
     store.updateRoutine({
       wakeTime,
@@ -163,13 +163,16 @@ export default function OnboardingPage() {
     store.courses.forEach(c => store.removeCourse(c.id));
     courses.forEach(c => store.addCourse(c));
 
-    // Mark as Onboarded
-    store.updateOnboardingStatus(true);
-
     // 2. Generate optimized schedule blocks inside store
     store.generateSchedule();
 
-    // 3. Navigate
+    // Mark as Onboarded LAST — this final update triggers the full sync
+    store.updateOnboardingStatus(true);
+
+    // 3. Wait a brief moment for Supabase sync to complete
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // 4. Navigate
     router.push('/dashboard');
   };
 
