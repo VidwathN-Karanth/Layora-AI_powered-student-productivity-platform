@@ -95,11 +95,14 @@ export async function POST(req: Request) {
 
     const driveData = await response.json();
 
+    // Fallback: if Google API doesn't return webViewLink directly, construct it from the file ID
+    const fileUrl = driveData.webViewLink || (driveData.id ? `https://drive.google.com/file/d/${driveData.id}/view?usp=drivesdk` : '#');
+
     return NextResponse.json({
       success: true,
       file: {
         name: driveData.name || file.name,
-        url: driveData.webViewLink,
+        url: fileUrl,
         driveId: driveData.id
       }
     });

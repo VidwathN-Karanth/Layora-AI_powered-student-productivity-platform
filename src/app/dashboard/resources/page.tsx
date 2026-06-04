@@ -116,6 +116,13 @@ export default function ResourcesPage() {
       return;
     }
 
+    // Direct Google Drive upload via Next API router proxy is limited to 4.5MB by Vercel serverless platform
+    const MAX_FILE_SIZE = 4.5 * 1024 * 1024; // 4.5MB
+    if (fileData.size > MAX_FILE_SIZE) {
+      alert(`File is too large (${(fileData.size / (1024 * 1024)).toFixed(2)}MB).\n\nDirect uploads are limited to 4.5MB due to serverless platform body-size limits. Please upload this file directly to your Google Drive and add it here as a "Web Link".`);
+      return;
+    }
+
     setIsUploading(true);
 
     try {
@@ -128,10 +135,18 @@ export default function ResourcesPage() {
         body: formData,
       });
 
-      const data = await res.json();
-
+      // Safely check status and parse JSON/text response to show the real error (like Vercel Payload Too Large)
+      let data: any = {};
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to upload to Google Drive');
+        const errorText = await res.text().catch(() => 'Unknown error');
+        let parsedError = errorText;
+        try {
+          const parsed = JSON.parse(errorText);
+          parsedError = parsed.error || errorText;
+        } catch (e) {}
+        throw new Error(parsedError);
+      } else {
+        data = await res.json();
       }
 
       store.uploadResource(targetSubjectId, {
@@ -337,7 +352,9 @@ export default function ResourcesPage() {
                             isDragging 
                               ? 'border-cyber-blue bg-cyber-blue/10' 
                               : fileData 
-                                ? 'border-emerald-500/50 bg-emerald-500/5 hover:border-emerald-400' 
+                                ? fileData.size > 4.5 * 1024 * 1024
+                                  ? 'border-red-500/50 bg-red-500/5 hover:border-red-400'
+                                  : 'border-emerald-500/50 bg-emerald-500/5 hover:border-emerald-400' 
                                 : 'border-white/15 bg-black/20 hover:border-cyber-blue/50 hover:bg-black/30'
                           }`}
                         >
@@ -350,13 +367,19 @@ export default function ResourcesPage() {
                           
                           {fileData ? (
                             <>
-                              <File className="w-7 h-7 text-emerald-400 animate-bounce" />
-                              <div className="text-xs font-mono font-bold text-emerald-400 truncate max-w-[200px]">
+                              <File className={`w-7 h-7 animate-bounce ${fileData.size > 4.5 * 1024 * 1024 ? 'text-red-400' : 'text-emerald-400'}`} />
+                              <div className={`text-xs font-mono font-bold truncate max-w-[200px] ${fileData.size > 4.5 * 1024 * 1024 ? 'text-red-400' : 'text-emerald-400'}`}>
                                 {fileData.name}
                               </div>
-                              <div className="text-[9px] font-mono text-white/40">
-                                Click to replace • Drag new file • Paste from clipboard
-                              </div>
+                              {fileData.size > 4.5 * 1024 * 1024 ? (
+                                <div className="text-[9px] font-mono text-red-400 font-bold">
+                                  File too large ({(fileData.size / (1024 * 1024)).toFixed(2)}MB). Max limit is 4.5MB.
+                                </div>
+                              ) : (
+                                <div className="text-[9px] font-mono text-white/40">
+                                  Click to replace • Drag new file • Paste from clipboard
+                                </div>
+                              )}
                             </>
                           ) : (
                             <>
@@ -365,7 +388,7 @@ export default function ResourcesPage() {
                                 Drag & Drop file here
                               </div>
                               <div className="text-[9px] font-mono text-white/40">
-                                or click to browse files
+                                or click to browse files (Max 4.5MB)
                               </div>
                               <div className="text-[8px] font-mono text-cyber-blue/70 bg-cyber-blue/10 px-2 py-0.5 rounded border border-cyber-blue/20 mt-1">
                                 Clipboard Paste (Ctrl+V) Supported
@@ -405,10 +428,10 @@ export default function ResourcesPage() {
 
                     <button
                       type="submit"
-                      disabled={isUploading}
+                      disabled={isUploading || (uploadMethod === 'drive' && !!fileData && fileData.size > 4.5 * 1024 * 1024)}
                       className="w-full bg-gradient-to-r from-cyber-purple/50 to-cyber-blue/50 hover:from-cyber-purple hover:to-cyber-blue text-white rounded-lg py-2.5 text-xs font-mono font-bold flex items-center justify-center gap-1.5 cursor-pointer border border-cyber-blue/30 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <UploadCloud className="w-4 h-4" /> {isUploading ? 'Uploading...' : uploadMethod === 'drive' ? 'Upload to Google Drive' : 'Add Link Resource'}
+                      <UploadCloud className="w-4 h-4" /> {isUploading ? 'Uploading...' : (uploadMethod === 'drive' && fileData && fileData.size > 4.5 * 1024 * 1024) ? 'File Too Large (Max 4.5MB)' : uploadMethod === 'drive' ? 'Upload to Google Drive' : 'Add Link Resource'}
                     </button>
                   </form>
                 )}
