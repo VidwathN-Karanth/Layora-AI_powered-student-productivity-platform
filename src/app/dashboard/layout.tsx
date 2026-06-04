@@ -23,7 +23,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { signOut } = useAuth();
 
   useEffect(() => {
-    if (!store.hasHydrated) return;
+    if (!store.hasHydrated || !store.isCloudLoaded) return;
     if (isLoaded && isSignedIn && clerkUser) {
       const primaryEmail = clerkUser.primaryEmailAddress?.emailAddress || '';
       const fullName = clerkUser.fullName || primaryEmail.split('@')[0];
@@ -31,7 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         store.login(primaryEmail, fullName);
       }
     }
-  }, [isLoaded, isSignedIn, clerkUser, store.hasHydrated]);
+  }, [isLoaded, isSignedIn, clerkUser, store.hasHydrated, store.isCloudLoaded]);
 
   useEffect(() => {
     if (store.isAuthenticated) {

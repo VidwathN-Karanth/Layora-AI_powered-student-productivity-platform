@@ -28,6 +28,21 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const hasHydrated = useStore((state) => state.hasHydrated);
   const isCloudLoaded = useStore((state) => state.isCloudLoaded);
 
+  const serverLog = (msg: string, isError = false) => {
+    if (isError) {
+      console.error(msg);
+    } else {
+      console.log(msg);
+    }
+    if (typeof window !== 'undefined') {
+      fetch('/api/debug-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg })
+      }).catch(() => {});
+    }
+  };
+
   const sanitizeStateForFirestore = (state: any) => {
     return JSON.parse(JSON.stringify(state));
   };
@@ -157,22 +172,19 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   // 1. Listen to Real-Time Updates from Supabase
   useEffect(() => {
     if (!hasHydrated || !isLoaded || !user) {
-      console.log('SyncProvider - skipping, conditions not met:', { hasHydrated, isLoaded, hasUser: !!user });
+      serverLog(`SyncProvider - skipping, conditions not met: hasHydrated=${hasHydrated}, isLoaded=${isLoaded}, hasUser=${!!user}`);
       return;
     }
 
     let supabaseChannel: any = null;
 
-    console.log('SyncProvider - ✓ All conditions met, loading data from Supabase', {
-      userId: user.id,
-      isSupabaseConfigured
-    });
+    serverLog(`SyncProvider - ✓ All conditions met, loading data from Supabase. user.id=${user.id}, isSupabaseConfigured=${isSupabaseConfigured}`);
 
     if (isSupabaseConfigured && supabase) {
       const client = supabase;
       const loadInitialSupabaseState = async () => {
         try {
-          console.log('SyncProvider - attempting to fetch user state from Supabase...');
+          serverLog('SyncProvider - attempting to fetch user state from Supabase...');
           
           // Wrap the database query in a promise race with an 8-second timeout to prevent infinite loader hangs
           const timeoutPromise = new Promise<never>((_, reject) =>
@@ -190,26 +202,21 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
           if (error) {
             if (error.code === 'PGRST116') {
-              // No data found - this is expected for first login
-              console.log('SyncProvider - no existing cloud data (first login), creating new state');
+              serverLog('SyncProvider - no existing cloud data (first login), creating new state');
               await processIncomingCloudState({}, 'supabase');
             } else {
-              console.error('SyncProvider - CRITICAL: Database query failed:', error);
+              serverLog(`SyncProvider - CRITICAL: Database query failed: ${JSON.stringify(error)}`, true);
               throw error;
             }
           } else if (data && data.state) {
-            console.log('SyncProvider - ✓ Loaded existing state from Supabase:', {
-              isOnboarded: data.state.user?.isOnboarded,
-              subjects: data.state.subjects?.length || 0,
-              tasks: data.state.tasks?.length || 0
-            });
+            serverLog(`SyncProvider - ✓ Loaded existing state from Supabase: isOnboarded=${data.state.user?.isOnboarded}, subjects=${data.state.subjects?.length || 0}`);
             await processIncomingCloudState(data.state, 'supabase');
           } else {
-            console.warn('SyncProvider - unexpected: no data but no error');
+            serverLog('SyncProvider - unexpected: no data but no error', true);
             await processIncomingCloudState({}, 'supabase');
           }
-        } catch (err) {
-          console.error('SyncProvider - CRITICAL: Failed to load initial Supabase state:', err);
+        } catch (err: any) {
+          serverLog(`SyncProvider - CRITICAL: Failed to load initial Supabase state: ${err.message}`, true);
         } finally {
           isHydrated.current = true;
           useStore.getState().setIsCloudLoaded(true);
@@ -230,7 +237,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             filter: `id=eq.${user.id}`
           },
           async (payload) => {
-            console.log('SyncProvider - real-time update received from Supabase');
+            serverLog('SyncProvider - real-time update received from Supabase');
             const newState = (payload.new as any)?.state;
             if (newState) {
               await processIncomingCloudState(newState, 'supabase');
@@ -239,7 +246,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         )
         .subscribe();
     } else {
-      console.log('SyncProvider - Supabase is not configured, running in local-only demo mode');
+      serverLog('SyncProvider - Supabase is not configured, running in local-only demo mode');
       isHydrated.current = true;
       useStore.getState().setIsCloudLoaded(true);
     }
@@ -308,7 +315,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
       // Prevent syncing empty/null states during logout or unauthenticated phases
       if (!state.isAuthenticated || !state.user) {
-        console.log('SyncProvider - store is unauthenticated or user is null, skipping sync');
+        serverLog(`SyncProvider - store is unauthenticated or user is null, skipping sync. isAuthenticated=${state.isAuthenticated}, hasUser=${!!state.user}`);
         return;
       }
 
