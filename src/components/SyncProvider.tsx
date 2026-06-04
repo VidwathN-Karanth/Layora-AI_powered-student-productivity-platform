@@ -23,6 +23,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   // Sequential Sync Queue refs
   const isWritingRef = useRef(false);
   const pendingWriteRef = useRef<{ stateToSave: any; serialized: string } | null>(null);
+  const lastLocalWriteTimestampRef = useRef<number>(0);
 
   const themeAccent = useStore((state) => state.themeAccent);
   const hasHydrated = useStore((state) => state.hasHydrated);
@@ -85,6 +86,12 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // Prevent out-of-order and echo overwrites via client timestamp validation
+    if (cloudState?.clientTimestamp && cloudState.clientTimestamp <= lastLocalWriteTimestampRef.current) {
+      console.log(`SyncProvider - ignoring cloud state update: cloud clientTimestamp (${cloudState.clientTimestamp}) <= local lastLocalWriteTimestamp (${lastLocalWriteTimestampRef.current})`);
+      return;
+    }
+
     const localState = useStore.getState();
     const localHasData = (localState.timetable && localState.timetable.length > 0) ||
                          (localState.subjects && localState.subjects.length > 0) ||
@@ -123,9 +130,13 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       isHydrated.current = true;
 
       if (isSupabaseConfigured && supabase) {
+        const migrationTimestamp = Date.now();
+        lastLocalWriteTimestampRef.current = migrationTimestamp;
+        const stateWithTimestamp = { ...stateToSave, clientTimestamp: migrationTimestamp };
+
         supabase.from('user_states').upsert({
           id: user!.id,
-          state: sanitizeStateForFirestore(stateToSave),
+          state: sanitizeStateForFirestore(stateWithTimestamp),
           updated_at: new Date().toISOString()
         }).then(({ error }) => {
           if (error) console.error('Failed to initialise Supabase state:', error);
@@ -164,6 +175,9 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       lastSavedSerializedRef.current = JSON.stringify(cloudStateToApply);
       lastSavedSubjectsRef.current = cloudStateToApply.subjects || [];
       lastSavedResourcesRef.current = cloudStateToApply.resources || {};
+      if (cloudState.clientTimestamp) {
+        lastLocalWriteTimestampRef.current = cloudState.clientTimestamp;
+      }
     }
     isHydrated.current = true;
     useStore.getState().setIsCloudLoaded(true);
@@ -317,11 +331,15 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         calendarSynced, is24HourFormat, chatHistory, proactiveRecommendations
       } = state;
 
+      const writeTimestamp = Date.now();
+      lastLocalWriteTimestampRef.current = writeTimestamp;
+
       const stateToSave = {
         user: storeUser,
         subjects, resources, activities, websites, courses, tasks,
         timetable, themeAccent, apiKeys, selectedModel,
-        calendarSynced, is24HourFormat, chatHistory, proactiveRecommendations
+        calendarSynced, is24HourFormat, chatHistory, proactiveRecommendations,
+        clientTimestamp: writeTimestamp
       };
 
       const serialized = JSON.stringify(stateToSave);
