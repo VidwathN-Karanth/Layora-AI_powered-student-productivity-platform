@@ -334,14 +334,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
                 <nav className="space-y-0.5">
                   {menuItems.map((item) => {
-                    const active = pathname === item.path;
+                    const active = pathname.replace(/\/$/, '') === item.path.replace(/\/$/, '');
                     const Icon = item.icon;
                     return (
                       <button
                         key={item.name}
                         onClick={() => { router.push(item.path); setMobileMenuOpen(false); }}
-                        className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-xs font-mono transition ${
-                          active ? 'bg-white/10 text-cyber-blue font-bold' : 'text-white/60 hover:bg-white/5 hover:text-white'
+                        className={`w-full flex items-center gap-3 py-1.5 rounded-lg text-xs font-mono transition border-l-[3px] ${
+                          active 
+                            ? 'bg-white/10 text-cyber-blue font-bold border-l-cyber-blue pl-2 pr-3' 
+                            : 'text-white/60 hover:bg-white/5 hover:text-white border-l-transparent pl-2 pr-3'
                         }`}
                       >
                         <Icon className="w-4 h-4" strokeWidth={1.5} />
@@ -420,16 +422,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Navigation Links */}
           <nav className="space-y-1">
             {menuItems.map((item) => {
-              const active = pathname === item.path;
+              const active = pathname.replace(/\/$/, '') === item.path.replace(/\/$/, '');
               const Icon = item.icon;
               return (
                 <button
                   key={item.name}
                   onClick={() => router.push(item.path)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-mono transition relative ${
+                  className={`w-full flex items-center gap-3 py-2.5 rounded-xl text-xs font-mono transition relative border border-l-[3px] ${
                     active 
-                      ? 'bg-gradient-to-r from-cyber-purple/20 to-cyber-blue/10 text-white border border-white/10' 
-                      : 'text-white/60 hover:bg-white/5 hover:text-white border border-transparent'
+                      ? 'bg-gradient-to-r from-cyber-purple/25 to-cyber-blue/15 text-white font-bold border-white/15 border-l-cyber-blue pl-2 pr-3' 
+                      : 'text-white/60 hover:bg-white/5 hover:text-white border-transparent border-l-transparent pl-2 pr-3'
                   }`}
                 >
                   <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-cyber-blue' : ''}`} strokeWidth={1.5} />
