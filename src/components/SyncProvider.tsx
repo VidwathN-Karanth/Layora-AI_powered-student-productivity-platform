@@ -181,42 +181,36 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     serverLog(`SyncProvider - ✓ All conditions met, loading data from Supabase. user.id=${user.id}, isSupabaseConfigured=${isSupabaseConfigured}`);
 
     if (isSupabaseConfigured && supabase) {
-      const client = supabase;
       const loadInitialSupabaseState = async () => {
         try {
-          serverLog('SyncProvider - attempting to fetch user state from Supabase...');
+          serverLog('SyncProvider - attempting to fetch user state from Server Proxy...');
           
           // Wrap the database query in a promise race with an 8-second timeout to prevent infinite loader hangs
           const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('Supabase initial fetch timed out after 8000ms')), 8000)
+            setTimeout(() => reject(new Error('Server state fetch timed out after 8000ms')), 8000)
           );
 
-          const queryPromise = client
-            .from('user_states')
-            .select('state')
-            .eq('id', user.id)
-            .single();
-
-          const resultObj = await Promise.race([queryPromise, timeoutPromise]) as any;
-          const { data, error } = resultObj;
-
-          if (error) {
-            if (error.code === 'PGRST116') {
-              serverLog('SyncProvider - no existing cloud data (first login), creating new state');
-              await processIncomingCloudState({}, 'supabase');
-            } else {
-              serverLog(`SyncProvider - CRITICAL: Database query failed: ${JSON.stringify(error)}`, true);
-              throw error;
+          const fetchPromise = fetch('/api/user/state/').then(async (res) => {
+            if (!res.ok) {
+              const errData = await res.json().catch(() => ({}));
+              throw new Error(errData.error || `HTTP error ${res.status}`);
             }
-          } else if (data && data.state) {
-            serverLog(`SyncProvider - ✓ Loaded existing state from Supabase: isOnboarded=${data.state.user?.isOnboarded}, subjects=${data.state.subjects?.length || 0}`);
-            await processIncomingCloudState(data.state, 'supabase');
+            return res.json();
+          });
+
+          const result = await Promise.race([fetchPromise, timeoutPromise]) as any;
+
+          if (result.isLocalMode) {
+            serverLog('SyncProvider - running in local-only demo mode (Supabase not configured)');
+          } else if (result.state) {
+            serverLog(`SyncProvider - ✓ Loaded existing state from Server Proxy: isOnboarded=${result.state.user?.isOnboarded}, subjects=${result.state.subjects?.length || 0}`);
+            await processIncomingCloudState(result.state, 'supabase');
           } else {
-            serverLog('SyncProvider - unexpected: no data but no error', true);
+            serverLog('SyncProvider - no existing cloud data (first login), creating new state');
             await processIncomingCloudState({}, 'supabase');
           }
         } catch (err: any) {
-          serverLog(`SyncProvider - CRITICAL: Failed to load initial Supabase state: ${err.message}`, true);
+          serverLog(`SyncProvider - CRITICAL: Failed to load initial state: ${err.message}`, true);
         } finally {
           isHydrated.current = true;
           useStore.getState().setIsCloudLoaded(true);
@@ -226,7 +220,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       loadInitialSupabaseState();
 
       // Subscribe to real-time table modifications for this row
-      supabaseChannel = client
+      supabaseChannel = supabase
         .channel(`realtime:user_states:id=eq.${user.id}`)
         .on(
           'postgres_changes',
@@ -266,24 +260,22 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       isWritingRef.current = true;
       try {
         inFlightWrites.current++;
-        const updateTime = new Date().toISOString();
 
-        if (isSupabaseConfigured && supabase) {
-          const { error } = await supabase
-            .from('user_states')
-            .upsert({
-              id: user.id,
-              state: sanitizeStateForFirestore(stateToSave),
-              updated_at: updateTime
-            });
-          if (error) {
-            console.error('SyncProvider - Supabase sync failed:', error);
-            throw error;
+        if (isSupabaseConfigured) {
+          const res = await fetch('/api/user/state/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ state: sanitizeStateForFirestore(stateToSave) })
+          });
+
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP error ${res.status}`);
           }
-          console.log('SyncProvider - ✓ Synced to Supabase (Queue):', {
+
+          console.log('SyncProvider - ✓ Synced to Supabase via Server Proxy (Queue):', {
             subjects: stateToSave.subjects?.length,
-            tasks: stateToSave.tasks?.length,
-            timestamp: updateTime
+            tasks: stateToSave.tasks?.length
           });
         }
 
@@ -376,13 +368,13 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           inFlightWrites.current++;
           const updateTime = new Date().toISOString();
 
-          if (isSupabaseConfigured && supabase) {
-            const { error } = await supabase.from('user_states').upsert({
-              id: user.id,
-              state: sanitizeStateForFirestore(toWrite.stateToSave),
-              updated_at: updateTime
+          if (isSupabaseConfigured) {
+            const res = await fetch('/api/user/state/', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ state: sanitizeStateForFirestore(toWrite.stateToSave) })
             });
-            if (error) throw error;
+            if (!res.ok) throw new Error(`HTTP error ${res.status}`);
           }
           lastSavedSerializedRef.current = toWrite.serialized;
           ignoreSnapshotUntilRef.current = Date.now() + 3000;
