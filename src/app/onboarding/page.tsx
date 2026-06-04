@@ -129,48 +129,63 @@ export default function OnboardingPage() {
 
   // Complete Onboarding Flow
   const handleSaveAndRedirect = async () => {
-    // 1. Commit everything to global Zustand store
-    store.updateRoutine({
+    // Generate new lists with unique IDs to match store formats
+    const newSubjects = subjects.map(s => ({
+      ...s,
+      id: `sub-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+    }));
+
+    const newResources: { [subjectId: string]: { id: string; name: string; url: string; type: string }[] } = {};
+    newSubjects.forEach((s, sIdx) => {
+      const files = uploadedFiles[sIdx] || [];
+      newResources[s.id] = files.map(f => ({
+        id: `res-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        name: f.name,
+        url: '#',
+        type: 'pdf'
+      }));
+    });
+
+    const newActivities = activities.map(a => ({
+      ...a,
+      id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+    }));
+
+    const newWebsites = websites.map(w => ({
+      ...w,
+      id: `site-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+    }));
+
+    const newCourses = courses.map(c => ({
+      ...c,
+      id: `course-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+    }));
+
+    const updatedUser = store.user ? {
+      ...store.user,
       wakeTime,
       sleepTime,
       collegeStart,
       collegeEnd,
-      freeBlocks
+      freeBlocks,
+      isOnboarded: true
+    } : null;
+
+    // Save all onboarded details to the global store in a single transaction
+    store.setFullState({
+      user: updatedUser,
+      subjects: newSubjects,
+      resources: newResources,
+      activities: newActivities,
+      websites: newWebsites,
+      courses: newCourses
     });
 
-    // Replace subjects
-    store.subjects.forEach(s => store.removeSubject(s.id));
-    subjects.forEach(s => store.addSubject(s));
-
-    // Upload resource items
-    subjects.forEach((s, sIdx) => {
-      const files = uploadedFiles[sIdx] || [];
-      const matchingSub = store.subjects.find(sub => sub.name === s.name);
-      if (matchingSub) {
-        files.forEach(f => store.uploadResource(matchingSub.id, { name: f.name, url: '#', type: 'pdf' }));
-      }
-    });
-
-    // Extracurriculars
-    store.activities.forEach(a => store.removeActivity(a.id));
-    activities.forEach(a => store.addActivity(a));
-
-    // Websites
-    store.websites.forEach(w => store.removeWebsite(w.id));
-    websites.forEach(w => store.addWebsite(w));
-
-    // Courses
-    store.courses.forEach(c => store.removeCourse(c.id));
-    courses.forEach(c => store.addCourse(c));
-
-    // 2. Generate optimized schedule blocks inside store
+    // Generate the initial study schedule blocks
     store.generateSchedule();
 
-    // Mark as Onboarded LAST — this final update triggers the full sync
-    store.updateOnboardingStatus(true);
-
-    // 3. Wait a brief moment for Supabase sync to complete
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // 3. Wait a brief moment for Supabase sync to complete (including the debounced write)
+    await new Promise(resolve => setTimeout(resolve, 800));
 
     // 4. Navigate
     router.push('/dashboard');

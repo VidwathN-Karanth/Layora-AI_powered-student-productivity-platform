@@ -305,8 +305,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         }
       };
 
-      // Sync immediately - don't debounce, Supabase is the only source of truth
-      performSync();
+      // Debounce the sync to Supabase (500ms) to prevent race conditions during rapid state changes (e.g. onboarding)
+      syncTimeoutRef.current = setTimeout(performSync, 500);
     });
 
     return () => {
