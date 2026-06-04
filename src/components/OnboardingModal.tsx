@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/store/useStore';
+import { isSupabaseConfigured } from '@/lib/supabaseClient';
 import { 
   Clock, BookOpen, UploadCloud, Dumbbell, Globe, Award, CheckCircle, 
   Plus, Trash, ChevronRight, ChevronLeft, File, X, Info
@@ -219,6 +220,14 @@ export default function OnboardingModal() {
           <Info className="w-3.5 h-3.5 text-primary shrink-0" />
           <span>Please complete these details to construct your interactive dashboard and custom AI timetable.</span>
         </div>
+
+        {/* Warning if Supabase is not configured */}
+        {!isSupabaseConfigured && (
+          <div className="bg-amber-950/45 border-b border-amber-500/30 px-5 py-2.5 flex items-center gap-2.5 text-[10px] text-amber-400 font-mono leading-relaxed">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping shrink-0"></span>
+            <span>WARNING: Supabase database is not configured. The application is running in Local Demo Mode, and all settings/subjects will be lost upon refreshing the page. Please add the environment variables in your Vercel Project Settings or .env.local file.</span>
+          </div>
+        )}
 
         {/* Progress Bar */}
         <div className="w-full h-[2px] bg-surface-container">
