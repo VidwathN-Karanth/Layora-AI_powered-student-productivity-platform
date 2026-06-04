@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/store/useStore';
+import { isSupabaseConfigured } from '@/lib/supabaseClient';
 import { 
   Clock, BookOpen, UploadCloud, Dumbbell, Globe, Award, CheckCircle, 
   Plus, Trash, ChevronRight, ChevronLeft, ArrowRight, ShieldCheck, File 
@@ -216,6 +217,14 @@ export default function OnboardingPage() {
             style={{ width: `${(step / totalSteps) * 100}%` }}
           ></div>
         </div>
+
+        {/* Warning if Supabase is not configured */}
+        {!isSupabaseConfigured && (
+          <div className="bg-amber-950/45 border border-amber-500/30 rounded-xl px-5 py-3 mb-6 flex items-center gap-2.5 text-xs text-amber-400 font-mono leading-relaxed">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping shrink-0"></span>
+            <span>WARNING: Supabase database is not configured. The application is running in Local Demo Mode, and all settings/subjects will be lost upon refreshing the page. Please add the environment variables in your Vercel Project Settings or .env.local file.</span>
+          </div>
+        )}
 
         {/* Form panel container */}
         <div className="glass-panel-neon rounded-2xl p-6 md:p-10 min-h-[450px] flex flex-col justify-between relative overflow-hidden">
