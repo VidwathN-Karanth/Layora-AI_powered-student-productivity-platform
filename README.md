@@ -56,6 +56,36 @@ Features a proactive weekly timetable planner that automatically maps class time
 
 ---
 
+## 🧩 Module Breakdown & Cloud Portability
+
+Layora is structured into modular academic components that synchronize across all user devices. Because data is linked to your secure Clerk credentials and synced in real-time to Supabase, **any subject, resource file link, or task you modify on one device is instantly available on all others (laptop, phone, or tablet)**.
+
+### 1. 🏁 Onboarding Portal
+A step-by-step routine-capturing wizard that gathers baseline student routines (sleep schedules, wake times, college hours), active courses, and subject parameters to configure your personalized database profile.
+
+### 2. 📊 Main Workspace Dashboard
+Your academic command center showing active focus stopwatch metrics, consecutive activity streak counts, daily agendas, and shortcut actions to trigger AI schedules or task configurations.
+
+### 3. 📅 Generative Planner & Timetable
+An automated scheduler compiling structured study blocks dynamically throughout your week. Backed by the **Groq LLM API** (with a smart offline fallback builder), it distributes blocks based on credits and difficulty, allowing manual drag-reordering and one-click syncing to **Google Calendar**.
+
+### 4. ⏱️ Milestone Tracker & Global Stopwatch
+A comprehensive task organizer with global ticking integration. Clicking "Start" on any task opens the focus stopwatch at the top of the screen (persisting globally across all dashboard pages). Completing tasks updates study hours, records stats, and triggers streak multipliers.
+
+### 5. 📂 Resource Vault
+A subject-specific document vault indexing slides, notes, and PDFs. It uploads files directly to the user's personal **Google Drive** folder or indexes shared URLs (**Web Links**) for files larger than 4.5MB. Uploaded materials sync to the database instantly, meaning you can retrieve, download, and view your study documents on any tablet, phone, or laptop.
+
+### 6. 🎓 Online Course Tracker
+A learning manager allowing you to input active online courses, update progress percentages, and visualize progress bars.
+
+### 7. 🤖 Study Copilot (LLM Assistant)
+A context-aware chat interface providing study help, summarizing notes, explaining complex topics, and recommending study timetables. Supports user-provided custom Groq API keys securely stored in their profile.
+
+### 8. 🛡️ Admin Root Console
+An administrative metrics dashboard to track overall user telemetry (such as total study hours and average streaks) and perform data purge operations.
+
+---
+
 ## 📂 Core Folder Structure
 
 ```
