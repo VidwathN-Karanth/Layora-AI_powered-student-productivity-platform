@@ -179,6 +179,14 @@ export default function OnboardingModal() {
     store.generateSchedule();
   };
 
+  if (typeof window !== 'undefined') {
+    fetch('/api/debug-log/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: `OnboardingModal render - hasUser=${!!store.user}, isOnboarded=${store.user?.isOnboarded}, email=${store.user?.email}` })
+    }).catch(() => {});
+  }
+
   if (!store.user || store.user.isOnboarded) return null;
 
   return (

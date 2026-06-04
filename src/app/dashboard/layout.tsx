@@ -282,6 +282,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     ...(isAdmin ? [{ name: 'Admin Portal', path: '/admin', icon: ShieldAlert }] : [])
   ];
 
+  if (typeof window !== 'undefined') {
+    fetch('/api/debug-log/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: `DashboardLayout render - isLoaded=${isLoaded}, isAuthenticated=${store.isAuthenticated}, hasUser=${!!store.user}, userEmail=${store.user?.email}, isOnboarded=${store.user?.isOnboarded}` })
+    }).catch(() => {});
+  }
+
   if (!isLoaded || !store.isAuthenticated) return null;
 
   return (

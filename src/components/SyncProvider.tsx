@@ -35,7 +35,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       console.log(msg);
     }
     if (typeof window !== 'undefined') {
-      fetch('/api/debug-log', {
+      fetch('/api/debug-log/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: msg })
