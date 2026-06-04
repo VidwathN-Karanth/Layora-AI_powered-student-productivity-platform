@@ -20,6 +20,10 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const inFlightWrites = useRef(0);
   const ignoreSnapshotUntilRef = useRef<number>(0);
 
+  // Sequential Sync Queue refs
+  const isWritingRef = useRef(false);
+  const pendingWriteRef = useRef<{ stateToSave: any; serialized: string } | null>(null);
+
   const themeAccent = useStore((state) => state.themeAccent);
   const hasHydrated = useStore((state) => state.hasHydrated);
   const isCloudLoaded = useStore((state) => state.isCloudLoaded);
@@ -54,8 +58,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const processIncomingCloudState = async (cloudState: any, source: 'supabase') => {
     if (suppressSync) return;
     
-    // Ignore snapshot if there are pending local writes, in-flight writes, or scheduled debounce timeouts
-    if (pendingStateRef.current !== null || inFlightWrites.current > 0 || syncTimeoutRef.current !== null) {
+    // Ignore snapshot if there are pending local writes, in-flight writes, or active queue processing
+    if (pendingStateRef.current !== null || inFlightWrites.current > 0 || isWritingRef.current || pendingWriteRef.current !== null) {
       console.log(`SyncProvider - ignoring ${source} snapshot due to pending/in-flight writes`);
       return;
     }
@@ -169,17 +173,26 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       const loadInitialSupabaseState = async () => {
         try {
           console.log('SyncProvider - attempting to fetch user state from Supabase...');
-          const { data, error } = await client
+          
+          // Wrap the database query in a promise race with an 8-second timeout to prevent infinite loader hangs
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Supabase initial fetch timed out after 8000ms')), 8000)
+          );
+
+          const queryPromise = client
             .from('user_states')
             .select('state')
             .eq('id', user.id)
             .single();
 
+          const resultObj = await Promise.race([queryPromise, timeoutPromise]) as any;
+          const { data, error } = resultObj;
+
           if (error) {
             if (error.code === 'PGRST116') {
               // No data found - this is expected for first login
               console.log('SyncProvider - no existing cloud data (first login), creating new state');
-              processIncomingCloudState({}, 'supabase');
+              await processIncomingCloudState({}, 'supabase');
             } else {
               console.error('SyncProvider - CRITICAL: Database query failed:', error);
               throw error;
@@ -190,14 +203,15 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
               subjects: data.state.subjects?.length || 0,
               tasks: data.state.tasks?.length || 0
             });
-            processIncomingCloudState(data.state, 'supabase');
+            await processIncomingCloudState(data.state, 'supabase');
           } else {
             console.warn('SyncProvider - unexpected: no data but no error');
-            processIncomingCloudState({}, 'supabase');
+            await processIncomingCloudState({}, 'supabase');
           }
         } catch (err) {
           console.error('SyncProvider - CRITICAL: Failed to load initial Supabase state:', err);
-          // Still mark as loaded even if failed to prevent infinite loops
+        } finally {
+          isHydrated.current = true;
           useStore.getState().setIsCloudLoaded(true);
         }
       };
@@ -215,15 +229,19 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             table: 'user_states',
             filter: `id=eq.${user.id}`
           },
-          (payload) => {
+          async (payload) => {
             console.log('SyncProvider - real-time update received from Supabase');
             const newState = (payload.new as any)?.state;
             if (newState) {
-              processIncomingCloudState(newState, 'supabase');
+              await processIncomingCloudState(newState, 'supabase');
             }
           }
         )
         .subscribe();
+    } else {
+      console.log('SyncProvider - Supabase is not configured, running in local-only demo mode');
+      isHydrated.current = true;
+      useStore.getState().setIsCloudLoaded(true);
     }
 
     return () => {
@@ -231,9 +249,59 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     };
   }, [isLoaded, user?.id, hasHydrated]);
 
-  // 2. Subscribe to local Store Changes and sync (writes to both)
+  // 2. Subscribe to local Store Changes and sync using a sequential write queue
   useEffect(() => {
     if (!hasHydrated || !isLoaded || !user) return;
+
+    // Helper that executes database upserts sequentially
+    const performSync = async (stateToSave: any, serialized: string) => {
+      if (suppressSync) return;
+      isWritingRef.current = true;
+      try {
+        inFlightWrites.current++;
+        const updateTime = new Date().toISOString();
+
+        if (isSupabaseConfigured && supabase) {
+          const { error } = await supabase
+            .from('user_states')
+            .upsert({
+              id: user.id,
+              state: sanitizeStateForFirestore(stateToSave),
+              updated_at: updateTime
+            });
+          if (error) {
+            console.error('SyncProvider - Supabase sync failed:', error);
+            throw error;
+          }
+          console.log('SyncProvider - ✓ Synced to Supabase (Queue):', {
+            subjects: stateToSave.subjects?.length,
+            tasks: stateToSave.tasks?.length,
+            timestamp: updateTime
+          });
+        }
+
+        lastSavedSerializedRef.current = serialized;
+        lastSavedSubjectsRef.current = stateToSave.subjects || [];
+        lastSavedResourcesRef.current = stateToSave.resources || {};
+        ignoreSnapshotUntilRef.current = Date.now() + 3000;
+      } catch (err: any) {
+        console.error('SyncProvider - CRITICAL: Failed to save to Supabase:', err);
+      } finally {
+        inFlightWrites.current--;
+        
+        // Check if a new write was staged while this write was in flight
+        if (pendingWriteRef.current) {
+          const nextWrite = pendingWriteRef.current;
+          pendingWriteRef.current = null;
+          // Trigger next sync asynchronously to avoid recursion call stack build-up
+          setTimeout(() => {
+            performSync(nextWrite.stateToSave, nextWrite.serialized);
+          }, 0);
+        } else {
+          isWritingRef.current = false;
+        }
+      }
+    };
 
     const unsubscribe = useStore.subscribe((state) => {
       if (!isHydrated.current) return;
@@ -260,113 +328,63 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       const serialized = JSON.stringify(stateToSave);
       if (serialized === lastSavedSerializedRef.current) return;
 
+      // Keep pendingStateRef updated for unload flush
       pendingStateRef.current = state;
 
-      if (syncTimeoutRef.current) {
-        clearTimeout(syncTimeoutRef.current);
-        syncTimeoutRef.current = null;
+      // Queue state writes: immediate execution if queue is idle, otherwise stage the latest state
+      if (isWritingRef.current) {
+        pendingWriteRef.current = { stateToSave, serialized };
+        console.log('SyncProvider - Sync in progress, staging next write');
+      } else {
+        performSync(stateToSave, serialized);
       }
-
-      // Perform immediate sync for ALL changes (no debouncing) - Supabase is the only source of truth
-      const performSync = async () => {
-        if (suppressSync) return;
-        try {
-          inFlightWrites.current++;
-          const updateTime = new Date().toISOString();
-
-          // Sync to Supabase immediately
-          if (isSupabaseConfigured && supabase) {
-            const { error } = await supabase
-              .from('user_states')
-              .upsert({
-                id: user.id,
-                state: sanitizeStateForFirestore(stateToSave),
-                updated_at: updateTime
-              });
-            if (error) {
-              console.error('SyncProvider - Supabase sync failed:', error);
-              throw error;
-            }
-            console.log('SyncProvider - ✓ Synced to Supabase:', { subjects: subjects?.length, tasks: stateToSave.tasks?.length, timestamp: updateTime });
-          }
-
-          lastSavedSerializedRef.current = serialized;
-          lastSavedSubjectsRef.current = subjects || [];
-          lastSavedResourcesRef.current = resources || {};
-          ignoreSnapshotUntilRef.current = Date.now() + 3000;
-        } catch (err: any) {
-          console.error('SyncProvider - CRITICAL: Failed to save to Supabase:', err);
-          // Don't swallow errors - log them loudly so user knows sync failed
-        } finally {
-          inFlightWrites.current--;
-          if (pendingStateRef.current === state) {
-            pendingStateRef.current = null;
-          }
-        }
-      };
-
-      // Debounce the sync to Supabase (500ms) to prevent race conditions during rapid state changes (e.g. onboarding)
-      syncTimeoutRef.current = setTimeout(performSync, 500);
     });
 
     return () => {
       unsubscribe();
-      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
     };
   }, [isLoaded, user?.id, hasHydrated]);
 
-  // 3. Force Flush Pending State on Unload/Visibility Change
+  // 3. Force Flush Pending State/Queue on Unload/Visibility Change
   useEffect(() => {
     if (!hasHydrated || !isLoaded || !user) return;
 
     const flushSync = async () => {
       if (suppressSync) return;
-      if (syncTimeoutRef.current) {
-        clearTimeout(syncTimeoutRef.current);
-        syncTimeoutRef.current = null;
-      }
 
-      // Flush any pending state and wait for in-flight writes
       const maxWaitTime = 5000; // Max 5 seconds
       const startTime = Date.now();
-      while (inFlightWrites.current > 0 && Date.now() - startTime < maxWaitTime) {
+
+      // Wait for any in-flight writes or current queue executions to complete
+      while ((isWritingRef.current || inFlightWrites.current > 0) && Date.now() - startTime < maxWaitTime) {
         await new Promise(resolve => setTimeout(resolve, 50));
       }
 
-      if (pendingStateRef.current) {
-        const state = pendingStateRef.current;
-        pendingStateRef.current = null;
+      // If a write is still pending in the queue, flush it out
+      if (pendingWriteRef.current) {
+        const toWrite = pendingWriteRef.current;
+        pendingWriteRef.current = null;
         try {
-          const {
-            user: storeUser, subjects, resources, activities, websites, courses, tasks,
-            timetable, themeAccent, apiKeys, selectedModel,
-            calendarSynced, is24HourFormat, chatHistory, proactiveRecommendations
-          } = state;
-
-          const stateToSave = {
-            user: storeUser,
-            subjects, resources, activities, websites, courses, tasks,
-            timetable, themeAccent, apiKeys, selectedModel,
-            calendarSynced, is24HourFormat, chatHistory, proactiveRecommendations
-          };
-
+          isWritingRef.current = true;
           inFlightWrites.current++;
           const updateTime = new Date().toISOString();
 
           if (isSupabaseConfigured && supabase) {
             const { error } = await supabase.from('user_states').upsert({
               id: user.id,
-              state: sanitizeStateForFirestore(stateToSave),
+              state: sanitizeStateForFirestore(toWrite.stateToSave),
               updated_at: updateTime
             });
             if (error) throw error;
           }
+          lastSavedSerializedRef.current = toWrite.serialized;
           ignoreSnapshotUntilRef.current = Date.now() + 3000;
-          console.log('SyncProvider - ✓ Flushed & synced to Supabase on page unload');
+          console.log('SyncProvider - ✓ Flushed pending queue write to Supabase on page unload');
         } catch (err) {
-          console.error('SyncProvider - CRITICAL: Failed to flush state on unload:', err);
+          console.error('SyncProvider - CRITICAL: Failed to flush pending queue write on unload:', err);
         } finally {
           inFlightWrites.current--;
+          isWritingRef.current = false;
         }
       }
     };
