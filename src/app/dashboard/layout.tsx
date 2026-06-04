@@ -31,7 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         store.login(primaryEmail, fullName);
       }
     }
-  }, [isLoaded, isSignedIn, clerkUser, store.hasHydrated, store.isCloudLoaded]);
+  }, [isLoaded, isSignedIn, clerkUser, store.hasHydrated, store.isCloudLoaded, store.isAuthenticated, store.user?.email]);
 
   useEffect(() => {
     if (store.isAuthenticated) {
