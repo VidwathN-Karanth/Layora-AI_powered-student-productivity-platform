@@ -20,7 +20,7 @@ export default function ResourcesPage() {
   const [activeTab, setActiveTab] = useState<'upload' | 'subject'>('upload');
 
   // Form states - Upload Resource
-  const [uploadMethod, setUploadMethod] = useState<'supabase' | 'drive' | 'link'>('supabase');
+  const [uploadMethod, setUploadMethod] = useState<'drive' | 'link'>('drive');
   const [linkUrl, setLinkUrl] = useState('');
   const [activeSubjectId, setActiveSubjectId] = useState(subjects[0]?.id || '');
   const [fileName, setFileName] = useState('');
@@ -118,78 +118,35 @@ export default function ResourcesPage() {
 
     setIsUploading(true);
 
-    if (uploadMethod === 'drive') {
-      try {
-        const formData = new FormData();
-        formData.append('file', fileData);
-        formData.append('name', fileName || fileData.name);
-
-        const res = await fetch('/api/resources/upload-drive', {
-          method: 'POST',
-          body: formData,
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.error || 'Failed to upload to Google Drive');
-        }
-
-        store.uploadResource(targetSubjectId, {
-          name: fileName || fileData.name,
-          url: data.file.url,
-          type: fileType
-        });
-
-        alert("File uploaded successfully to your Google Drive!");
-        
-        setFileName('');
-        setFileData(null);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-      } catch (err: any) {
-        alert(`Google Drive Upload Failed: ${err.message}\n\nFalling back: You can use the "Web Link" tab to link your files if your Google integration isn't authorized.`);
-        console.error(err);
-      } finally {
-        setIsUploading(false);
-      }
-      return;
-    }
-
-    // Default Supabase Storage flow
     try {
-      if (!isSupabaseConfigured || !supabase) {
-        throw new Error("Supabase is not configured.");
+      const formData = new FormData();
+      formData.append('file', fileData);
+      formData.append('name', fileName || fileData.name);
+
+      const res = await fetch('/api/resources/upload-drive', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to upload to Google Drive');
       }
-      const userId = user?.id || 'anonymous';
-      const timestamp = Date.now();
-      const safeName = (fileName || fileData.name).replace(/[^a-zA-Z0-9.-]/g, '_');
-      const storagePath = `users/${userId}/subjects/${targetSubjectId}/${timestamp}_${safeName}`;
-
-      const { data, error } = await supabase.storage
-        .from('resources')
-        .upload(storagePath, fileData, {
-          cacheControl: '3600',
-          upsert: true
-        });
-
-      if (error) throw error;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('resources')
-        .getPublicUrl(storagePath);
 
       store.uploadResource(targetSubjectId, {
         name: fileName || fileData.name,
-        url: publicUrl,
+        url: data.file.url,
         type: fileType
       });
+
+      alert("File uploaded successfully to your Google Drive!");
       
       setFileName('');
       setFileData(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err: any) {
-      alert(`Upload failed: ${err.message}`);
+      alert(`Google Drive Upload Failed: ${err.message}\n\nFalling back: You can use the "Web Link" tab to link your files if your Google integration isn't authorized.`);
       console.error(err);
     } finally {
       setIsUploading(false);
@@ -322,21 +279,7 @@ export default function ResourcesPage() {
                     {/* Storage / Upload Location Selector */}
                     <div>
                       <label className="block text-[10px] font-mono text-white/50 mb-1">Storage Destination</label>
-                      <div className="grid grid-cols-3 gap-1.5 p-1 bg-white/5 border border-white/10 rounded-xl">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setUploadMethod('supabase');
-                            setFileType('pdf');
-                          }}
-                          className={`py-1.5 text-[9px] font-mono font-bold rounded-lg flex items-center justify-center gap-1 transition cursor-pointer ${
-                            uploadMethod === 'supabase'
-                              ? 'bg-cyber-blue/20 text-cyber-blue border border-cyber-blue/30'
-                              : 'text-white/50 hover:text-white hover:bg-white/5 border border-transparent'
-                          }`}
-                        >
-                          Supabase Storage
-                        </button>
+                      <div className="grid grid-cols-2 gap-1.5 p-1 bg-white/5 border border-white/10 rounded-xl">
                         <button
                           type="button"
                           onClick={() => {
@@ -345,7 +288,7 @@ export default function ResourcesPage() {
                           }}
                           className={`py-1.5 text-[9px] font-mono font-bold rounded-lg flex items-center justify-center gap-1 transition cursor-pointer ${
                             uploadMethod === 'drive'
-                              ? 'bg-cyber-purple/20 text-cyber-purple border border-cyber-purple/30'
+                              ? 'bg-cyber-blue/20 text-cyber-blue border border-cyber-blue/30'
                               : 'text-white/50 hover:text-white hover:bg-white/5 border border-transparent'
                           }`}
                         >
