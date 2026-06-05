@@ -113,6 +113,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [store.timetable]);
 
+  // Auto-generate schedule if timetable is empty (Rule 1)
+  useEffect(() => {
+    if (store.isAuthenticated && store.isCloudLoaded && store.timetable.length === 0) {
+      console.log('DashboardLayout - timetable is empty, auto-generating schedule');
+      store.generateSchedule();
+    }
+  }, [store.isAuthenticated, store.isCloudLoaded, store.timetable.length]);
+
   // Chat message input and scrolling
   const [messageText, setMessageText] = useState('');
   const [chatLoading, setChatLoading] = useState(false);

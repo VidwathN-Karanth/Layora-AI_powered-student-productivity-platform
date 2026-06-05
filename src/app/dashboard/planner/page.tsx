@@ -48,27 +48,7 @@ export default function PlannerPage() {
 
   const handleGenerateAI = async () => {
     setLoadingSchedule(true);
-    
-    // Setup routine config
-    const routine = {
-      wakeTime: store.user?.wakeTime || '06:00',
-      sleepTime: store.user?.sleepTime || '22:00',
-      collegeTimings: {
-        start: store.user?.collegeStart || '09:00',
-        end: store.user?.collegeEnd || '16:00'
-      },
-      freeBlocks: store.user?.freeBlocks || []
-    };
-
-    const newBlocks = await generateAISchedule(
-      store.apiKeys,
-      routine,
-      store.subjects,
-      store.activities,
-      store.courses
-    );
-
-    store.setTimetable(newBlocks);
+    await store.generateSchedule();
     setLoadingSchedule(false);
   };
 
@@ -302,18 +282,29 @@ export default function PlannerPage() {
             <h4 className="text-xs font-geist font-bold text-primary border-b border-outline-variant pb-2 uppercase">Planning Guide</h4>
             
             <ul className="space-y-3 text-xs font-sans text-on-surface/70">
-              <li className="flex items-start gap-2">
-                <span className="text-primary font-mono font-bold">01.</span>
-                <span>The **AI Planner** parses subject credits and difficulty, scheduling more blocks for hard tasks.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary font-mono font-bold">02.</span>
-                <span>It allocates mandatory college hours, gyms, chess practice, and schedules power rest breaks automatically.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary font-mono font-bold">03.</span>
-                <span>Sync to Google Calendar exports study slots so you receive mobile calendar push notifications.</span>
-              </li>
+              {store.planningGuideInsights && store.planningGuideInsights.length > 0 ? (
+                store.planningGuideInsights.map((insight, idx) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <span className="text-primary font-mono font-bold">{(idx + 1).toString().padStart(2, '0')}.</span>
+                    <span>{insight}</span>
+                  </li>
+                ))
+              ) : (
+                <>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary font-mono font-bold">01.</span>
+                    <span>The **AI Planner** parses subject credits and difficulty, scheduling more blocks for hard tasks.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary font-mono font-bold">02.</span>
+                    <span>It allocates mandatory college hours, gyms, chess practice, and schedules power rest breaks automatically.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary font-mono font-bold">03.</span>
+                    <span>Sync to Google Calendar exports study slots so you receive mobile calendar push notifications.</span>
+                  </li>
+                </>
+              )}
             </ul>
           </div>
         </div>
