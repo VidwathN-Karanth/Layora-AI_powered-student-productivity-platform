@@ -110,7 +110,7 @@ export default function DashboardHome() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            currentTasks: tasks.filter(t => t.status !== 'completed'),
+            currentTasks: tasks,
             currentSubjects: subjects,
             currentRoutine: user ? {
               wakeTime: user.wakeTime,

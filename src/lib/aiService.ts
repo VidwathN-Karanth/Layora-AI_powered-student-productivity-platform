@@ -7,6 +7,19 @@ export interface AIKeys {
   grok?: string;
 }
 
+export interface Task {
+  id: string;
+  subjectId: string;
+  subjectName: string;
+  title: string;
+  deadline: string;
+  estimatedMinutes: number;
+  actualMinutesSpent: number;
+  status: 'pending' | 'in_progress' | 'completed';
+  completedAt?: string;
+}
+
+
 export interface Subject {
   id: string;
   name: string;
@@ -67,66 +80,24 @@ export function generateLocalWeeklySchedule(
   routine: Routine,
   subjects: Subject[],
   activities: Activity[],
-  courses: Course[]
-): TimetableBlock[] {
+  courses: Course[],
+  tasks?: Task[]
+): { schedule: TimetableBlock[]; insights: string[] } {
   const schedule: TimetableBlock[] = [];
-  const days = [1, 2, 3, 4, 5, 6]; // Monday to Saturday (rest on Sunday by default)
+  const days = [1, 2, 3, 4, 5, 6, 0]; // Monday to Saturday (rest on Sunday by default)
+  const insights: string[] = [];
 
-  // 1. Combine subjects and active online courses, then sort by priority/importance
-  interface StudyItem {
-    type: 'subject' | 'course';
-    name: string;
-    code?: string;
-    details: string;
-    priorityScore: number;
-    credits?: number;
-    difficulty?: string;
-    priority?: string;
-  }
-
-  const studyItems: StudyItem[] = [];
-
-  subjects.forEach((sub) => {
-    const priorityWeight = { High: 3, Medium: 2, Low: 1 };
-    const score = (priorityWeight[sub.priority] || 2) * 5 + sub.credits;
-    studyItems.push({
-      type: 'subject',
-      name: sub.name,
-      code: sub.code,
-      details: `AI Mentor: Review credits (${sub.credits}) & assignments. Difficulty: ${sub.difficulty}. Keep pushing forward!`,
-      priorityScore: score,
-      credits: sub.credits,
-      difficulty: sub.difficulty,
-      priority: sub.priority
-    });
-  });
-
-  courses.forEach((course) => {
-    // Online courses are given a baseline priority score so they rotate with subjects
-    studyItems.push({
-      type: 'course',
-      name: course.name,
-      details: `AI Mentor: Online course work on ${course.platform}. Current Progress: ${course.progress}%. Keep learning!`,
-      priorityScore: 7, // moderate-high priority
-    });
-  });
-
-  const sortedStudyItems = studyItems.sort((a, b) => b.priorityScore - a.priorityScore);
-
-  // Helper to convert time string "HH:MM" to minutes from midnight
   const timeToMin = (t: string) => {
     const [h, m] = t.split(':').map(Number);
     return h * 60 + m;
   };
 
-  // Helper to convert minutes to "HH:MM"
   const minToTime = (m: number) => {
     const h = Math.floor(m / 60) % 24;
     const min = Math.floor(m % 60);
     return `${h.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
   };
 
-  // Helper to subtract occupied intervals from a free interval to avoid overlap conflicts
   const getUnoccupiedSegments = (start: number, end: number, occupied: { start: number; end: number }[]) => {
     let segments = [{ start, end }];
     
@@ -149,14 +120,10 @@ export function generateLocalWeeklySchedule(
       segments = nextSegments;
     });
 
-    // Return segments that are at least 15 minutes long to be useful
-    return segments.filter(seg => seg.end - seg.start >= 15);
+    // Return segments that are at least 10 minutes long to be useful
+    return segments.filter(seg => seg.end - seg.start >= 10);
   };
 
-  const collegeStart = timeToMin(routine.collegeTimings?.start || '09:00');
-  const collegeEnd = timeToMin(routine.collegeTimings?.end || '16:00');
-
-  // Colors for matching elements
   const colors = {
     class: 'border-l-4 border-secondary bg-secondary-fixed text-on-surface',
     study: 'border-l-4 border-primary bg-primary-fixed text-on-surface',
@@ -164,11 +131,221 @@ export function generateLocalWeeklySchedule(
     break: 'border-l-4 border-emerald-500 bg-emerald-950/20 text-emerald-200',
   };
 
+  // Rule 4: Default schedule template if no user data exists yet
+  if (subjects.length === 0 && (!tasks || tasks.length === 0)) {
+    insights.push("No subjects or tasks found. Loaded default template.");
+    insights.push("Add your subjects and tasks so I can personalize this further.");
+
+    days.forEach((day) => {
+      let blockIdCounter = 0;
+      // Monday to Friday
+      if (day >= 1 && day <= 5) {
+        schedule.push({
+          id: `block-${day}-class-${blockIdCounter++}`,
+          day,
+          start: '09:00',
+          end: '16:00',
+          title: 'College Class Hours',
+          type: 'class',
+          color: colors.class,
+          details: 'Mandatory college class hours (locked)'
+        });
+
+        schedule.push({
+          id: `block-${day}-break-${blockIdCounter++}`,
+          day,
+          start: '16:00',
+          end: '16:30',
+          title: 'Break',
+          type: 'break',
+          color: colors.break,
+          details: 'Afternoon rest break (30 min)'
+        });
+
+        schedule.push({
+          id: `block-${day}-study-1-${blockIdCounter++}`,
+          day,
+          start: '17:00',
+          end: '18:00',
+          title: 'Study: Review today\'s lecture notes',
+          type: 'study',
+          color: colors.study,
+          details: 'Review lecture highlights and notes (60 min)'
+        });
+
+        schedule.push({
+          id: `block-${day}-study-2-${blockIdCounter++}`,
+          day,
+          start: '18:30',
+          end: '19:30',
+          title: 'Study: Work on pending assignment',
+          type: 'study',
+          color: colors.study,
+          details: 'Address homework or projects (60 min)'
+        });
+
+        schedule.push({
+          id: `block-${day}-study-3-${blockIdCounter++}`,
+          day,
+          start: '20:00',
+          end: '22:00',
+          title: 'Night Work / Self-study',
+          type: 'study',
+          color: colors.study,
+          details: 'Open hours for extra learning or revision'
+        });
+      } else if (day === 6) { // Saturday
+        schedule.push({
+          id: `block-${day}-study-1`,
+          day,
+          start: '10:00',
+          end: '12:00',
+          title: 'Study: Weekend Review',
+          type: 'study',
+          color: colors.study,
+          details: 'Revise topics from the week'
+        });
+        schedule.push({
+          id: `block-${day}-study-2`,
+          day,
+          start: '14:00',
+          end: '14:45',
+          title: 'Solve 1 LeetCode Problem',
+          type: 'study',
+          color: colors.study,
+          details: 'Practice logic and coding tasks'
+        });
+      } else if (day === 0) { // Sunday
+        schedule.push({
+          id: `block-${day}-study-1`,
+          day,
+          start: '10:00',
+          end: '12:00',
+          title: 'Online Course Study',
+          type: 'study',
+          color: colors.study,
+          details: 'Advance your active online courses'
+        });
+        schedule.push({
+          id: `block-${day}-study-2`,
+          day,
+          start: '14:00',
+          end: '14:45',
+          title: 'Solve 1 LeetCode Problem',
+          type: 'study',
+          color: colors.study,
+          details: 'Sundays logic practice'
+        });
+        schedule.push({
+          id: `block-${day}-break-recap`,
+          day,
+          start: '16:00',
+          end: '17:00',
+          title: 'Weekly AI Recap & Planning',
+          type: 'break',
+          color: colors.break,
+          details: 'Plan upcoming milestones and review hours'
+        });
+      }
+    });
+
+    return { schedule: resolveScheduleOverlaps(schedule), insights };
+  }
+
+  // 1. Filter active tasks and sort by priority order (Rule 3)
+  const activeTasks = (tasks || []).filter(t => t.status !== 'completed');
+
+  const todayMs = new Date().setHours(0, 0, 0, 0);
+  const getDaysUntil = (deadlineStr: string) => {
+    if (!deadlineStr) return 999;
+    const deadlineMs = new Date(deadlineStr).setHours(0, 0, 0, 0);
+    return Math.ceil((deadlineMs - todayMs) / (1000 * 60 * 60 * 24));
+  };
+
+  const urgentTasks: Task[] = [];
+  const highTasks: Task[] = [];
+  const mediumTasks: Task[] = [];
+
+  activeTasks.forEach((t) => {
+    const days = getDaysUntil(t.deadline);
+    if (days <= 1) {
+      urgentTasks.push(t);
+    } else if (days <= 3) {
+      highTasks.push(t);
+    } else {
+      mediumTasks.push(t);
+    }
+  });
+
+  // Calculate subject completed minutes from task history (Rule 2 point 4)
+  const subjectStudyMinutes: { [subjectId: string]: number } = {};
+  (tasks || []).forEach((t) => {
+    if (t.status === 'completed') {
+      subjectStudyMinutes[t.subjectId] = (subjectStudyMinutes[t.subjectId] || 0) + (t.actualMinutesSpent || 0);
+    }
+  });
+
+  // Combine subjects and active online courses, then sort by priority/importance
+  interface StudyItem {
+    type: 'subject' | 'course';
+    id: string;
+    name: string;
+    code?: string;
+    details: string;
+    priorityScore: number;
+    credits?: number;
+    difficulty?: string;
+    priority?: string;
+  }
+
+  const studyItems: StudyItem[] = [];
+
+  subjects.forEach((sub) => {
+    const priorityWeight = { High: 3, Medium: 2, Low: 1 };
+    let score = (priorityWeight[sub.priority] || 2) * 5 + sub.credits;
+
+    // Hard subjects priority weight (Rule 5)
+    if (sub.difficulty === 'Hard') score += 5;
+    else if (sub.difficulty === 'Medium') score += 2;
+
+    // Scale priority based on recent study hours history (Rule 2 point 4)
+    const completedHours = (subjectStudyMinutes[sub.id] || 0) / 60;
+    score -= Math.floor(completedHours) * 2; // Demote highly studied subjects to cycle priorities
+
+    studyItems.push({
+      type: 'subject',
+      id: sub.id,
+      name: sub.name,
+      code: sub.code,
+      details: `AI Mentor: Review credits (${sub.credits}) & assignments. Difficulty: ${sub.difficulty}. Keep pushing forward!`,
+      priorityScore: score,
+      credits: sub.credits,
+      difficulty: sub.difficulty,
+      priority: sub.priority
+    });
+  });
+
+  courses.forEach((course) => {
+    studyItems.push({
+      type: 'course',
+      id: course.id,
+      name: course.name,
+      details: `AI Mentor: Online course work on ${course.platform}. Current Progress: ${course.progress}%. Keep learning!`,
+      priorityScore: 7, // moderate baseline priority
+    });
+  });
+
+  const sortedStudyItems = studyItems.sort((a, b) => b.priorityScore - a.priorityScore);
+
+  const collegeStart = timeToMin(routine.collegeTimings?.start || '09:00');
+  const collegeEnd = timeToMin(routine.collegeTimings?.end || '16:00');
+  const currentDayOfWeek = new Date().getDay();
+
   days.forEach((day) => {
     let blockIdCounter = 0;
     const occupiedIntervals: { start: number; end: number }[] = [];
 
-    // A. College Class Timing Block (Monday - Friday)
+    // A. College Class Timing Block (Monday - Friday) (Rule 6: always locked)
     if (day >= 1 && day <= 5) {
       schedule.push({
         id: `block-${day}-class-${blockIdCounter++}`,
@@ -199,7 +376,7 @@ export function generateLocalWeeklySchedule(
           actEnd = minToTime(collegeEnd + 60 + activity.duration);
         } else {
           actStart = '16:30';
-          actEnd = minToTime(990 + activity.duration); // Fix 1630 to 990
+          actEnd = minToTime(990 + activity.duration);
         }
 
         schedule.push({
@@ -217,9 +394,8 @@ export function generateLocalWeeklySchedule(
       }
     });
 
-    // B.2 Daily LeetCode practice session
+    // C. Daily LeetCode/coding practice session (Rule 3 point 3)
     let leetcodeScheduled = false;
-    // Look through free blocks first to find a suitable space
     routine.freeBlocks.forEach((freeBlock) => {
       if (leetcodeScheduled) return;
       const freeStart = timeToMin(freeBlock.start);
@@ -229,8 +405,7 @@ export function generateLocalWeeklySchedule(
       for (const segment of unoccupiedSegments) {
         const segStart = segment.start;
         const segEnd = segment.end;
-        const duration = segEnd - segStart;
-        if (duration >= 45) {
+        if (segEnd - segStart >= 45) {
           const leetcodeEnd = segStart + 45;
           schedule.push({
             id: `block-${day}-leetcode`,
@@ -250,9 +425,8 @@ export function generateLocalWeeklySchedule(
     });
 
     if (!leetcodeScheduled) {
-      // Fallback: schedule in evening free time, say 20:00 to 20:45
       const sleepMin = timeToMin(routine.sleepTime || '22:00');
-      const startMin = Math.min(1200, sleepMin - 60); // 20:00 or 1 hour before sleep
+      const startMin = Math.min(1200, sleepMin - 60);
       const endMin = startMin + 45;
       schedule.push({
         id: `block-${day}-leetcode-fallback`,
@@ -262,55 +436,119 @@ export function generateLocalWeeklySchedule(
         title: 'Solve 1 LeetCode Problem',
         type: 'study',
         color: colors.study,
-        details: 'AI Mentor: Daily coding practice. Pick an easy-level problem to maintain your daily study streak!'
+        details: 'AI Mentor: Daily coding practice. Maintain your study streak!'
       });
       occupiedIntervals.push({ start: startMin, end: endMin });
     }
 
-    // C. Study blocks in the Free time slots (filtering out conflicts with occupied times)
-    let studyBlocksScheduled = 0;
+    // D. Daily Study blocks in Free slots
+    const wakeMin = timeToMin(routine.wakeTime || '06:00');
+    const sleepMin = timeToMin(routine.sleepTime || '22:00');
+    const totalAwake = sleepMin - wakeMin;
+    const classMins = (day >= 1 && day <= 5) ? (collegeEnd - collegeStart) : 0;
+    const availableMins = totalAwake - classMins;
     
-    // Scan free blocks set by user
+    // Daily study limit (Rule 5: available hours after class * 0.75)
+    const maxStudyMins = Math.floor(availableMins * 0.75);
+    let dayStudyMins = 45; // baseline starting with LeetCode
+    let studyBlocksScheduled = 0;
+
     routine.freeBlocks.forEach((freeBlock) => {
       const freeStart = timeToMin(freeBlock.start);
       const freeEnd = timeToMin(freeBlock.end);
-      
       const unoccupiedSegments = getUnoccupiedSegments(freeStart, freeEnd, occupiedIntervals);
 
       unoccupiedSegments.forEach((segment) => {
-        const segStart = segment.start;
+        let segStart = segment.start;
         const segEnd = segment.end;
-        const duration = segEnd - segStart;
+        let duration = segEnd - segStart;
 
-        if (duration >= 45) {
-          // We split free segments larger than 2 hours to suggest a rest break
-          if (duration > 120) {
-            // Study Session 1
-            const s1End = segStart + 90; // 90 min study
-            const nextItem = sortedStudyItems[studyBlocksScheduled % Math.max(1, sortedStudyItems.length)];
-            
-            if (nextItem) {
-              const isSub = nextItem.type === 'subject';
-              schedule.push({
-                id: `block-${day}-study-1-${blockIdCounter++}`,
-                day,
-                start: minToTime(segStart),
-                end: minToTime(s1End),
-                title: isSub ? `Study: ${nextItem.name}` : `Course: ${nextItem.name}`,
-                type: 'study',
-                color: colors.study,
-                subjectCode: nextItem.code,
-                details: nextItem.details
-              });
-              studyBlocksScheduled++;
+        while (duration >= 30 && dayStudyMins < maxStudyMins) {
+          const isTodayOrTomorrow = day === currentDayOfWeek || day === (currentDayOfWeek + 1) % 7;
+          const isNext1To2Days = day === (currentDayOfWeek + 1) % 7 || day === (currentDayOfWeek + 2) % 7;
+
+          let blockTitle = '';
+          let blockDetails = '';
+          let blockDuration = 60;
+          let blockSubCode = '';
+
+          // 1. Rule 3: URGENT Tasks due within 24 hours -> schedule immediately today
+          if (isTodayOrTomorrow && urgentTasks.length > 0) {
+            const t = urgentTasks[0];
+            blockTitle = `Study: ${t.title}`;
+            blockDuration = Math.min(duration, t.estimatedMinutes || 60);
+            blockDetails = `Urgent Task: Due in 24 hours. Maintain focus!`;
+            blockSubCode = subjects.find(s => s.id === t.subjectId)?.code || '';
+
+            if (!insights.some(ins => ins.includes(t.title))) {
+              insights.push(`Scheduled "${t.title}" first — it is urgent and due in 24 hours.`);
             }
+            urgentTasks.shift();
+          }
+          // 2. Rule 3: HIGH Tasks due within 3 days -> schedule in the next 1-2 days
+          else if (isNext1To2Days && highTasks.length > 0) {
+            const t = highTasks[0];
+            blockTitle = `Study: ${t.title}`;
+            blockDuration = Math.min(duration, t.estimatedMinutes || 60);
+            blockDetails = `High Priority Task: Due in 3 days. Focus!`;
+            blockSubCode = subjects.find(s => s.id === t.subjectId)?.code || '';
 
-            // Break Session
-            const breakEnd = s1End + 20; // 20 min break
+            if (!insights.some(ins => ins.includes(t.title))) {
+              insights.push(`Scheduled "${t.title}" — high priority task due in next few days.`);
+            }
+            highTasks.shift();
+          }
+          // 3. Rule 3: MEDIUM Tasks / leftover items
+          else if (mediumTasks.length > 0) {
+            const t = mediumTasks[0];
+            blockTitle = `Study: ${t.title}`;
+            blockDuration = Math.min(duration, t.estimatedMinutes || 60);
+            blockDetails = `Milestone Study: ${t.title}`;
+            blockSubCode = subjects.find(s => s.id === t.subjectId)?.code || '';
+            mediumTasks.shift();
+          }
+          // 4. Rotating subjects based on credits/difficulty weights (Rule 5)
+          else {
+            const nextItem = sortedStudyItems[studyBlocksScheduled % Math.max(1, sortedStudyItems.length)];
+            if (nextItem) {
+              blockTitle = nextItem.type === 'subject' ? `Study: ${nextItem.name}` : `Course: ${nextItem.name}`;
+              // Hard subjects get longer contiguous focus blocks (Rule 5)
+              blockDuration = nextItem.difficulty === 'Hard' ? 90 : 60;
+              blockDetails = nextItem.details;
+              blockSubCode = nextItem.code || '';
+              
+              studyBlocksScheduled++;
+            } else {
+              break;
+            }
+          }
+
+          blockDuration = Math.min(blockDuration, duration, maxStudyMins - dayStudyMins);
+          if (blockDuration < 15) break;
+
+          const blockEnd = segStart + blockDuration;
+          schedule.push({
+            id: `block-${day}-study-${blockIdCounter++}`,
+            day,
+            start: minToTime(segStart),
+            end: minToTime(blockEnd),
+            title: blockTitle,
+            type: 'study',
+            color: colors.study,
+            subjectCode: blockSubCode,
+            details: blockDetails
+          });
+
+          dayStudyMins += blockDuration;
+          occupiedIntervals.push({ start: segStart, end: blockEnd });
+
+          // Rule 3: Insert a 15-min break after 90 minutes of study
+          if (blockDuration >= 90 && (duration - blockDuration) >= 30 && dayStudyMins < maxStudyMins) {
+            const breakEnd = blockEnd + 15;
             schedule.push({
               id: `block-${day}-break-${blockIdCounter++}`,
               day,
-              start: minToTime(s1End),
+              start: minToTime(blockEnd),
               end: minToTime(breakEnd),
               title: 'Power Rest & Hydrate',
               type: 'break',
@@ -318,69 +556,39 @@ export function generateLocalWeeklySchedule(
               details: 'AI recommended break to optimize focus and prevent cognitive burnout.'
             });
 
-            // Study Session 2
-            const s2End = Math.min(segEnd, breakEnd + 90);
-            const nextItem2 = sortedStudyItems[studyBlocksScheduled % Math.max(1, sortedStudyItems.length)];
-            if (nextItem2 && (s2End - breakEnd) >= 45) {
-              const isSub2 = nextItem2.type === 'subject';
-              schedule.push({
-                id: `block-${day}-study-2-${blockIdCounter++}`,
-                day,
-                start: minToTime(breakEnd),
-                end: minToTime(s2End),
-                title: isSub2 ? `Study: ${nextItem2.name}` : `Course: ${nextItem2.name}`,
-                type: 'study',
-                color: colors.study,
-                subjectCode: nextItem2.code,
-                details: nextItem2.details
-              });
-              studyBlocksScheduled++;
+            if (insights.filter(ins => ins.includes("Added a break")).length < 2) {
+              insights.push(`Added a break at ${minToTime(blockEnd)} — you've been studying for 90 minutes.`);
             }
+
+            occupiedIntervals.push({ start: blockEnd, end: breakEnd });
+            segStart = breakEnd;
           } else {
-            // Regular single study block
-            const nextItem = sortedStudyItems[studyBlocksScheduled % Math.max(1, sortedStudyItems.length)];
-            if (nextItem) {
-              const isSub = nextItem.type === 'subject';
-              schedule.push({
-                id: `block-${day}-study-single-${blockIdCounter++}`,
-                day,
-                start: minToTime(segStart),
-                end: minToTime(segEnd),
-                title: isSub ? `Study: ${nextItem.name}` : `Course: ${nextItem.name}`,
-                type: 'study',
-                color: colors.study,
-                subjectCode: nextItem.code,
-                details: nextItem.details
-              });
-              studyBlocksScheduled++;
-            }
+            segStart = blockEnd;
           }
+
+          duration = segEnd - segStart;
         }
       });
     });
 
-    // D. Sunday Schedule: Special focus on online courses and weekly goals reviews
-    if (day === 6) {
-      // Add online course review block on Saturday/Sunday
-      courses.forEach((course, index) => {
-        if (index < 2) { // limit to first 2 courses
-          schedule.push({
-            id: `block-${day}-course-${course.id}`,
-            day: 0, // Sunday
-            start: '10:00',
-            end: '12:00',
-            title: `Course: ${course.name}`,
-            type: 'study',
-            color: colors.study,
-            details: `Online course review on ${course.platform}. Current Progress: ${course.progress}%`
-          });
-        }
+    // Saturday & Sunday course/prep blocks
+    if (day === 6) { // Saturday
+      courses.slice(0, 2).forEach((course, index) => {
+        schedule.push({
+          id: `block-${day}-course-${course.id}`,
+          day,
+          start: index === 0 ? '10:00' : '14:00',
+          end: index === 0 ? '12:00' : '16:00',
+          title: `Course: ${course.name}`,
+          type: 'study',
+          color: colors.study,
+          details: `Online course review on ${course.platform}. Current Progress: ${course.progress}%`
+        });
       });
-
-      // Weekly planning prep block
+    } else if (day === 0) { // Sunday
       schedule.push({
         id: `block-0-prep`,
-        day: 0, // Sunday
+        day: 0,
         start: '16:00',
         end: '17:00',
         title: 'Weekly AI Recap & Planning',
@@ -388,22 +596,16 @@ export function generateLocalWeeklySchedule(
         color: colors.break,
         details: 'Review study hours stats and set active goals for next week.'
       });
-
-      // Add a LeetCode block on Sunday too!
-      schedule.push({
-        id: `block-0-leetcode`,
-        day: 0, // Sunday
-        start: '14:00',
-        end: '14:45',
-        title: 'Solve 1 LeetCode Problem',
-        type: 'study',
-        color: colors.study,
-        details: 'AI Mentor: Sunday algorithmic challenge. Work on a medium-level LeetCode problem to stretch your skills!'
-      });
     }
   });
 
-  return resolveScheduleOverlaps(schedule);
+  if (insights.length < 3) {
+    insights.push("Allocated college class hours as mandatory locked blocks.");
+    insights.push("Balanced self-study slots around your extracurricular activities.");
+    insights.push("Synced algorithmic study blocks to ensure daily coding consistency.");
+  }
+
+  return { schedule: resolveScheduleOverlaps(schedule), insights };
 }
 
 export function resolveScheduleOverlaps(schedule: TimetableBlock[]): TimetableBlock[] {
@@ -514,25 +716,31 @@ export async function generateAISchedule(
   routine: Routine,
   subjects: Subject[],
   activities: Activity[],
-  courses: Course[]
-): Promise<TimetableBlock[]> {
+  courses: Course[],
+  tasks?: Task[]
+): Promise<{ schedule: TimetableBlock[]; insights: string[] }> {
   try {
     const response = await fetch('/api/ai/planner', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ keys, routine, subjects, activities, courses }),
+      body: JSON.stringify({ keys, routine, subjects, activities, courses, tasks }),
     });
 
     if (response.ok) {
       const data = await response.json();
-      if (data.schedule) return resolveScheduleOverlaps(data.schedule);
+      if (data.schedule) {
+        return {
+          schedule: resolveScheduleOverlaps(data.schedule),
+          insights: data.insights || []
+        };
+      }
     }
   } catch (error) {
     console.error('Failed to request remote AI planner schedule. Using local optimizer.', error);
   }
 
   // Fallback to local scheduling logic
-  return generateLocalWeeklySchedule(routine, subjects, activities, courses);
+  return generateLocalWeeklySchedule(routine, subjects, activities, courses, tasks);
 }
 
 export async function sendAIChatMessage(
