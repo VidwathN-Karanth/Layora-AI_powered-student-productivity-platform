@@ -22,6 +22,21 @@ export default function LoginPage() {
           <p className="text-xs text-white/50 font-mono mt-1">Autonomous Student Productivity Suite</p>
         </div>
 
+        {/* Google Sign-In Recommendation Note */}
+        <div className="w-full bg-[#0d111c]/60 border border-white/10 rounded-2xl p-4 mb-6 backdrop-blur-md relative z-10 flex items-start gap-3 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
+          <div className="mt-0.5 p-1 rounded-lg bg-cyber-purple/10 border border-cyber-purple/30 text-cyber-purple flex-shrink-0">
+            <svg className="w-4 h-4 text-cyber-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="text-xs font-semibold text-white tracking-wide font-mono uppercase mb-0.5">Google Sign-In Recommended</h4>
+            <p className="text-[11px] text-white/70 font-mono leading-relaxed">
+              To enable direct uploads to <span className="text-cyber-secondary font-semibold">Google Drive</span> and seamless event syncs with <span className="text-cyber-secondary font-semibold">Google Calendar</span>, please log in or sign up using your Google account.
+            </p>
+          </div>
+        </div>
+
         {/* Clerk SignIn Widget Wrapper */}
         <div className="w-full relative">
           {/* Neon backdrop halo for visual depth */}
