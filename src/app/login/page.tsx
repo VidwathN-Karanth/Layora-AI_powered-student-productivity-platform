@@ -32,7 +32,7 @@ export default function LoginPage() {
           <div className="flex-1 min-w-0">
             <h4 className="text-xs font-semibold text-white tracking-wide font-mono uppercase mb-0.5">Google Sign-In Recommended</h4>
             <p className="text-[11px] text-white/70 font-mono leading-relaxed">
-              To enable direct uploads to <span className="text-cyber-secondary font-semibold">Google Drive</span> and seamless event syncs with <span className="text-cyber-secondary font-semibold">Google Calendar</span>, please log in or sign up using your Google account.
+              To enable direct uploads to <span className="text-cyber-secondary font-semibold">Google Drive</span>, please log in or sign up using your Google account.
             </p>
           </div>
         </div>
