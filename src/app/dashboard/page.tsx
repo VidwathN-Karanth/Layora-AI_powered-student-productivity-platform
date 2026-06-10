@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Flame, Globe, ExternalLink, ChevronRight, AlertCircle, Sparkles, Check, Plus
+  Flame, Globe, ExternalLink, ChevronRight, AlertCircle, Sparkles, Check, Plus, Trash
 } from 'lucide-react';
 import Link from 'next/link';
 import { formatTimeStr } from '@/lib/timeUtils';
@@ -30,6 +30,41 @@ export default function DashboardHome() {
   const [instantEnd, setInstantEnd] = useState('');
   const [instantError, setInstantError] = useState('');
   const [instantMode, setInstantMode] = useState<'task' | 'session'>('task');
+
+  const [isAddingShortcut, setIsAddingShortcut] = useState(false);
+  const [shortcutName, setShortcutName] = useState('');
+  const [shortcutUrl, setShortcutUrl] = useState('');
+  const [shortcutError, setShortcutError] = useState('');
+
+  const handleAddShortcut = () => {
+    setShortcutError('');
+    if (!shortcutName.trim() || !shortcutUrl.trim()) {
+      setShortcutError('Name and URL are required.');
+      return;
+    }
+
+    let formattedUrl = shortcutUrl.trim();
+    if (!/^https?:\/\//i.test(formattedUrl)) {
+      formattedUrl = 'https://' + formattedUrl;
+    }
+
+    try {
+      new URL(formattedUrl);
+    } catch (_) {
+      setShortcutError('Please enter a valid URL.');
+      return;
+    }
+
+    store.addWebsite({
+      name: shortcutName.trim(),
+      url: formattedUrl,
+      timeSpentGoal: 0
+    });
+
+    setShortcutName('');
+    setShortcutUrl('');
+    setIsAddingShortcut(false);
+  };
 
   const handleOpenInstantTaskModal = () => {
     const now = new Date();
@@ -528,6 +563,130 @@ export default function DashboardHome() {
                     </div>
                   </div>
                 ))
+              )}
+            </div>
+          </div>
+
+          {/* Quick Shortcuts Widget */}
+          <div className="glass-card rounded-2xl p-5 space-y-4">
+            <div className="flex justify-between items-center border-b border-white/10 pb-2">
+              <h3 className="text-xs font-geist font-bold tracking-wider text-cyber-blue uppercase text-glow-cyan">Quick Shortcuts</h3>
+              <button 
+                onClick={() => setIsAddingShortcut(!isAddingShortcut)} 
+                className="p-1 hover:bg-white/10 rounded-lg text-cyber-blue transition cursor-pointer"
+                title="Add Shortcut"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Inline Add Form */}
+            <AnimatePresence>
+              {isAddingShortcut && (
+                <motion.div 
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden space-y-3 bg-white/5 border border-white/10 rounded-xl p-3.5"
+                >
+                  <div>
+                    <label className="block text-[9px] font-mono text-white/50 mb-1 uppercase tracking-wider">Name</label>
+                    <input
+                      type="text"
+                      value={shortcutName}
+                      onChange={(e) => setShortcutName(e.target.value)}
+                      placeholder="e.g. GitHub"
+                      className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-cyber-blue"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[9px] font-mono text-white/50 mb-1 uppercase tracking-wider">URL</label>
+                    <input
+                      type="text"
+                      value={shortcutUrl}
+                      onChange={(e) => setShortcutUrl(e.target.value)}
+                      placeholder="https://github.com"
+                      className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-cyber-blue"
+                    />
+                  </div>
+                  {shortcutError && (
+                    <div className="text-[10px] text-red-400 font-mono">{shortcutError}</div>
+                  )}
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      onClick={() => setIsAddingShortcut(false)}
+                      className="bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg px-2.5 py-1 text-[10px] font-mono transition cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleAddShortcut}
+                      className="bg-cyber-blue/20 hover:bg-cyber-blue/40 border border-cyber-blue text-cyber-blue rounded-lg px-3 py-1 text-[10px] font-mono font-bold transition cursor-pointer"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Stacked Shortcuts List */}
+            <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
+              {websites.length === 0 ? (
+                <p className="text-xs text-white/40 font-mono text-center py-6">No shortcuts configured</p>
+              ) : (
+                websites.map((site) => {
+                  let domain = '';
+                  try {
+                    let urlStr = site.url;
+                    if (!/^https?:\/\//i.test(urlStr)) {
+                      urlStr = 'https://' + urlStr;
+                    }
+                    domain = new URL(urlStr).hostname;
+                  } catch (e) {
+                    domain = site.url;
+                  }
+
+                  const faviconSrc = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+
+                  return (
+                    <div 
+                      key={site.id} 
+                      className="flex items-center justify-between p-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-cyber-blue/40 transition group"
+                    >
+                      <a
+                        href={site.url.startsWith('http') ? site.url : `https://${site.url}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 flex-1 min-w-0"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-black/45 border border-white/10 flex items-center justify-center p-1.5 shrink-0 overflow-hidden">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img 
+                            src={faviconSrc} 
+                            alt={site.name} 
+                            className="w-5 h-5 object-contain"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = 'none';
+                            }}
+                          />
+                        </div>
+                        <div className="truncate">
+                          <div className="text-xs font-mono font-bold text-white group-hover:text-cyber-blue transition">{site.name}</div>
+                          <div className="text-[9px] font-mono text-white/40 truncate">{site.url}</div>
+                        </div>
+                      </a>
+
+                      <button
+                        onClick={() => store.removeWebsite(site.id)}
+                        className="text-red-400 hover:text-red-300 p-1 opacity-0 group-hover:opacity-100 transition duration-200 shrink-0 cursor-pointer"
+                        title="Delete Shortcut"
+                      >
+                        <Trash className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>        </div>
