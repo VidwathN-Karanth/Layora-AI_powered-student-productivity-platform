@@ -2,8 +2,9 @@
 
 import { useStore } from '@/store/useStore';
 import { 
-  BarChart3, Flame, Clock, CheckSquare, Sparkles, 
-  TrendingUp, Calendar, AlertCircle, Compass 
+  BarChart3, Clock, CheckSquare, Sparkles, 
+  TrendingUp, Calendar, AlertCircle, Compass,
+  Award, BookOpen
 } from 'lucide-react';
 
 export default function AnalyticsPage() {
@@ -13,8 +14,9 @@ export default function AnalyticsPage() {
   const tasks = store.tasks;
   const subjects = store.subjects;
 
-  const completedCount = tasks.filter(t => t.status === 'completed').length;
-  const pendingCount = tasks.filter(t => t.status !== 'completed').length;
+  const pendingTasks = tasks.filter((t) => t.status !== 'completed').length;
+  const completedTasks = tasks.filter((t) => t.status === 'completed').length;
+  const completionRate = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
 
   // Study hours per day (simulated for the visual bar chart)
   const dailyStudyHours = [
@@ -36,34 +38,44 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Stats Blocks */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="glass-card rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden">
-          <div className="w-10 h-10 rounded-xl bg-primary-fixed border border-primary flex items-center justify-center text-primary shrink-0">
-            <Clock className="w-5 h-5 animate-pulse" />
+          <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-cyber-blue shrink-0">
+            <Clock className="w-5 h-5" strokeWidth={1.5} />
           </div>
           <div>
-            <div className="text-[10px] font-mono text-outline">Total Focus Time</div>
-            <div className="text-base font-mono font-bold">{user?.totalStudyHours || 0} Hours logged</div>
+            <div className="text-xs font-mono text-white/50">Study Hours</div>
+            <div className="text-lg font-mono font-bold text-white">{user?.totalStudyHours || 0} hrs</div>
           </div>
         </div>
 
         <div className="glass-card rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden">
-          <div className="w-10 h-10 rounded-xl bg-secondary-fixed border border-secondary flex items-center justify-center text-secondary shrink-0">
-            <CheckSquare className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-cyber-purple shrink-0">
+            <CheckSquare className="w-5 h-5" strokeWidth={1.5} />
           </div>
           <div>
-            <div className="text-[10px] font-mono text-outline">Milestones Completed</div>
-            <div className="text-base font-mono font-bold">{completedCount} complete • {pendingCount} active</div>
+            <div className="text-xs font-mono text-white/50">Pending Tasks</div>
+            <div className="text-lg font-mono font-bold text-white">{pendingTasks} active</div>
           </div>
         </div>
 
         <div className="glass-card rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden">
-          <div className="w-10 h-10 rounded-xl bg-pink-950/30 border border-pink-500/30 flex items-center justify-center text-pink-400 shrink-0">
-            <Flame className="w-5 h-5 text-pink-500 animate-bounce" />
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+            <Award className="w-5 h-5" strokeWidth={1.5} />
           </div>
           <div>
-            <div className="text-[10px] font-mono text-outline">Active Commitment Streak</div>
-            <div className="text-base font-mono font-bold">{user?.streakCount || 0} Daily Cycles</div>
+            <div className="text-xs font-mono text-white/50">Completion Rate</div>
+            <div className="text-lg font-mono font-bold text-white">{completionRate}%</div>
+          </div>
+        </div>
+
+        <div className="glass-card rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden">
+          <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/30 flex items-center justify-center text-pink-400 shrink-0">
+            <BookOpen className="w-5 h-5" strokeWidth={1.5} />
+          </div>
+          <div>
+            <div className="text-xs font-mono text-white/50">Total Subjects</div>
+            <div className="text-lg font-mono font-bold text-white">{subjects.length} loaded</div>
           </div>
         </div>
       </div>
