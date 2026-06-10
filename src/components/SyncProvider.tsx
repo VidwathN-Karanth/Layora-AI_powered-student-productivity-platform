@@ -12,6 +12,7 @@ export function suppressSupabaseSync() { suppressSync = true; }
 export function SyncProvider({ children }: { children: React.ReactNode }) {
   const { user, isLoaded } = useUser();
   const isHydrated = useRef(false);
+  const initialCloudLoadSucceededRef = useRef(false);
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pendingStateRef = useRef<any>(null);
   const lastSavedSerializedRef = useRef<string>('');
@@ -73,6 +74,9 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
   const processIncomingCloudState = async (cloudState: any, source: 'supabase') => {
     if (suppressSync) return;
+    
+    // Mark cloud load as successful
+    initialCloudLoadSucceededRef.current = true;
     
     // Ignore snapshot if there are pending local writes, in-flight writes, or active queue processing
     if (pendingStateRef.current !== null || inFlightWrites.current > 0 || isWritingRef.current || pendingWriteRef.current !== null) {
@@ -319,6 +323,12 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = useStore.subscribe((state) => {
       if (!isHydrated.current) return;
 
+      // Block writes if initial state load failed to prevent overwriting cloud state with empty defaults
+      if (isSupabaseConfigured && !initialCloudLoadSucceededRef.current) {
+        console.warn('SyncProvider - blocking write because initial cloud state load failed');
+        return;
+      }
+
       // Prevent syncing empty/null states during logout or unauthenticated phases
       if (!state.isAuthenticated || !state.user) {
         serverLog(`SyncProvider - store is unauthenticated or user is null, skipping sync. isAuthenticated=${state.isAuthenticated}, hasUser=${!!state.user}`);
@@ -368,6 +378,11 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
     const flushSync = async () => {
       if (suppressSync) return;
+
+      // Block flush if initial state load failed to prevent overwriting cloud state with empty defaults
+      if (isSupabaseConfigured && !initialCloudLoadSucceededRef.current) {
+        return;
+      }
 
       const maxWaitTime = 5000; // Max 5 seconds
       const startTime = Date.now();
