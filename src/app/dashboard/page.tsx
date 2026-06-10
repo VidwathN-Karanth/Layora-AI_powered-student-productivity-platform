@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Flame, BookOpen, Clock, CheckSquare, Globe, 
-  ExternalLink, ChevronRight, Award, AlertCircle, Sparkles, Check, Plus
+  Flame, Globe, ExternalLink, ChevronRight, AlertCircle, Sparkles, Check, Plus
 } from 'lucide-react';
 import Link from 'next/link';
 import { formatTimeStr } from '@/lib/timeUtils';
@@ -138,10 +137,7 @@ export default function DashboardHome() {
     }
   }, [tasks.length, subjects.length]);
 
-  // Simple statistics
-  const pendingTasks = tasks.filter((t) => t.status !== 'completed').length;
-  const completedTasks = tasks.filter((t) => t.status === 'completed').length;
-  const completionRate = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
+
 
   const formatTimer = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600);
@@ -309,48 +305,7 @@ export default function DashboardHome() {
         </div>
       </div>
 
-      {/* --- STATS SUMMARY GRID --- */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="glass-card rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden">
-          <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-cyber-blue shrink-0">
-            <Clock className="w-5 h-5" strokeWidth={1.5} />
-          </div>
-          <div>
-            <div className="text-xs font-mono text-white/50">Study Hours</div>
-            <div className="text-lg font-mono font-bold text-white">{user?.totalStudyHours || 0} hrs</div>
-          </div>
-        </div>
 
-        <div className="glass-card rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden">
-          <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-cyber-purple shrink-0">
-            <CheckSquare className="w-5 h-5" strokeWidth={1.5} />
-          </div>
-          <div>
-            <div className="text-xs font-mono text-white/50">Pending Tasks</div>
-            <div className="text-lg font-mono font-bold text-white">{pendingTasks} active</div>
-          </div>
-        </div>
-
-        <div className="glass-card rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
-            <Award className="w-5 h-5" strokeWidth={1.5} />
-          </div>
-          <div>
-            <div className="text-xs font-mono text-white/50">Completion Rate</div>
-            <div className="text-lg font-mono font-bold text-white">{completionRate}%</div>
-          </div>
-        </div>
-
-        <div className="glass-card rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden">
-          <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/30 flex items-center justify-center text-pink-400 shrink-0">
-            <BookOpen className="w-5 h-5" strokeWidth={1.5} />
-          </div>
-          <div>
-            <div className="text-xs font-mono text-white/50">Total Subjects</div>
-            <div className="text-lg font-mono font-bold text-white">{subjects.length} loaded</div>
-          </div>
-        </div>
-      </div>
 
       {/* --- AI PROACTIVE ENGINE WIDGET --- */}
       <div className="glass-card rounded-2xl p-5 relative overflow-hidden bg-gradient-to-r from-black/40 to-cyber-blue/5 border border-cyber-blue/20">
