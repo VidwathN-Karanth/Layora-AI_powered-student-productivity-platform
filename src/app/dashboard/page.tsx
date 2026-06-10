@@ -373,29 +373,6 @@ export default function DashboardHome() {
           </div>
         </div>
 
-        {/* --- AI STUDY MENTOR ADVICE SECTION --- */}
-        {!loadingRecs && aiRecs && (aiRecs.mentorAdvice || aiRecs.workloadWarning) && (
-          <div className="mt-4 pt-4 border-t border-white/10 flex flex-col gap-2.5">
-            {aiRecs.workloadWarning && (
-              <div className="flex items-start gap-2.5 text-amber-300 text-xs font-mono bg-amber-950/20 border border-amber-500/20 p-3 rounded-xl">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
-                <div>
-                  <span className="font-bold uppercase tracking-wider text-[9px] block text-amber-400/85">Backlog Alert</span>
-                  {aiRecs.workloadWarning}
-                </div>
-              </div>
-            )}
-            {aiRecs.mentorAdvice && (
-              <div className="flex items-start gap-2.5 text-cyber-blue text-xs bg-cyber-blue/5 border border-cyber-blue/20 p-3.5 rounded-xl">
-                <Sparkles className="w-4 h-4 shrink-0 mt-0.5 text-cyber-blue animate-pulse" />
-                <div>
-                  <span className="font-bold uppercase tracking-wider text-[9px] block text-cyber-blue/85">AI Study Mentor</span>
-                  <p className="font-sans leading-relaxed text-white/90">{aiRecs.mentorAdvice}</p>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
