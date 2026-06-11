@@ -330,16 +330,9 @@ export default function AdminPage() {
         {/* Header Terminal */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded bg-cyber-purple/20 text-cyber-purple border border-cyber-purple/40 text-[10px] font-bold tracking-wider">ROOT OVERLORD</span>
-              <span className="text-white/40 text-xs">v1.2.9-prod</span>
-            </div>
             <h1 className="text-3xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyber-purple to-cyber-blue text-glow-cyan">
               ADMIN CONTROL CENTER
             </h1>
-            <p className="text-xs text-white/50 leading-relaxed max-w-xl">
-              System monitoring node for student productivity metrics, synced local Zustand stores, and AI operations.
-            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
