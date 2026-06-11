@@ -31,19 +31,19 @@ export default function DashboardHome() {
   const [instantError, setInstantError] = useState('');
   const [instantMode, setInstantMode] = useState<'task' | 'session'>('task');
 
-  const [isAddingShortcut, setIsAddingShortcut] = useState(false);
-  const [shortcutName, setShortcutName] = useState('');
-  const [shortcutUrl, setShortcutUrl] = useState('');
-  const [shortcutError, setShortcutError] = useState('');
+  const [isAddingLauncher, setIsAddingLauncher] = useState(false);
+  const [launcherName, setLauncherName] = useState('');
+  const [launcherUrl, setLauncherUrl] = useState('');
+  const [launcherError, setLauncherError] = useState('');
 
-  const handleAddShortcut = () => {
-    setShortcutError('');
-    if (!shortcutName.trim() || !shortcutUrl.trim()) {
-      setShortcutError('Name and URL are required.');
+  const handleAddLauncher = () => {
+    setLauncherError('');
+    if (!launcherName.trim() || !launcherUrl.trim()) {
+      setLauncherError('Name and URL are required.');
       return;
     }
 
-    let formattedUrl = shortcutUrl.trim();
+    let formattedUrl = launcherUrl.trim();
     if (!/^https?:\/\//i.test(formattedUrl)) {
       formattedUrl = 'https://' + formattedUrl;
     }
@@ -51,19 +51,19 @@ export default function DashboardHome() {
     try {
       new URL(formattedUrl);
     } catch (_) {
-      setShortcutError('Please enter a valid URL.');
+      setLauncherError('Please enter a valid URL.');
       return;
     }
 
     store.addWebsite({
-      name: shortcutName.trim(),
+      name: launcherName.trim(),
       url: formattedUrl,
       timeSpentGoal: 0
     });
 
-    setShortcutName('');
-    setShortcutUrl('');
-    setIsAddingShortcut(false);
+    setLauncherName('');
+    setLauncherUrl('');
+    setIsAddingLauncher(false);
   };
 
   const handleOpenInstantTaskModal = () => {
@@ -349,7 +349,7 @@ export default function DashboardHome() {
           <h3 className="text-sm font-geist font-bold text-cyber-blue uppercase text-glow-cyan">Proactive Academic Engine</h3>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Column 1: Next Best Task */}
           <div className="bg-white/5 rounded-xl p-3 border border-white/10 min-h-[80px] flex flex-col justify-center">
             <span className="text-[10px] font-mono text-white/50 uppercase">Next Best Task</span>
@@ -379,31 +379,6 @@ export default function DashboardHome() {
               </p>
             ) : (
               <p className="text-xs text-white/45 font-mono mt-1">Load subjects to evaluate</p>
-            )}
-          </div>
-
-          {/* Column 3: Quick Launchers */}
-          <div className="bg-white/5 rounded-xl p-3 border border-white/10 min-h-[80px] flex flex-col justify-center">
-            <span className="text-[10px] font-mono text-cyber-blue uppercase flex items-center gap-1">
-              <Globe className="w-3 h-3" /> Quick Launchers
-            </span>
-            {websites.length === 0 ? (
-              <p className="text-[10px] text-white/40 font-mono mt-1">No launchers configured</p>
-            ) : (
-              <div className="flex flex-wrap gap-1.5 mt-1.5">
-                {websites.map((site) => (
-                  <a
-                    key={site.id}
-                    href={site.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="bg-white/5 hover:bg-cyber-blue/10 border border-white/10 hover:border-cyber-blue/50 rounded-lg px-2 py-1 flex items-center gap-1 transition text-[10px] font-mono text-white"
-                  >
-                    <span className="truncate max-w-[65px]">{site.name}</span>
-                    <ExternalLink className="w-2.5 h-2.5 text-white/30 shrink-0" />
-                  </a>
-                ))}
-              </div>
             )}
           </div>
         </div>
@@ -529,7 +504,7 @@ export default function DashboardHome() {
           </div>
         </div>
 
-        {/* --- RIGHT COLUMN: ACTIVE COURSES & QUICK ACCESS WEBSITES --- */}
+        {/* --- RIGHT COLUMN: ACTIVE COURSES & QUICK LAUNCHERS --- */}
         <div className="space-y-6">
           {/* Active Courses Widget */}
           <div className="glass-card rounded-2xl p-5 space-y-4">
@@ -567,14 +542,16 @@ export default function DashboardHome() {
             </div>
           </div>
 
-          {/* Quick Shortcuts Widget */}
+          {/* Quick Launchers Widget */}
           <div className="glass-card rounded-2xl p-5 space-y-4">
             <div className="flex justify-between items-center border-b border-white/10 pb-2">
-              <h3 className="text-xs font-geist font-bold tracking-wider text-cyber-blue uppercase text-glow-cyan">Quick Shortcuts</h3>
+              <h3 className="text-xs font-geist font-bold tracking-wider text-cyber-blue uppercase text-glow-cyan flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5 text-cyber-blue" /> Quick Launchers
+              </h3>
               <button 
-                onClick={() => setIsAddingShortcut(!isAddingShortcut)} 
+                onClick={() => setIsAddingLauncher(!isAddingLauncher)} 
                 className="p-1 hover:bg-white/10 rounded-lg text-cyber-blue transition cursor-pointer"
-                title="Add Shortcut"
+                title="Add Launcher"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -582,7 +559,7 @@ export default function DashboardHome() {
 
             {/* Inline Add Form */}
             <AnimatePresence>
-              {isAddingShortcut && (
+              {isAddingLauncher && (
                 <motion.div 
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
@@ -593,8 +570,8 @@ export default function DashboardHome() {
                     <label className="block text-[9px] font-mono text-white/50 mb-1 uppercase tracking-wider">Name</label>
                     <input
                       type="text"
-                      value={shortcutName}
-                      onChange={(e) => setShortcutName(e.target.value)}
+                      value={launcherName}
+                      onChange={(e) => setLauncherName(e.target.value)}
                       placeholder="e.g. GitHub"
                       className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-cyber-blue"
                     />
@@ -603,24 +580,24 @@ export default function DashboardHome() {
                     <label className="block text-[9px] font-mono text-white/50 mb-1 uppercase tracking-wider">URL</label>
                     <input
                       type="text"
-                      value={shortcutUrl}
-                      onChange={(e) => setShortcutUrl(e.target.value)}
+                      value={launcherUrl}
+                      onChange={(e) => setLauncherUrl(e.target.value)}
                       placeholder="https://github.com"
                       className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-cyber-blue"
                     />
                   </div>
-                  {shortcutError && (
-                    <div className="text-[10px] text-red-400 font-mono">{shortcutError}</div>
+                  {launcherError && (
+                    <div className="text-[10px] text-red-400 font-mono">{launcherError}</div>
                   )}
                   <div className="flex gap-2 justify-end">
                     <button
-                      onClick={() => setIsAddingShortcut(false)}
+                      onClick={() => setIsAddingLauncher(false)}
                       className="bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg px-2.5 py-1 text-[10px] font-mono transition cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
-                      onClick={handleAddShortcut}
+                      onClick={handleAddLauncher}
                       className="bg-cyber-blue/20 hover:bg-cyber-blue/40 border border-cyber-blue text-cyber-blue rounded-lg px-3 py-1 text-[10px] font-mono font-bold transition cursor-pointer"
                     >
                       Save
@@ -630,10 +607,10 @@ export default function DashboardHome() {
               )}
             </AnimatePresence>
 
-            {/* Stacked Shortcuts List */}
+            {/* Stacked Launchers List */}
             <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
               {websites.length === 0 ? (
-                <p className="text-xs text-white/40 font-mono text-center py-6">No shortcuts configured</p>
+                <p className="text-xs text-white/40 font-mono text-center py-6">No launchers configured</p>
               ) : (
                 websites.map((site) => {
                   let domain = '';
@@ -680,7 +657,7 @@ export default function DashboardHome() {
                       <button
                         onClick={() => store.removeWebsite(site.id)}
                         className="text-red-400 hover:text-red-300 p-1 opacity-0 group-hover:opacity-100 transition duration-200 shrink-0 cursor-pointer"
-                        title="Delete Shortcut"
+                        title="Delete Launcher"
                       >
                         <Trash className="w-3.5 h-3.5" />
                       </button>
