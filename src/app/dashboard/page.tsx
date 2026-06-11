@@ -268,6 +268,32 @@ export default function DashboardHome() {
           <h2 className="text-xl font-geist font-bold tracking-tight text-white">
             Welcome Back, <span className="text-cyber-blue text-glow-cyan">{user?.name || 'Student'}</span>
           </h2>
+          <div className="flex items-center gap-2 mt-2">
+            <a
+              href="https://chatgpt.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-2.5 py-1 rounded-lg text-[10px] font-mono bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-500/50 text-emerald-400 transition"
+            >
+              ChatGPT
+            </a>
+            <a
+              href="https://gemini.google.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-2.5 py-1 rounded-lg text-[10px] font-mono bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 text-blue-400 transition"
+            >
+              Gemini
+            </a>
+            <a
+              href="https://claude.ai"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-2.5 py-1 rounded-lg text-[10px] font-mono bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 hover:border-orange-500/50 text-orange-400 transition"
+            >
+              Claude
+            </a>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
