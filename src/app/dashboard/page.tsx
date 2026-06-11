@@ -20,9 +20,6 @@ export default function DashboardHome() {
   const websites = store.websites;
   const timetable = store.timetable;
 
-  const aiRecs = store.proactiveRecommendations;
-  const setAiRecs = store.setProactiveRecommendations;
-  const [loadingRecs, setLoadingRecs] = useState(!aiRecs);
   const [mounted, setMounted] = useState(false);
   const [isAddingInstantTask, setIsAddingInstantTask] = useState(false);
   const [instantTitle, setInstantTitle] = useState('');
@@ -137,40 +134,7 @@ export default function DashboardHome() {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    async function fetchProactive() {
-      try {
-        const res = await fetch('/api/ai/proactive', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            currentTasks: tasks,
-            currentSubjects: subjects,
-            currentRoutine: user ? {
-              wakeTime: user.wakeTime,
-              sleepTime: user.sleepTime,
-              collegeTimings: { start: user.collegeStart, end: user.collegeEnd },
-            } : {}
-          })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setAiRecs(data);
-        }
-      } catch (err) {
-        console.error('Failed to fetch AI recommendations', err);
-      } finally {
-        setLoadingRecs(false);
-      }
-    }
-    
-    // Only fetch if we have subjects and active tasks to save tokens
-    if (subjects.length > 0) {
-      fetchProactive();
-    } else {
-      setLoadingRecs(false);
-    }
-  }, [tasks.length, subjects.length]);
+
 
 
 
@@ -340,50 +304,6 @@ export default function DashboardHome() {
         </div>
       </div>
 
-
-
-      {/* --- AI PROACTIVE ENGINE WIDGET --- */}
-      <div className="glass-card rounded-2xl p-5 relative overflow-hidden bg-gradient-to-r from-black/40 to-cyber-blue/5 border border-cyber-blue/20">
-        <div className="flex items-center gap-2 mb-4">
-          <Sparkles className="w-5 h-5 text-cyber-blue animate-pulse" strokeWidth={1.5} />
-          <h3 className="text-sm font-geist font-bold text-cyber-blue uppercase text-glow-cyan">Proactive Academic Engine</h3>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Column 1: Next Best Task */}
-          <div className="bg-white/5 rounded-xl p-3 border border-white/10 min-h-[80px] flex flex-col justify-center">
-            <span className="text-[10px] font-mono text-white/50 uppercase">Next Best Task</span>
-            {loadingRecs ? (
-              <div className="flex items-center gap-2 text-white/45 font-mono text-xs mt-1">
-                <span className="w-1.5 h-1.5 bg-cyber-blue rounded-full animate-ping"></span>
-                Analyzing...
-              </div>
-            ) : aiRecs ? (
-              <p className="font-bold text-white text-sm mt-1">{aiRecs.nextBestTask}</p>
-            ) : (
-              <p className="text-xs text-white/45 font-mono mt-1">No active tasks</p>
-            )}
-          </div>
-
-          {/* Column 2: Focus Priority */}
-          <div className="bg-white/5 rounded-xl p-3 border border-white/10 min-h-[80px] flex flex-col justify-center">
-            <span className="text-[10px] font-mono text-white/50 uppercase">Focus Priority</span>
-            {loadingRecs ? (
-              <div className="flex items-center gap-2 text-white/45 font-mono text-xs mt-1">
-                <span className="w-1.5 h-1.5 bg-cyber-blue rounded-full animate-ping"></span>
-                Evaluating...
-              </div>
-            ) : aiRecs ? (
-              <p className="font-bold text-cyber-purple text-sm mt-1 text-glow-purple">
-                {aiRecs.urgentSubject} ({aiRecs.recommendedDuration} mins)
-              </p>
-            ) : (
-              <p className="text-xs text-white/45 font-mono mt-1">Load subjects to evaluate</p>
-            )}
-          </div>
-        </div>
-
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* --- LEFT COLUMNS: DAILY AGENDA & RECOMMENDATIONS --- */}
