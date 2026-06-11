@@ -268,29 +268,32 @@ export default function DashboardHome() {
           <h2 className="text-xl font-geist font-bold tracking-tight text-white">
             Welcome Back, <span className="text-cyber-blue text-glow-cyan">{user?.name || 'Student'}</span>
           </h2>
-          <div className="flex items-center gap-2 mt-2">
+          <div className="flex items-center gap-2 mt-3">
             <a
               href="https://chatgpt.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="px-2.5 py-1 rounded-lg text-[10px] font-mono bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-500/50 text-emerald-400 transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-mono bg-[#10a37f]/10 hover:bg-[#10a37f]/20 border border-[#10a37f]/30 hover:border-[#10a37f]/60 text-white shadow-[0_2px_8px_rgba(16,163,127,0.15)] hover:shadow-[0_4px_12px_rgba(16,163,127,0.3)] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
             >
+              <span className="w-1.5 h-1.5 rounded-full bg-[#10a37f]"></span>
               ChatGPT
             </a>
             <a
               href="https://gemini.google.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="px-2.5 py-1 rounded-lg text-[10px] font-mono bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 text-blue-400 transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-mono bg-[#1a73e8]/10 hover:bg-[#1a73e8]/20 border border-[#1a73e8]/30 hover:border-[#1a73e8]/60 text-white shadow-[0_2px_8px_rgba(26,115,232,0.15)] hover:shadow-[0_4px_12px_rgba(26,115,232,0.3)] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
             >
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1a73e8]"></span>
               Gemini
             </a>
             <a
               href="https://claude.ai"
               target="_blank"
               rel="noopener noreferrer"
-              className="px-2.5 py-1 rounded-lg text-[10px] font-mono bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 hover:border-orange-500/50 text-orange-400 transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-mono bg-[#d97756]/10 hover:bg-[#d97756]/20 border border-[#d97756]/30 hover:border-[#d97756]/60 text-white shadow-[0_2px_8px_rgba(217,119,86,0.15)] hover:shadow-[0_4px_12px_rgba(217,119,86,0.3)] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
             >
+              <span className="w-1.5 h-1.5 rounded-full bg-[#d97756]"></span>
               Claude
             </a>
           </div>
