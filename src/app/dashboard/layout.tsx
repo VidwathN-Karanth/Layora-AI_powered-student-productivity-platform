@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { UserButton, useUser, useAuth } from '@clerk/nextjs';
 import OnboardingModal from '@/components/OnboardingModal';
+import { isSupabaseConfigured } from '@/lib/supabaseClient';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -505,7 +506,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
 
             {/* Live digital clock with 12/24 toggle */}
-            <div className="flex items-center gap-2 border border-white/10 bg-white/5 px-4 py-1.5 rounded-full font-mono">
+            <div className="flex items-center gap-2.5 border border-white/10 bg-white/5 px-4 py-1.5 rounded-full font-mono">
+              <span 
+                className={`w-2 h-2 rounded-full shrink-0 ${isSupabaseConfigured ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]'}`}
+                title={isSupabaseConfigured ? "Synced to Supabase" : "Running in Local Demo Mode"}
+              />
               <Clock className="w-4 h-4 text-cyber-blue animate-spin-slow" strokeWidth={1.5} />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 font-black font-mono text-xl tracking-wider min-w-[110px] text-center">
                 {timeStr || '00:00:00'}
