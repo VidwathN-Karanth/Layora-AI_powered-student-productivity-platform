@@ -130,7 +130,7 @@ export default function DashboardHome() {
   };
 
   useEffect(() => {
-    setMounted(true);
+    setTimeout(() => setMounted(true), 0);
   }, []);
 
 
@@ -149,6 +149,7 @@ export default function DashboardHome() {
     return h * 60 + m;
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleToggleBlockCompleted = (block: any) => {
     const isCompleted = !block.completed;
     store.updateTimetableBlock(block.id, { completed: isCompleted });
@@ -196,6 +197,7 @@ export default function DashboardHome() {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleStartStudySession = (block: any) => {
     const taskId = `task-from-block-${block.id}`;
     const existingTask = store.tasks.find((t) => t.id === taskId);
@@ -341,11 +343,7 @@ export default function DashboardHome() {
                 </div>
               ) : (
                 todaySchedule.map((block) => (
-                  <div key={block.id} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-xl bg-white/5 border-l-4 transition-all ${
-                    block.isSession === false
-                      ? 'border-cyber-purple'
-                      : (block.type === 'study' ? 'border-cyber-blue' : 'border-cyber-purple')
-                  }`}>
+                  <div key={block.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-xl bg-white/5 transition-all">
                     {/* Main row info */}
                     <div className="flex items-center gap-3 flex-1 min-w-0 w-full">
                       {/* Tick Icon to complete task */}
@@ -409,7 +407,7 @@ export default function DashboardHome() {
           <div className="glass-card rounded-2xl p-5 space-y-4">
             <div className="flex justify-between items-center border-b border-white/10 pb-2">
               <h3 className="text-xs font-geist font-bold tracking-wider text-cyber-purple uppercase text-glow-purple">
-                Tomorrow's Schedule ({tomorrowLabel})
+                {"Tomorrow's Schedule"} ({tomorrowLabel})
               </h3>
               <span className="text-[9px] font-mono text-white/40 uppercase">Upcoming Blocks</span>
             </div>
@@ -421,9 +419,7 @@ export default function DashboardHome() {
                 </div>
               ) : (
                 tomorrowSchedule.map((block) => (
-                  <div key={block.id} className={`flex items-center gap-4 p-3 rounded-xl bg-white/5 border-l-4 transition-all ${
-                    block.type === 'study' ? 'border-cyber-blue' : 'border-cyber-purple'
-                  }`}>
+                  <div key={block.id} className="flex items-center gap-4 p-3 rounded-xl bg-white/5 transition-all">
                     <div className="font-mono text-xs font-bold text-center w-20 text-white shrink-0">
                       <div>{formatTimeStr(block.start, store.is24HourFormat)}</div>
                       <div className="text-[10px] text-white/50 font-normal">{formatTimeStr(block.end, store.is24HourFormat)}</div>
