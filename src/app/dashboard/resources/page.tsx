@@ -255,7 +255,7 @@ export default function ResourcesPage() {
           <div className="glass-card rounded-2xl p-5 space-y-4 border border-white/10">
             
             {/* Tabs */}
-            <div className="flex gap-2 p-1 bg-white/5 border border-white/10 rounded-xl">
+            <div className="flex flex-col gap-2 p-1.5 bg-white/5 border border-white/10 rounded-xl">
               <button
                 type="button"
                 disabled={subjects.length === 0}
