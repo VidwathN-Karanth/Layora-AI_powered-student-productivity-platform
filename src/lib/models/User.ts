@@ -6,6 +6,7 @@ export interface UserRow {
   email: string;
   leetcodeUsername: string | null;
   githubUsername: string | null;
+  linkedinUrl: string | null;
   leetcodeEasyTotal: number;
   leetcodeMediumTotal: number;
   leetcodeHardTotal: number;
@@ -18,6 +19,7 @@ interface DatabaseUserRow {
   email: string;
   leetcode_username: string | null;
   github_username: string | null;
+  linkedin_url: string | null;
   leetcode_easy_total: number;
   leetcode_medium_total: number;
   leetcode_hard_total: number;
@@ -35,6 +37,7 @@ function mapUserRow(row: DatabaseUserRow | null | undefined): UserRow | null {
     email: row.email,
     leetcodeUsername: row.leetcode_username,
     githubUsername: row.github_username,
+    linkedinUrl: row.linkedin_url,
     leetcodeEasyTotal: row.leetcode_easy_total || 0,
     leetcodeMediumTotal: row.leetcode_medium_total || 0,
     leetcodeHardTotal: row.leetcode_hard_total || 0,
@@ -52,6 +55,7 @@ export class User {
     email, 
     leetcodeUsername = null, 
     githubUsername = null,
+    linkedinUrl = null,
     leetcodeEasyTotal = 0,
     leetcodeMediumTotal = 0,
     leetcodeHardTotal = 0
@@ -61,6 +65,7 @@ export class User {
     email: string; 
     leetcodeUsername?: string | null; 
     githubUsername?: string | null; 
+    linkedinUrl?: string | null;
     leetcodeEasyTotal?: number;
     leetcodeMediumTotal?: number;
     leetcodeHardTotal?: number;
@@ -74,6 +79,7 @@ export class User {
         email,
         leetcode_username: leetcodeUsername,
         github_username: githubUsername,
+        linkedin_url: linkedinUrl,
         leetcode_easy_total: leetcodeEasyTotal,
         leetcode_medium_total: leetcodeMediumTotal,
         leetcode_hard_total: leetcodeHardTotal
@@ -116,6 +122,7 @@ export class User {
       email?: string; 
       leetcodeUsername?: string | null; 
       githubUsername?: string | null;
+      linkedinUrl?: string | null;
       leetcodeEasyTotal?: number;
       leetcodeMediumTotal?: number;
       leetcodeHardTotal?: number;
@@ -126,6 +133,7 @@ export class User {
       email?: string;
       leetcode_username?: string | null;
       github_username?: string | null;
+      linkedin_url?: string | null;
       leetcode_easy_total?: number;
       leetcode_medium_total?: number;
       leetcode_hard_total?: number;
@@ -134,6 +142,7 @@ export class User {
     if (updates.email !== undefined) dbUpdates.email = updates.email;
     if (updates.leetcodeUsername !== undefined) dbUpdates.leetcode_username = updates.leetcodeUsername;
     if (updates.githubUsername !== undefined) dbUpdates.github_username = updates.githubUsername;
+    if (updates.linkedinUrl !== undefined) dbUpdates.linkedin_url = updates.linkedinUrl;
     if (updates.leetcodeEasyTotal !== undefined) dbUpdates.leetcode_easy_total = updates.leetcodeEasyTotal;
     if (updates.leetcodeMediumTotal !== undefined) dbUpdates.leetcode_medium_total = updates.leetcodeMediumTotal;
     if (updates.leetcodeHardTotal !== undefined) dbUpdates.leetcode_hard_total = updates.leetcodeHardTotal;

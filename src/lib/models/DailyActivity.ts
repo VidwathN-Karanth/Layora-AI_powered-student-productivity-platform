@@ -19,6 +19,7 @@ export interface LeaderboardUser {
   name: string;
   leetcodeUsername: string | null;
   githubUsername: string | null;
+  linkedinUrl: string | null;
   totalPoints: number;
   totalLeetcodeSolved: number;
   totalGithubContributions: number;
@@ -138,6 +139,7 @@ export class DailyActivity {
         name: user.name,
         leetcodeUsername: user.leetcodeUsername,
         githubUsername: user.githubUsername,
+        linkedinUrl: user.linkedinUrl,
         totalPoints: 0,
         totalLeetcodeSolved: 0,
         totalGithubContributions: 0
