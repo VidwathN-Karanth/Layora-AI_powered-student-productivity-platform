@@ -15,6 +15,12 @@ interface LeetCodeResponse {
   data?: {
     matchedUser?: {
       username: string;
+      submitStats?: {
+        acSubmissionNum?: Array<{
+          difficulty: string;
+          count: number;
+        }>;
+      };
     };
     question?: LeetCodeQuestion;
     recentAcSubmissionList?: LeetCodeSubmission[];
@@ -66,6 +72,38 @@ export async function validateUsername(username: string): Promise<boolean> {
   }
 
   return true;
+}
+
+/**
+ * Fetches total solves by difficulty for a user.
+ */
+export async function fetchTotalSolves(username: string): Promise<{ Easy: number; Medium: number; Hard: number }> {
+  if (!username) throw new Error('LeetCode username is required');
+
+  const query = `
+    query userProblemsSolved($username: String!) {
+      matchedUser(username: $username) {
+        submitStats {
+          acSubmissionNum {
+            difficulty
+            count
+          }
+        }
+      }
+    }
+  `;
+
+  const result = await queryLeetCode(query, { username });
+  const stats = result?.data?.matchedUser?.submitStats?.acSubmissionNum || [];
+  
+  const counts = { Easy: 0, Medium: 0, Hard: 0 };
+  for (const stat of stats) {
+    if (stat.difficulty === 'Easy') counts.Easy = stat.count;
+    if (stat.difficulty === 'Medium') counts.Medium = stat.count;
+    if (stat.difficulty === 'Hard') counts.Hard = stat.count;
+  }
+
+  return counts;
 }
 
 /**
