@@ -1,41 +1,55 @@
-const axios = require('axios');
+import axios from 'axios';
 
-// In-memory cache for problem difficulty (titleSlug -> difficulty)
-const difficultyCache = {};
+const difficultyCache: { [key: string]: string } = {};
+
+interface LeetCodeQuestion {
+  difficulty: string;
+}
+
+interface LeetCodeSubmission {
+  titleSlug: string;
+  timestamp: number;
+}
+
+interface LeetCodeResponse {
+  data?: {
+    matchedUser?: {
+      username: string;
+    };
+    question?: LeetCodeQuestion;
+    recentAcSubmissionList?: LeetCodeSubmission[];
+  };
+}
 
 /**
- * Helper to execute a GraphQL query against LeetCode.
- * Wraps calls in try/catch and handles exceptions gracefully per user.
+ * Helper to query LeetCode GraphQL.
  */
-async function queryLeetCode(query, variables = {}) {
+async function queryLeetCode(query: string, variables: Record<string, unknown> = {}): Promise<LeetCodeResponse> {
   try {
-    const response = await axios.post(
+    const response = await axios.post<LeetCodeResponse>(
       'https://leetcode.com/graphql',
-      {
-        query,
-        variables
-      },
+      { query, variables },
       {
         headers: {
           'Content-Type': 'application/json',
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Referer': 'https://leetcode.com'
         },
-        timeout: 10000 // 10s timeout
+        timeout: 10000
       }
     );
     return response.data;
-  } catch (error) {
-    console.error('LeetCode API call failed:', error.message);
-    throw new Error(`LeetCode service communication error: ${error.message}`);
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : String(error);
+    console.error('LeetCode API call failed:', errMessage);
+    throw new Error(`LeetCode service communication error: ${errMessage}`);
   }
 }
 
 /**
- * Validates whether a LeetCode username exists and is public.
- * Throws a descriptive error if not found.
+ * Checks if a LeetCode username is valid and has public stats.
  */
-async function validateUsername(username) {
+export async function validateUsername(username: string): Promise<boolean> {
   if (!username) throw new Error('LeetCode username is required');
 
   const query = `
@@ -55,10 +69,9 @@ async function validateUsername(username) {
 }
 
 /**
- * Fetches the question difficulty for a given titleSlug.
- * Uses an in-memory cache to prevent redundant API hits across users or repeat problems.
+ * Fetches difficulty for a problem slug (caches it in memory).
  */
-async function getQuestionDifficulty(titleSlug) {
+async function getQuestionDifficulty(titleSlug: string): Promise<string> {
   if (difficultyCache[titleSlug]) {
     return difficultyCache[titleSlug];
   }
@@ -79,15 +92,20 @@ async function getQuestionDifficulty(titleSlug) {
     return difficulty;
   }
 
-  return 'Easy'; // Safe fallback
+  return 'Easy';
+}
+
+interface DifficultyCounts {
+  [key: string]: number;
+  Easy: number;
+  Medium: number;
+  Hard: number;
 }
 
 /**
- * Fetches LeetCode problems solved by a user on a target date (UTC).
- * Returns an object with the counts of solved problems by difficulty: { Easy: X, Medium: Y, Hard: Z }.
+ * Fetches solved submissions counts on target date.
  */
-async function fetchActivityForDate(username, targetDateStr) {
-  // Validate targetDateStr (format: 'YYYY-MM-DD')
+export async function fetchActivityForDate(username: string, targetDateStr: string): Promise<DifficultyCounts> {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(targetDateStr)) {
     throw new Error(`Invalid date format: ${targetDateStr}. Expected YYYY-MM-DD.`);
   }
@@ -101,46 +119,38 @@ async function fetchActivityForDate(username, targetDateStr) {
     }
   `;
 
-  // KNOWN LIMITATION: recentAcSubmissionList is capped at 20.
-  // If a user solves 20+ problems in a single day, anything past the most recent 20 won't be counted.
   const result = await queryLeetCode(query, { username, limit: 20 });
   const submissions = result?.data?.recentAcSubmissionList || [];
 
-  // Filter submissions by date (convert unix timestamp to YYYY-MM-DD UTC date string)
-  const submissionsOnDate = submissions.filter(sub => {
+  // Filter down to the target date YYYY-MM-DD UTC
+  const submissionsOnDate = submissions.filter((sub) => {
     const subDateStr = new Date(sub.timestamp * 1000).toISOString().split('T')[0];
     return subDateStr === targetDateStr;
   });
 
-  // Deduplicate by titleSlug (a problem solved twice in one day should only count once)
-  const uniqueSlugs = [...new Set(submissionsOnDate.map(sub => sub.titleSlug))];
+  // Deduplicate by titleSlug
+  const uniqueSlugs = Array.from(new Set(submissionsOnDate.map((sub) => sub.titleSlug)));
 
-  const difficultyCounts = {
+  const difficultyCounts: DifficultyCounts = {
     Easy: 0,
     Medium: 0,
     Hard: 0
   };
 
-  // Fetch difficulties for unique problems solved that day
   for (const titleSlug of uniqueSlugs) {
     try {
       const difficulty = await getQuestionDifficulty(titleSlug);
       if (difficultyCounts[difficulty] !== undefined) {
         difficultyCounts[difficulty]++;
       } else {
-        // Fallback for unexpected difficulty values
         difficultyCounts['Easy']++;
       }
-    } catch (err) {
-      console.warn(`Could not fetch difficulty for problem: ${titleSlug}. Defaulting to Easy.`, err.message);
+    } catch (err: unknown) {
+      const errMessage = err instanceof Error ? err.message : String(err);
+      console.warn(`Could not fetch difficulty for problem: ${titleSlug}. Defaulting to Easy.`, errMessage);
       difficultyCounts['Easy']++;
     }
   }
 
   return difficultyCounts;
 }
-
-module.exports = {
-  validateUsername,
-  fetchActivityForDate
-};

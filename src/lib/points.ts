@@ -1,4 +1,4 @@
-module.exports = {
+export const pointsConfig = {
   leetcode: {
     Easy: 10,
     Medium: 20,

@@ -66,7 +66,7 @@ export default function AdminPage() {
     setLoadingLeaderboard(true);
     setLeaderboardError('');
     try {
-      const res = await fetch(`http://localhost:4000/api/admin/leaderboard?range=${range}`);
+      const res = await fetch(`/api/admin/leaderboard?range=${range}`);
       if (!res.ok) {
         throw new Error('Failed to fetch leaderboard data.');
       }
@@ -74,7 +74,7 @@ export default function AdminPage() {
       setLeaderboard(data);
     } catch (err: any) {
       console.error(err);
-      setLeaderboardError('Could not load leaderboard data. Please make sure the backend server is running on port 4000.');
+      setLeaderboardError('Could not load leaderboard data. Please verify your database connection or if the endpoint is deployed.');
     } finally {
       setLoadingLeaderboard(false);
     }

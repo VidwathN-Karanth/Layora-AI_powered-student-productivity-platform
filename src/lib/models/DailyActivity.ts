@@ -1,16 +1,40 @@
-const supabase = require('../config/supabase');
-const User = require('./User');
+import { supabaseAdmin } from '../supabaseAdmin';
+import { User } from './User';
 
-function checkDb() {
-  if (!supabase) {
-    throw new Error('Database is unconfigured. Please check that SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set in your .env file.');
-  }
+export interface DailyActivityRow {
+  id: number;
+  userId: string;
+  date: string;
+  leetcodeSolvedToday: number;
+  githubContributionsToday: number;
+  pointsEarned: number;
+  createdAt: string;
+}
+
+export interface LeaderboardUser {
+  userId: string;
+  name: string;
+  leetcodeUsername: string | null;
+  githubUsername: string | null;
+  totalPoints: number;
+  totalLeetcodeSolved: number;
+  totalGithubContributions: number;
+}
+
+interface DatabaseDailyActivityRow {
+  id: number;
+  user_id: string;
+  date: string;
+  leetcode_solved_today: number;
+  github_contributions_today: number;
+  points_earned: number;
+  created_at: string;
 }
 
 /**
- * Maps database snake_case daily activity row to camelCase JS object
+ * Maps database snake_case row to camelCase JS object.
  */
-function mapActivityRow(row) {
+function mapActivityRow(row: DatabaseDailyActivityRow | null | undefined): DailyActivityRow | null {
   if (!row) return null;
   return {
     id: row.id,
@@ -23,14 +47,24 @@ function mapActivityRow(row) {
   };
 }
 
-class DailyActivity {
+export class DailyActivity {
   /**
-   * Upserts a daily activity row.
-   * If a row for the given (userId, date) already exists, it is overwritten, ensuring idempotency.
+   * Idempotently logs a day's activity metrics and points ledger row.
    */
-  static async upsert({ userId, date, leetcodeSolvedToday, githubContributionsToday, pointsEarned }) {
-    checkDb();
-    const { data, error } = await supabase
+  static async upsert({
+    userId,
+    date,
+    leetcodeSolvedToday,
+    githubContributionsToday,
+    pointsEarned
+  }: {
+    userId: string;
+    date: string;
+    leetcodeSolvedToday: number;
+    githubContributionsToday: number;
+    pointsEarned: number;
+  }): Promise<DailyActivityRow | null> {
+    const { data, error } = await supabaseAdmin
       .from('daily_activities')
       .upsert({
         user_id: userId,
@@ -48,24 +82,18 @@ class DailyActivity {
       throw new Error(`Failed to upsert daily activity: ${error.message}`);
     }
 
-    return mapActivityRow(data);
+    return mapActivityRow(data as DatabaseDailyActivityRow);
   }
 
   /**
-   * Fetches the leaderboard.
-   * Returns a list of users, sorted descending by totalPoints earned within the specified date range.
-   * Range can be:
-   *  - 'today': current UTC date
-   *  - 'week': past 7 days (UTC)
-   *  - 'all': all time
+   * Computes rank list for a range (today, week, all).
    */
-  static async getLeaderboard(range) {
-    checkDb();
-    // 1. Retrieve all users in the system to ensure a full list (including 0-point users)
+  static async getLeaderboard(range: 'today' | 'week' | 'all'): Promise<LeaderboardUser[]> {
+    // 1. Fetch all users so we include 0-point users on the scoreboard
     const users = await User.findAll();
 
-    // 2. Fetch all daily activity records for the target range
-    let query = supabase.from('daily_activities').select('*');
+    // 2. Fetch daily activities for the chosen range
+    let query = supabaseAdmin.from('daily_activities').select('*');
 
     const today = new Date();
     
@@ -74,7 +102,7 @@ class DailyActivity {
       query = query.eq('date', todayStr);
     } else if (range === 'week') {
       const lastWeek = new Date();
-      lastWeek.setUTCDate(today.getUTCDate() - 6); // Past 7 days (including today)
+      lastWeek.setUTCDate(today.getUTCDate() - 6); // 7 days rolling (including today)
       const startDateStr = lastWeek.toISOString().split('T')[0];
       query = query.gte('date', startDateStr);
     }
@@ -84,8 +112,8 @@ class DailyActivity {
       throw new Error(`Failed to fetch daily activities for leaderboard: ${error.message}`);
     }
 
-    // 3. Initialize the leaderboard map with all users at 0 points
-    const leaderboardMap = {};
+    // 3. Initialize scoreboard map
+    const leaderboardMap: { [key: string]: LeaderboardUser } = {};
     for (const user of users) {
       leaderboardMap[user.id] = {
         userId: user.id,
@@ -98,8 +126,10 @@ class DailyActivity {
       };
     }
 
-    // 4. Accumulate activity stats per user
-    for (const act of activities) {
+    const activityRows = (activities || []) as unknown as DatabaseDailyActivityRow[];
+
+    // 4. Sum up points
+    for (const act of activityRows) {
       const summary = leaderboardMap[act.user_id];
       if (summary) {
         summary.totalPoints += act.points_earned;
@@ -108,9 +138,8 @@ class DailyActivity {
       }
     }
 
-    // 5. Convert map to array and sort descending by totalPoints
+    // 5. Convert to array and sort descending by totalPoints
     const sortedLeaderboard = Object.values(leaderboardMap).sort((a, b) => {
-      // Sort by totalPoints descending. If tied, sort by totalLeetcodeSolved, then github contributions
       if (b.totalPoints !== a.totalPoints) {
         return b.totalPoints - a.totalPoints;
       }
@@ -123,5 +152,3 @@ class DailyActivity {
     return sortedLeaderboard;
   }
 }
-
-module.exports = DailyActivity;

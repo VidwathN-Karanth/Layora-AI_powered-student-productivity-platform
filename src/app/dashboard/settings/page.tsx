@@ -55,7 +55,7 @@ export default function SettingsPage() {
 
     try {
       // 1. Register/Ensure User exists in the backend first
-      const registerRes = await fetch('http://localhost:4000/api/users', {
+      const registerRes = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -71,7 +71,7 @@ export default function SettingsPage() {
       }
 
       // 2. Perform Account Link with Username verification
-      const linkRes = await fetch(`http://localhost:4000/api/users/${targetUserId}/link-accounts`, {
+      const linkRes = await fetch(`/api/users/${targetUserId}/link-accounts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -95,7 +95,7 @@ export default function SettingsPage() {
     } catch (err: any) {
       console.error('Account link failed:', err);
       if (err instanceof TypeError && err.message.toLowerCase().includes('fetch')) {
-        setLinkError('Could not connect to the activity sync backend. Please ensure the backend server is running on port 4000.');
+        setLinkError('Could not connect to the activity sync serverless backend. Please verify your internet connection.');
       } else {
         setLinkError(err.message || 'An unexpected error occurred.');
       }
