@@ -698,18 +698,28 @@ export default function AdminPage() {
                               </div>
                             </td>
                             <td className="p-4">
-                              <div className="flex flex-col gap-1">
+                              <div className="flex flex-col gap-1.5">
                                 {item.leetcodeUsername ? (
-                                  <span className="text-[10px] text-yellow-500/90 font-mono">
-                                    💡 leetcode: <strong className="text-white">{item.leetcodeUsername}</strong>
-                                  </span>
+                                  <a
+                                    href={item.leetcodeUsername.trim().startsWith('http') ? item.leetcodeUsername.trim() : `https://leetcode.com/u/${item.leetcodeUsername.trim()}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/25 hover:border-yellow-500/40 text-[10px] text-yellow-500 font-bold transition duration-200 cursor-pointer w-fit"
+                                  >
+                                    💡 leetcode: <strong className="text-white hover:underline">{item.leetcodeUsername}</strong>
+                                  </a>
                                 ) : (
                                   <span className="text-[9px] text-white/20 font-mono italic">No LeetCode linked</span>
                                 )}
                                 {item.githubUsername ? (
-                                  <span className="text-[10px] text-cyber-blue font-mono">
-                                    🐙 github: <strong className="text-white">{item.githubUsername}</strong>
-                                  </span>
+                                  <a
+                                    href={item.githubUsername.trim().startsWith('http') ? item.githubUsername.trim() : `https://github.com/${item.githubUsername.trim()}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyber-blue/10 hover:bg-cyber-blue/20 border border-cyber-blue/25 hover:border-cyber-blue/40 text-[10px] text-cyber-blue font-bold transition duration-200 cursor-pointer w-fit"
+                                  >
+                                    🐙 github: <strong className="text-white hover:underline">{item.githubUsername}</strong>
+                                  </a>
                                 ) : (
                                   <span className="text-[9px] text-white/20 font-mono italic">No GitHub linked</span>
                                 )}
