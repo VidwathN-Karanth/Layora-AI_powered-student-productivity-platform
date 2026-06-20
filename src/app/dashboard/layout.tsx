@@ -9,7 +9,7 @@ import {
   LayoutDashboard, CalendarRange, BookMarked, CheckSquare, Calendar, 
   FolderLock, BarChart3, Settings, UserCheck, LogOut, ChevronLeft, 
   ChevronRight, Send, Paperclip, Sparkles, MessageCircle, Clock, 
-  Pause, Check, Menu, X, ArrowUpRight, ShieldAlert
+  Pause, Check, Menu, X, ArrowUpRight, ShieldAlert, Trophy
 } from 'lucide-react';
 import { UserButton, useUser, useAuth } from '@clerk/nextjs';
 import OnboardingModal from '@/components/OnboardingModal';
@@ -287,6 +287,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: 'Tasks', path: '/dashboard/tasks', icon: CheckSquare },
     { name: 'Resources', path: '/dashboard/resources', icon: FolderLock },
     { name: 'Analytics', path: '/dashboard/analytics', icon: BarChart3 },
+    { name: 'Leaderboard', path: '/dashboard/leaderboard', icon: Trophy },
     { name: 'Settings', path: '/dashboard/settings', icon: Settings },
     ...(isAdmin ? [{ name: 'Admin Portal', path: '/admin', icon: ShieldAlert }] : [])
   ];
