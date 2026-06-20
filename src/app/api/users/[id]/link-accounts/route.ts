@@ -24,13 +24,19 @@ export async function POST(
     const updates: {
       leetcodeUsername?: string | null;
       githubUsername?: string | null;
+      leetcodeEasyTotal?: number;
+      leetcodeMediumTotal?: number;
+      leetcodeHardTotal?: number;
     } = {};
 
-    // 2. Validate LeetCode username
+    // 2. Validate LeetCode username and load initial totals
     if (leetcodeUsername !== undefined && leetcodeUsername !== null && leetcodeUsername !== '') {
       try {
-        await leetcodeService.validateUsername(leetcodeUsername);
+        const totals = await leetcodeService.fetchTotalSolves(leetcodeUsername);
         updates.leetcodeUsername = leetcodeUsername;
+        updates.leetcodeEasyTotal = totals.Easy;
+        updates.leetcodeMediumTotal = totals.Medium;
+        updates.leetcodeHardTotal = totals.Hard;
       } catch (err: unknown) {
         const errMsg = err instanceof Error ? err.message : String(err);
         return NextResponse.json(
@@ -40,6 +46,9 @@ export async function POST(
       }
     } else if (leetcodeUsername === null || leetcodeUsername === '') {
       updates.leetcodeUsername = null;
+      updates.leetcodeEasyTotal = 0;
+      updates.leetcodeMediumTotal = 0;
+      updates.leetcodeHardTotal = 0;
     }
 
     // 3. Validate GitHub username

@@ -46,6 +46,9 @@ create table if not exists public.users (
   email text not null unique,
   leetcode_username text unique,
   github_username text unique,
+  leetcode_easy_total integer not null default 0,
+  leetcode_medium_total integer not null default 0,
+  leetcode_hard_total integer not null default 0,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
@@ -54,9 +57,12 @@ create table if not exists public.daily_activities (
   id serial primary key,
   user_id text not null references public.users(id) on delete cascade,
   date date not null,
-  leetcode_solved_today integer not null default 0,
+  leetcode_solved_today integer not null default 0, -- Left for backward compatibility or daily calculated change
   github_contributions_today integer not null default 0,
   points_earned integer not null default 0,
+  leetcode_easy_accumulated integer not null default 0,
+  leetcode_medium_accumulated integer not null default 0,
+  leetcode_hard_accumulated integer not null default 0,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   constraint unique_user_date unique (user_id, date)
 );

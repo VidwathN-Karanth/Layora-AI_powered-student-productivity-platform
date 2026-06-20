@@ -6,6 +6,9 @@ export interface UserRow {
   email: string;
   leetcodeUsername: string | null;
   githubUsername: string | null;
+  leetcodeEasyTotal: number;
+  leetcodeMediumTotal: number;
+  leetcodeHardTotal: number;
   createdAt: string;
 }
 
@@ -15,6 +18,9 @@ interface DatabaseUserRow {
   email: string;
   leetcode_username: string | null;
   github_username: string | null;
+  leetcode_easy_total: number;
+  leetcode_medium_total: number;
+  leetcode_hard_total: number;
   created_at: string;
 }
 
@@ -29,6 +35,9 @@ function mapUserRow(row: DatabaseUserRow | null | undefined): UserRow | null {
     email: row.email,
     leetcodeUsername: row.leetcode_username,
     githubUsername: row.github_username,
+    leetcodeEasyTotal: row.leetcode_easy_total || 0,
+    leetcodeMediumTotal: row.leetcode_medium_total || 0,
+    leetcodeHardTotal: row.leetcode_hard_total || 0,
     createdAt: row.created_at
   };
 }
@@ -42,13 +51,19 @@ export class User {
     name, 
     email, 
     leetcodeUsername = null, 
-    githubUsername = null 
+    githubUsername = null,
+    leetcodeEasyTotal = 0,
+    leetcodeMediumTotal = 0,
+    leetcodeHardTotal = 0
   }: { 
     id?: string; 
     name: string; 
     email: string; 
     leetcodeUsername?: string | null; 
     githubUsername?: string | null; 
+    leetcodeEasyTotal?: number;
+    leetcodeMediumTotal?: number;
+    leetcodeHardTotal?: number;
   }): Promise<UserRow | null> {
     const userId = id || `usr_${Math.random().toString(36).substring(2, 11)}`;
     const { data, error } = await supabaseAdmin
@@ -58,7 +73,10 @@ export class User {
         name,
         email,
         leetcode_username: leetcodeUsername,
-        github_username: githubUsername
+        github_username: githubUsername,
+        leetcode_easy_total: leetcodeEasyTotal,
+        leetcode_medium_total: leetcodeMediumTotal,
+        leetcode_hard_total: leetcodeHardTotal
       })
       .select()
       .single();
@@ -89,7 +107,7 @@ export class User {
   }
 
   /**
-   * Updates user linking credentials.
+   * Updates user linking credentials and solved totals.
    */
   static async update(
     id: string, 
@@ -97,7 +115,10 @@ export class User {
       name?: string; 
       email?: string; 
       leetcodeUsername?: string | null; 
-      githubUsername?: string | null; 
+      githubUsername?: string | null;
+      leetcodeEasyTotal?: number;
+      leetcodeMediumTotal?: number;
+      leetcodeHardTotal?: number;
     }
   ): Promise<UserRow | null> {
     const dbUpdates: {
@@ -105,11 +126,17 @@ export class User {
       email?: string;
       leetcode_username?: string | null;
       github_username?: string | null;
+      leetcode_easy_total?: number;
+      leetcode_medium_total?: number;
+      leetcode_hard_total?: number;
     } = {};
     if (updates.name !== undefined) dbUpdates.name = updates.name;
     if (updates.email !== undefined) dbUpdates.email = updates.email;
     if (updates.leetcodeUsername !== undefined) dbUpdates.leetcode_username = updates.leetcodeUsername;
     if (updates.githubUsername !== undefined) dbUpdates.github_username = updates.githubUsername;
+    if (updates.leetcodeEasyTotal !== undefined) dbUpdates.leetcode_easy_total = updates.leetcodeEasyTotal;
+    if (updates.leetcodeMediumTotal !== undefined) dbUpdates.leetcode_medium_total = updates.leetcodeMediumTotal;
+    if (updates.leetcodeHardTotal !== undefined) dbUpdates.leetcode_hard_total = updates.leetcodeHardTotal;
 
     const { data, error } = await supabaseAdmin
       .from('users')

@@ -8,6 +8,9 @@ export interface DailyActivityRow {
   leetcodeSolvedToday: number;
   githubContributionsToday: number;
   pointsEarned: number;
+  leetcodeEasyAccumulated: number;
+  leetcodeMediumAccumulated: number;
+  leetcodeHardAccumulated: number;
   createdAt: string;
 }
 
@@ -28,6 +31,9 @@ interface DatabaseDailyActivityRow {
   leetcode_solved_today: number;
   github_contributions_today: number;
   points_earned: number;
+  leetcode_easy_accumulated: number;
+  leetcode_medium_accumulated: number;
+  leetcode_hard_accumulated: number;
   created_at: string;
 }
 
@@ -43,6 +49,9 @@ function mapActivityRow(row: DatabaseDailyActivityRow | null | undefined): Daily
     leetcodeSolvedToday: row.leetcode_solved_today,
     githubContributionsToday: row.github_contributions_today,
     pointsEarned: row.points_earned,
+    leetcodeEasyAccumulated: row.leetcode_easy_accumulated || 0,
+    leetcodeMediumAccumulated: row.leetcode_medium_accumulated || 0,
+    leetcodeHardAccumulated: row.leetcode_hard_accumulated || 0,
     createdAt: row.created_at
   };
 }
@@ -56,13 +65,19 @@ export class DailyActivity {
     date,
     leetcodeSolvedToday,
     githubContributionsToday,
-    pointsEarned
+    pointsEarned,
+    leetcodeEasyAccumulated = 0,
+    leetcodeMediumAccumulated = 0,
+    leetcodeHardAccumulated = 0
   }: {
     userId: string;
     date: string;
     leetcodeSolvedToday: number;
     githubContributionsToday: number;
     pointsEarned: number;
+    leetcodeEasyAccumulated?: number;
+    leetcodeMediumAccumulated?: number;
+    leetcodeHardAccumulated?: number;
   }): Promise<DailyActivityRow | null> {
     const { data, error } = await supabaseAdmin
       .from('daily_activities')
@@ -71,7 +86,10 @@ export class DailyActivity {
         date,
         leetcode_solved_today: leetcodeSolvedToday,
         github_contributions_today: githubContributionsToday,
-        points_earned: pointsEarned
+        points_earned: pointsEarned,
+        leetcode_easy_accumulated: leetcodeEasyAccumulated,
+        leetcode_medium_accumulated: leetcodeMediumAccumulated,
+        leetcode_hard_accumulated: leetcodeHardAccumulated
       }, {
         onConflict: 'user_id,date'
       })
@@ -132,9 +150,32 @@ export class DailyActivity {
     for (const act of activityRows) {
       const summary = leaderboardMap[act.user_id];
       if (summary) {
-        summary.totalPoints += act.points_earned;
-        summary.totalLeetcodeSolved += act.leetcode_solved_today;
-        summary.totalGithubContributions += act.github_contributions_today;
+        if (range === 'all') {
+          // For all-time, we accumulate GitHub contributions and GitHub points from ledger
+          const ghPoints = act.github_contributions_today > 0 
+            ? (10 + act.github_contributions_today * 5) 
+            : 0;
+          summary.totalGithubContributions += act.github_contributions_today;
+          summary.totalPoints += ghPoints;
+        } else {
+          // For today/week, we sum the daily points_earned and leetcode_solved_today directly
+          summary.totalPoints += act.points_earned;
+          summary.totalLeetcodeSolved += act.leetcode_solved_today;
+          summary.totalGithubContributions += act.github_contributions_today;
+        }
+      }
+    }
+
+    // 4.5 For all-time, add the cumulative LeetCode solved counts from the User profile
+    if (range === 'all') {
+      for (const user of users) {
+        const summary = leaderboardMap[user.id];
+        if (summary) {
+          const lcSolved = user.leetcodeEasyTotal + user.leetcodeMediumTotal + user.leetcodeHardTotal;
+          const lcPoints = user.leetcodeEasyTotal * 10 + user.leetcodeMediumTotal * 20 + user.leetcodeHardTotal * 30;
+          summary.totalLeetcodeSolved = lcSolved;
+          summary.totalPoints += lcPoints;
+        }
       }
     }
 
@@ -150,5 +191,22 @@ export class DailyActivity {
     });
 
     return sortedLeaderboard;
+  }
+
+  /**
+   * Fetches all daily activities for a specific user.
+   */
+  static async findByUserId(userId: string): Promise<DailyActivityRow[]> {
+    const { data, error } = await supabaseAdmin
+      .from('daily_activities')
+      .select('*')
+      .eq('user_id', userId)
+      .order('date', { ascending: false });
+
+    if (error) {
+      throw new Error(`Failed to retrieve activities for user: ${error.message}`);
+    }
+
+    return (data || []).map((row) => mapActivityRow(row as DatabaseDailyActivityRow)).filter((a): a is DailyActivityRow => a !== null);
   }
 }

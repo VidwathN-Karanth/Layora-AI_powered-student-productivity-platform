@@ -3,6 +3,7 @@ import { DailyActivity } from '@/lib/models/DailyActivity';
 import * as leetcodeService from '@/lib/leetcodeService';
 import * as githubService from '@/lib/githubService';
 import { pointsConfig } from '@/lib/points';
+import { supabaseAdmin } from './supabaseAdmin';
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -55,18 +56,46 @@ export async function runSyncForDate(targetDateStr: string): Promise<SyncStats> 
       let githubContributionsToday = 0;
       let githubPoints = 0;
 
-      // 1. LeetCode Sync
+      let newEasyTotal = user.leetcodeEasyTotal || 0;
+      let newMediumTotal = user.leetcodeMediumTotal || 0;
+      let newHardTotal = user.leetcodeHardTotal || 0;
+
+      // 1. LeetCode Sync (Cumulative Solves)
       if (user.leetcodeUsername) {
         try {
-          const lcActivity = await leetcodeService.fetchActivityForDate(user.leetcodeUsername, targetDateStr);
-          
-          leetcodeSolvedToday = (lcActivity.Easy || 0) + (lcActivity.Medium || 0) + (lcActivity.Hard || 0);
-          leetcodePoints = 
-            (lcActivity.Easy || 0) * pointsConfig.leetcode.Easy +
-            (lcActivity.Medium || 0) * pointsConfig.leetcode.Medium +
-            (lcActivity.Hard || 0) * pointsConfig.leetcode.Hard;
+          const totals = await leetcodeService.fetchTotalSolves(user.leetcodeUsername);
+          newEasyTotal = totals.Easy;
+          newMediumTotal = totals.Medium;
+          newHardTotal = totals.Hard;
 
-          console.log(`[Sync] [LeetCode] User ${user.leetcodeUsername} solved: Easy=${lcActivity.Easy}, Medium=${lcActivity.Medium}, Hard=${lcActivity.Hard} (Points: ${leetcodePoints})`);
+          // Retrieve the closest baseline snapshot before targetDateStr
+          const { data: baselineRows } = await supabaseAdmin
+            .from('daily_activities')
+            .select('leetcode_easy_accumulated, leetcode_medium_accumulated, leetcode_hard_accumulated')
+            .eq('user_id', user.id)
+            .lt('date', targetDateStr)
+            .order('date', { ascending: false })
+            .limit(1);
+
+          const baseline = baselineRows && baselineRows.length > 0 
+            ? {
+                Easy: baselineRows[0].leetcode_easy_accumulated || 0,
+                Medium: baselineRows[0].leetcode_medium_accumulated || 0,
+                Hard: baselineRows[0].leetcode_hard_accumulated || 0
+              }
+            : { Easy: 0, Medium: 0, Hard: 0 };
+
+          const easyDiff = Math.max(0, newEasyTotal - baseline.Easy);
+          const mediumDiff = Math.max(0, newMediumTotal - baseline.Medium);
+          const hardDiff = Math.max(0, newHardTotal - baseline.Hard);
+
+          leetcodeSolvedToday = easyDiff + mediumDiff + hardDiff;
+          leetcodePoints = 
+            easyDiff * pointsConfig.leetcode.Easy +
+            mediumDiff * pointsConfig.leetcode.Medium +
+            hardDiff * pointsConfig.leetcode.Hard;
+
+          console.log(`[Sync] [LeetCode] User ${user.leetcodeUsername} solved diff: Easy=${easyDiff}, Medium=${mediumDiff}, Hard=${hardDiff} (Points: ${leetcodePoints})`);
         } catch (err: unknown) {
           const errMsg = err instanceof Error ? err.message : String(err);
           console.error(`[Sync] [LeetCode] Failed to sync for user ${user.leetcodeUsername}:`, errMsg);
@@ -93,13 +122,25 @@ export async function runSyncForDate(targetDateStr: string): Promise<SyncStats> 
 
       const totalPointsEarned = leetcodePoints + githubPoints;
 
-      // 3. Save/Upsert activity log
+      // Update user model totals in the database
+      if (user.leetcodeUsername) {
+        await User.update(user.id, {
+          leetcodeEasyTotal: newEasyTotal,
+          leetcodeMediumTotal: newMediumTotal,
+          leetcodeHardTotal: newHardTotal
+        });
+      }
+
+      // 3. Save/Upsert activity log with snapshots
       await DailyActivity.upsert({
         userId: user.id,
         date: targetDateStr,
         leetcodeSolvedToday,
         githubContributionsToday,
-        pointsEarned: totalPointsEarned
+        pointsEarned: totalPointsEarned,
+        leetcodeEasyAccumulated: newEasyTotal,
+        leetcodeMediumAccumulated: newMediumTotal,
+        leetcodeHardAccumulated: newHardTotal
       });
 
       stats.successful++;
