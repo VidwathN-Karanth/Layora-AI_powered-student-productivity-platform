@@ -322,7 +322,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .cl-headerSubtitle {
-  color: rgba(224, 231, 255, 0.65) !important;
+  color: #ffffff !important;
   font-family: var(--font-inter), sans-serif !important;
   font-size: 0.85rem !important;
   text-align: center !important;
@@ -373,7 +373,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .cl-dividerText {
-  color: rgba(255, 255, 255, 0.35) !important;
+  color: #ffffff !important;
   font-family: var(--font-mono), monospace !important;
   font-size: 0.75rem !important;
   text-transform: uppercase !important;
@@ -381,7 +381,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Form Labels - Clean uppercase style */
 .cl-formFieldLabel {
-  color: rgba(224, 231, 255, 0.75) !important;
+  color: #ffffff !important;
   font-family: var(--font-geist), system-ui, sans-serif !important;
   font-size: 0.75rem !important;
   font-weight: 600 !important;
@@ -420,7 +420,7 @@ h1, h2, h3, h4, h5, h6 {
 .cl-formFieldInputShowPasswordButton, 
 .cl-formFieldInputCopyButton,
 .cl-formFieldInputIcon {
-  color: rgba(255, 255, 255, 0.5) !important;
+  color: #ffffff !important;
 }
 
 .cl-formFieldInputShowPasswordButton:hover, 
@@ -462,7 +462,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .cl-footerActionText {
-  color: rgba(224, 231, 255, 0.6) !important;
+  color: #ffffff !important;
   font-family: var(--font-inter), sans-serif !important;
   font-size: 0.85rem !important;
 }
@@ -495,6 +495,19 @@ h1, h2, h3, h4, h5, h6 {
   background: #0f172a !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   color: #ffffff !important;
+}
+
+/* Make all grey text white globally */
+[class*="text-white/"],
+[class*="text-slate-"],
+[class*="text-gray-"],
+[class*="text-zinc-"],
+[class*="text-neutral-"],
+[class*="text-stone-"],
+.text-on-surface-variant,
+.text-outline,
+.text-outline-variant {
+  color: #ffffff;
 }
 
 
