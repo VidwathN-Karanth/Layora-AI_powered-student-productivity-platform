@@ -9,7 +9,7 @@ import { useStore } from '@/store/useStore';
 import { 
   Users, Clock, Flame, BookOpen, Search, ArrowLeft, 
   Trash2, Settings, Activity, Calendar, ListTodo, 
-  CheckCircle2, Building2, LogOut, X, FileText, Globe, RefreshCw, Eye, Sparkles
+  CheckCircle2, Building2, LogOut, X, FileText, Globe, RefreshCw, Eye, Sparkles, AlertTriangle
 } from 'lucide-react';
 
 interface TelemetryUser {
@@ -54,6 +54,37 @@ export default function AdminPage() {
   const [editStreak, setEditStreak] = useState<number>(0);
   const [editHours, setEditHours] = useState<number>(0);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  // Leaderboard States & Handlers
+  const [adminView, setAdminView] = useState<'nodes' | 'leaderboard'>('nodes');
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [leaderboardRange, setLeaderboardRange] = useState<'today' | 'week' | 'all'>('all');
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+  const [leaderboardError, setLeaderboardError] = useState('');
+
+  const fetchLeaderboard = async (range: 'today' | 'week' | 'all') => {
+    setLoadingLeaderboard(true);
+    setLeaderboardError('');
+    try {
+      const res = await fetch(`http://localhost:4000/api/admin/leaderboard?range=${range}`);
+      if (!res.ok) {
+        throw new Error('Failed to fetch leaderboard data.');
+      }
+      const data = await res.json();
+      setLeaderboard(data);
+    } catch (err: any) {
+      console.error(err);
+      setLeaderboardError('Could not load leaderboard data. Please make sure the backend server is running on port 4000.');
+    } finally {
+      setLoadingLeaderboard(false);
+    }
+  };
+
+  useEffect(() => {
+    if (authorized && adminView === 'leaderboard') {
+      fetchLeaderboard(leaderboardRange);
+    }
+  }, [authorized, adminView, leaderboardRange]);
 
   useEffect(() => {
     if (selectedUser) {
@@ -428,135 +459,280 @@ export default function AdminPage() {
         {/* Database Search & List Panel */}
         <section className="glass-panel border border-white/10 overflow-hidden">
           <div className="p-4 border-b border-white/10 bg-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-cyber-blue animate-pulse"></span>
-              <h2 className="text-sm font-bold tracking-wider">DATABASE TERMINAL LOG</h2>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setAdminView('nodes')}
+                className={`text-xs font-mono font-bold tracking-wider uppercase px-3 py-1.5 rounded-lg border transition cursor-pointer ${
+                  adminView === 'nodes'
+                    ? 'border-cyber-blue bg-cyber-blue/10 text-cyber-blue'
+                    : 'border-transparent text-white/50 hover:text-white'
+                }`}
+              >
+                📁 Student Nodes
+              </button>
+              <button
+                onClick={() => setAdminView('leaderboard')}
+                className={`text-xs font-mono font-bold tracking-wider uppercase px-3 py-1.5 rounded-lg border transition cursor-pointer ${
+                  adminView === 'leaderboard'
+                    ? 'border-cyber-purple bg-cyber-purple/10 text-cyber-purple'
+                    : 'border-transparent text-white/50 hover:text-white'
+                }`}
+              >
+                🏆 Activity Leaderboard
+              </button>
             </div>
 
-            <div className="relative w-full sm:max-w-xs">
-              <Search className="absolute left-3 top-2.5 w-4 h-4 text-white/30" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Query name, email or UUID..."
-                className="w-full bg-black/40 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-cyber-blue"
-              />
-            </div>
+            {adminView === 'nodes' ? (
+              <div className="relative w-full sm:max-w-xs">
+                <Search className="absolute left-3 top-2.5 w-4 h-4 text-white/30" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Query name, email or UUID..."
+                  className="w-full bg-black/40 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-cyber-blue"
+                />
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                {(['today', 'week', 'all'] as const).map((r) => (
+                  <button
+                    key={r}
+                    onClick={() => setLeaderboardRange(r)}
+                    className={`px-3 py-1 rounded-lg border text-[10px] uppercase font-bold tracking-wider transition cursor-pointer ${
+                      leaderboardRange === r
+                        ? 'border-cyber-purple bg-cyber-purple/20 text-cyber-purple shadow-glow-purple'
+                        : 'border-white/10 bg-white/5 text-white/60 hover:text-white'
+                    }`}
+                  >
+                    {r === 'week' ? '7 Days' : r}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {loadingData ? (
-            <div className="p-12 text-center text-white/40 text-xs flex flex-col items-center gap-3">
-              <RefreshCw className="w-6 h-6 animate-spin text-cyber-blue" />
-              Fetching terminal data...
-            </div>
-          ) : filteredUsers.length === 0 ? (
-            <div className="p-12 text-center text-white/30 text-xs">
-              No matching database states found.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="border-b border-white/10 bg-white/2 text-white/40 font-bold uppercase tracking-wider">
-                    <th className="p-4 font-normal">Student Node</th>
-                    <th className="p-4 font-normal">Status</th>
-                    <th className="p-4 font-normal">Streak</th>
-                    <th className="p-4 font-normal text-right">Study Time</th>
-                    <th className="p-4 font-normal text-center">Subjects</th>
-                    <th className="p-4 font-normal text-center">Tasks Done</th>
-                    <th className="p-4 font-normal text-center">AI Load</th>
-                    <th className="p-4 font-normal">Last Active Sync</th>
-                    <th className="p-4 font-normal text-center">Diagnostics</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {filteredUsers.map((u) => {
-                    const uProfile = u.state.user || {};
-                    const tasksList = u.state.tasks || [];
-                    const completedTasks = tasksList.filter(t => t.status === 'completed').length;
-                    
-                    return (
-                      <tr key={u.id} className="hover:bg-white/3 transition group">
-                        <td className="p-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center font-bold text-sm text-cyber-blue">
-                              {uProfile.name?.charAt(0).toUpperCase() || 'U'}
-                            </div>
-                            <div>
-                              <div className="font-bold text-white group-hover:text-cyber-blue transition">{uProfile.name || 'Anonymous Student'}</div>
-                              <div className="text-[10px] text-white/40">{uProfile.email || 'No email synced'}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          {uProfile.isOnboarded ? (
-                            <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-semibold">ONBOARDED</span>
-                          ) : (
-                            <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[9px] font-semibold">ONBOARDING</span>
-                          )}
-                        </td>
-                        <td className="p-4">
-                          <div className="flex items-center gap-1">
-                            <Flame className="w-3.5 h-3.5 text-amber-500" />
-                            <span className="font-bold text-white">{uProfile.streakCount || 0}d</span>
-                          </div>
-                        </td>
-                        <td className="p-4 text-right">
-                          <div className="font-bold text-white">{uProfile.totalStudyHours?.toFixed(1) || '0.0'}h</div>
-                        </td>
-                        <td className="p-4 text-center">
-                          <span className="px-2 py-0.5 bg-white/5 rounded border border-white/10 font-bold">
-                            {u.state.subjects?.length || 0}
-                          </span>
-                        </td>
-                        <td className="p-4 text-center">
-                          <span className={`px-2 py-0.5 rounded font-bold ${
-                            tasksList.length > 0 && completedTasks === tasksList.length 
-                              ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
-                              : 'bg-white/5 border border-white/10 text-white/70'
-                          }`}>
-                            {completedTasks} / {tasksList.length}
-                          </span>
-                        </td>
-                        <td className="p-4 text-center font-mono">
-                          <div className="font-bold text-white">
-                            {u.state.chatHistory?.filter(m => m.role === 'user').length || 0} <span className="text-[9px] text-white/40 font-normal">prompts</span>
-                          </div>
-                          <div className="text-[9px] text-cyber-purple">
-                            ~{Math.round((u.state.chatHistory?.reduce((sum, m) => sum + (m.content?.length || 0), 0) || 0) / 4).toLocaleString()} tok
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <div className="font-medium text-white/70">{formatLastSync(u.updated_at)}</div>
-                          <div className="text-[9px] text-white/30 truncate max-w-[120px]">{u.id}</div>
-                        </td>
-                        <td className="p-4 text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => {
-                                setSelectedUser(u);
-                                setActiveTab('profile');
-                              }}
-                              className="p-1.5 rounded-lg border border-white/10 hover:border-cyber-blue text-white/60 hover:text-cyber-blue transition cursor-pointer"
-                              title="Inspect Details"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => setShowDeleteConfirm(u.id)}
-                              className="p-1.5 rounded-lg border border-white/10 hover:border-red-500 text-white/60 hover:text-red-400 transition cursor-pointer"
-                              title="Purge Sync State"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
+          {adminView === 'nodes' && (
+            <>
+              {loadingData ? (
+                <div className="p-12 text-center text-white/40 text-xs flex flex-col items-center gap-3">
+                  <RefreshCw className="w-6 h-6 animate-spin text-cyber-blue" />
+                  Fetching terminal data...
+                </div>
+              ) : filteredUsers.length === 0 ? (
+                <div className="p-12 text-center text-white/30 text-xs">
+                  No matching database states found.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-white/10 bg-white/2 text-white/40 font-bold uppercase tracking-wider">
+                        <th className="p-4 font-normal">Student Node</th>
+                        <th className="p-4 font-normal">Status</th>
+                        <th className="p-4 font-normal">Streak</th>
+                        <th className="p-4 font-normal text-right">Study Time</th>
+                        <th className="p-4 font-normal text-center">Subjects</th>
+                        <th className="p-4 font-normal text-center">Tasks Done</th>
+                        <th className="p-4 font-normal text-center">AI Load</th>
+                        <th className="p-4 font-normal">Last Active Sync</th>
+                        <th className="p-4 font-normal text-center">Diagnostics</th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {filteredUsers.map((u) => {
+                        const uProfile = u.state.user || {};
+                        const tasksList = u.state.tasks || [];
+                        const completedTasks = tasksList.filter(t => t.status === 'completed').length;
+                        
+                        return (
+                          <tr key={u.id} className="hover:bg-white/3 transition group">
+                            <td className="p-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center font-bold text-sm text-cyber-blue">
+                                  {uProfile.name?.charAt(0).toUpperCase() || 'U'}
+                                </div>
+                                <div>
+                                  <div className="font-bold text-white group-hover:text-cyber-blue transition">{uProfile.name || 'Anonymous Student'}</div>
+                                  <div className="text-[10px] text-white/40">{uProfile.email || 'No email synced'}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              {uProfile.isOnboarded ? (
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-semibold">ONBOARDED</span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[9px] font-semibold">ONBOARDING</span>
+                              )}
+                            </td>
+                            <td className="p-4">
+                              <div className="flex items-center gap-1">
+                                <Flame className="w-3.5 h-3.5 text-amber-500" />
+                                <span className="font-bold text-white">{uProfile.streakCount || 0}d</span>
+                              </div>
+                            </td>
+                            <td className="p-4 text-right">
+                              <div className="font-bold text-white">{uProfile.totalStudyHours?.toFixed(1) || '0.0'}h</div>
+                            </td>
+                            <td className="p-4 text-center">
+                              <span className="px-2 py-0.5 bg-white/5 rounded border border-white/10 font-bold">
+                                {u.state.subjects?.length || 0}
+                              </span>
+                            </td>
+                            <td className="p-4 text-center">
+                              <span className={`px-2 py-0.5 rounded font-bold ${
+                                tasksList.length > 0 && completedTasks === tasksList.length 
+                                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
+                                  : 'bg-white/5 border border-white/10 text-white/70'
+                              }`}>
+                                {completedTasks} / {tasksList.length}
+                              </span>
+                            </td>
+                            <td className="p-4 text-center font-mono">
+                              <div className="font-bold text-white">
+                                {u.state.chatHistory?.filter(m => m.role === 'user').length || 0} <span className="text-[9px] text-white/40 font-normal">prompts</span>
+                              </div>
+                              <div className="text-[9px] text-cyber-purple">
+                                ~{Math.round((u.state.chatHistory?.reduce((sum, m) => sum + (m.content?.length || 0), 0) || 0) / 4).toLocaleString()} tok
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              <div className="font-medium text-white/70">{formatLastSync(u.updated_at)}</div>
+                              <div className="text-[9px] text-white/30 truncate max-w-[120px]">{u.id}</div>
+                            </td>
+                            <td className="p-4 text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                <button
+                                  onClick={() => {
+                                    setSelectedUser(u);
+                                    setActiveTab('profile');
+                                  }}
+                                  className="p-1.5 rounded-lg border border-white/10 hover:border-cyber-blue text-white/60 hover:text-cyber-blue transition cursor-pointer"
+                                  title="Inspect Details"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => setShowDeleteConfirm(u.id)}
+                                  className="p-1.5 rounded-lg border border-white/10 hover:border-red-500 text-white/60 hover:text-red-400 transition cursor-pointer"
+                                  title="Purge Sync State"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          )}
+
+          {adminView === 'leaderboard' && (
+            <div>
+              {loadingLeaderboard ? (
+                <div className="p-12 text-center text-white/40 text-xs flex flex-col items-center gap-3">
+                  <RefreshCw className="w-6 h-6 animate-spin text-cyber-purple" />
+                  Compiling leaderboard ranks...
+                </div>
+              ) : leaderboardError ? (
+                <div className="p-12 text-center text-rose-300 text-xs flex flex-col items-center gap-2">
+                  <AlertTriangle className="w-6 h-6 text-rose-400" />
+                  <span>{leaderboardError}</span>
+                  <button
+                    onClick={() => fetchLeaderboard(leaderboardRange)}
+                    className="mt-3 px-3 py-1.5 bg-rose-950/30 border border-rose-500/25 hover:bg-rose-950/50 text-rose-300 rounded-lg text-[10px] font-bold transition cursor-pointer"
+                  >
+                    RETRY SYNC FETCH
+                  </button>
+                </div>
+              ) : leaderboard.length === 0 ? (
+                <div className="p-12 text-center text-white/30 text-xs">
+                  No daily activity ledger entries registered yet.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-white/10 bg-white/2 text-white/40 font-bold uppercase tracking-wider">
+                        <th className="p-4 font-normal text-center w-16">Rank</th>
+                        <th className="p-4 font-normal">Student</th>
+                        <th className="p-4 font-normal">Linked Accounts</th>
+                        <th className="p-4 font-normal text-right">LeetCode Solved</th>
+                        <th className="p-4 font-normal text-right">GitHub Contributions</th>
+                        <th className="p-4 font-normal text-right">Points Earned</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {leaderboard.map((item, index) => {
+                        const isTopThree = index < 3;
+                        const rankColors = [
+                          'text-yellow-400 border-yellow-500/30 bg-yellow-500/5',
+                          'text-slate-300 border-slate-400/30 bg-slate-400/5',
+                          'text-amber-600 border-amber-600/30 bg-amber-600/5'
+                        ];
+                        
+                        return (
+                          <tr key={item.userId} className="hover:bg-white/3 transition group">
+                            <td className="p-4 text-center font-black text-sm">
+                              {isTopThree ? (
+                                <span className={`inline-flex w-7 h-7 rounded-full border items-center justify-center font-extrabold ${rankColors[index]}`}>
+                                  {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                                </span>
+                              ) : (
+                                <span className="text-white/40">#{index + 1}</span>
+                              )}
+                            </td>
+                            <td className="p-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center font-bold text-sm text-cyber-purple">
+                                  {item.name?.charAt(0).toUpperCase() || 'U'}
+                                </div>
+                                <div>
+                                  <div className="font-bold text-white group-hover:text-cyber-purple transition">{item.name || 'Anonymous Student'}</div>
+                                  <div className="text-[9px] text-white/30 truncate max-w-[150px]">{item.userId}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              <div className="flex flex-col gap-1">
+                                {item.leetcodeUsername ? (
+                                  <span className="text-[10px] text-yellow-500/90 font-mono">
+                                    💡 leetcode: <strong className="text-white">{item.leetcodeUsername}</strong>
+                                  </span>
+                                ) : (
+                                  <span className="text-[9px] text-white/20 font-mono italic">No LeetCode linked</span>
+                                )}
+                                {item.githubUsername ? (
+                                  <span className="text-[10px] text-cyber-blue font-mono">
+                                    🐙 github: <strong className="text-white">{item.githubUsername}</strong>
+                                  </span>
+                                ) : (
+                                  <span className="text-[9px] text-white/20 font-mono italic">No GitHub linked</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="p-4 text-right font-black text-white text-sm">
+                              {item.totalLeetcodeSolved} <span className="text-[10px] font-normal text-white/40">solved</span>
+                            </td>
+                            <td className="p-4 text-right font-black text-white text-sm">
+                              {item.totalGithubContributions} <span className="text-[10px] font-normal text-white/40">contribs</span>
+                            </td>
+                            <td className="p-4 text-right">
+                              <span className="px-3 py-1 bg-cyber-purple/10 border border-cyber-purple/20 text-cyber-purple rounded-lg font-black text-sm text-glow-purple">
+                                {item.totalPoints} pts
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
         </section>
