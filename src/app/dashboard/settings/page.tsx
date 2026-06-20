@@ -650,10 +650,7 @@ export default function SettingsPage() {
                               <div>
                                 <span className={`font-bold ${isSelf ? 'text-primary' : 'text-on-surface'}`}>{item.name}</span>
                                 {isSelf && <span className="ml-1 text-[8px] bg-primary/10 text-primary border border-primary/20 px-1 py-px rounded uppercase">You</span>}
-                                <div className="text-[8px] text-outline mt-0.5">
-                                  {item.leetcodeUsername && `💡 ${item.leetcodeUsername} `}
-                                  {item.githubUsername && `🐙 ${item.githubUsername}`}
-                                </div>
+
                               </div>
                             </td>
                             <td className="p-3 text-right font-bold text-on-surface">
