@@ -39,6 +39,7 @@ export default function SettingsPage() {
 
   const [leetcodeUsername, setLeetcodeUsername] = useState(store.user?.leetcodeUsername || '');
   const [githubUsername, setGithubUsername] = useState(store.user?.githubUsername || '');
+  const [linkedinUrl, setLinkedinUrl] = useState(store.user?.linkedinUrl || '');
   const [isLinking, setIsLinking] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
   const [linkSuccess, setLinkSuccess] = useState(false);
@@ -144,7 +145,8 @@ export default function SettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           leetcodeUsername: leetcodeUsername || null,
-          githubUsername: githubUsername || null
+          githubUsername: githubUsername || null,
+          linkedinUrl: linkedinUrl || null
         })
       });
 
@@ -156,7 +158,8 @@ export default function SettingsPage() {
       // 3. Update Zustand Store
       store.updateRoutine({
         leetcodeUsername: leetcodeUsername || null,
-        githubUsername: githubUsername || null
+        githubUsername: githubUsername || null,
+        linkedinUrl: linkedinUrl || null
       });
 
       setLinkSuccess(true);
@@ -330,6 +333,8 @@ export default function SettingsPage() {
             <form onSubmit={handleLinkAccounts} className="space-y-4">
               <p className="text-[10px] text-outline font-mono leading-relaxed">
                 Link your public LeetCode and GitHub profiles to earn points daily for your solving activity and contributions! Leaderboard scores update every midnight UTC.
+                <br />
+                <strong className="text-amber-500 block mt-1.5 uppercase tracking-wide">⚠️ For LeetCode and GitHub, only your username should be given, not the full link.</strong>
               </p>
 
               {linkError && (
@@ -362,6 +367,17 @@ export default function SettingsPage() {
                   value={githubUsername}
                   onChange={(e) => setGithubUsername(e.target.value)}
                   placeholder="e.g. github_user"
+                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-mono text-outline mb-1">LinkedIn Account URL</label>
+                <input
+                  type="url"
+                  value={linkedinUrl}
+                  onChange={(e) => setLinkedinUrl(e.target.value)}
+                  placeholder="e.g. https://www.linkedin.com/in/username"
                   className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                 />
               </div>

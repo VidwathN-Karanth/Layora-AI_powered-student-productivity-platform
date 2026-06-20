@@ -46,6 +46,7 @@ create table if not exists public.users (
   email text not null unique,
   leetcode_username text unique,
   github_username text unique,
+  linkedin_url text,
   leetcode_easy_total integer not null default 0,
   leetcode_medium_total integer not null default 0,
   leetcode_hard_total integer not null default 0,

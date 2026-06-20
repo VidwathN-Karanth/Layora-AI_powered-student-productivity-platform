@@ -61,6 +61,7 @@ export default function AdminPage() {
   const [leaderboardRange, setLeaderboardRange] = useState<'today' | 'week' | 'all'>('all');
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
   const [leaderboardError, setLeaderboardError] = useState('');
+  const [selectedLeaderboardUser, setSelectedLeaderboardUser] = useState<any | null>(null);
 
   const fetchLeaderboard = async (range: 'today' | 'week' | 'all') => {
     setLoadingLeaderboard(true);
@@ -664,6 +665,7 @@ export default function AdminPage() {
                         <th className="p-4 font-normal text-right">LeetCode Solved</th>
                         <th className="p-4 font-normal text-right">GitHub Contributions</th>
                         <th className="p-4 font-normal text-right">Points Earned</th>
+                        <th className="p-4 font-normal text-center">Inspect</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
@@ -735,6 +737,15 @@ export default function AdminPage() {
                               <span className="px-3 py-1 bg-cyber-purple/10 border border-cyber-purple/20 text-cyber-purple rounded-lg font-black text-sm text-glow-purple">
                                 {item.totalPoints} pts
                               </span>
+                            </td>
+                            <td className="p-4 text-center">
+                              <button
+                                onClick={() => setSelectedLeaderboardUser(item)}
+                                className="p-1.5 rounded-lg border border-white/10 hover:border-cyber-blue text-white/60 hover:text-cyber-blue transition cursor-pointer"
+                                title="Inspect Accounts"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
                             </td>
                           </tr>
                         );
@@ -1100,6 +1111,143 @@ export default function AdminPage() {
                   </div>
                 )}
 
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Leaderboard User Details Inspector Modal */}
+      <AnimatePresence>
+        {selectedLeaderboardUser && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedLeaderboardUser(null)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="glass-panel border border-cyber-purple/30 p-6 rounded-2xl max-w-md w-full relative z-10 bg-[#0F0F16]"
+            >
+              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-cyber-purple/15 border border-cyber-purple/35 flex items-center justify-center font-bold text-sm text-cyber-purple">
+                    {selectedLeaderboardUser.name?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-white">{selectedLeaderboardUser.name || 'Anonymous Student'}</h3>
+                    <p className="text-[10px] text-white/40">{selectedLeaderboardUser.userId}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedLeaderboardUser(null)}
+                  className="p-1.5 rounded-lg border border-white/10 hover:border-white/30 text-white/50 hover:text-white transition cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="mt-6 space-y-4">
+                <div className="bg-white/2 border border-white/5 rounded-xl p-4 space-y-3">
+                  <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider block">
+                    Points Summary
+                  </span>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="bg-black/30 p-2 rounded-lg border border-white/5">
+                      <div className="text-[10px] text-white/40 font-bold">Points</div>
+                      <div className="text-sm font-black text-cyber-purple mt-0.5">{selectedLeaderboardUser.totalPoints}</div>
+                    </div>
+                    <div className="bg-black/30 p-2 rounded-lg border border-white/5">
+                      <div className="text-[10px] text-white/40 font-bold">LeetCode</div>
+                      <div className="text-sm font-black text-yellow-500 mt-0.5">{selectedLeaderboardUser.totalLeetcodeSolved}</div>
+                    </div>
+                    <div className="bg-black/30 p-2 rounded-lg border border-white/5">
+                      <div className="text-[10px] text-white/40 font-bold">GitHub</div>
+                      <div className="text-sm font-black text-cyber-blue mt-0.5">{selectedLeaderboardUser.totalGithubContributions}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider block">
+                    Social & Dev Profiles
+                  </span>
+                  
+                  {/* GitHub Profile Button */}
+                  {selectedLeaderboardUser.githubUsername ? (
+                    <a
+                      href={selectedLeaderboardUser.githubUsername.trim().startsWith('http') ? selectedLeaderboardUser.githubUsername.trim() : `https://github.com/${selectedLeaderboardUser.githubUsername.trim()}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center justify-between p-3 rounded-xl bg-cyber-blue/10 hover:bg-cyber-blue/20 border border-cyber-blue/25 hover:border-cyber-blue/50 text-cyber-blue font-bold text-xs transition duration-200 cursor-pointer shadow-md"
+                    >
+                      <span className="flex items-center gap-2">
+                        🐙 GitHub Profile
+                      </span>
+                      <span className="text-white text-[10px]">{selectedLeaderboardUser.githubUsername}</span>
+                    </a>
+                  ) : (
+                    <div className="w-full flex items-center justify-between p-3 rounded-xl bg-white/2 border border-white/5 text-white/30 text-xs italic">
+                      <span>🐙 GitHub Profile</span>
+                      <span>Not linked</span>
+                    </div>
+                  )}
+
+                  {/* LeetCode Profile Button */}
+                  {selectedLeaderboardUser.leetcodeUsername ? (
+                    <a
+                      href={selectedLeaderboardUser.leetcodeUsername.trim().startsWith('http') ? selectedLeaderboardUser.leetcodeUsername.trim() : `https://leetcode.com/u/${selectedLeaderboardUser.leetcodeUsername.trim()}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center justify-between p-3 rounded-xl bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/25 hover:border-yellow-500/50 text-yellow-500 font-bold text-xs transition duration-200 cursor-pointer shadow-md"
+                    >
+                      <span className="flex items-center gap-2">
+                        💡 LeetCode Profile
+                      </span>
+                      <span className="text-white text-[10px]">{selectedLeaderboardUser.leetcodeUsername}</span>
+                    </a>
+                  ) : (
+                    <div className="w-full flex items-center justify-between p-3 rounded-xl bg-white/2 border border-white/5 text-white/30 text-xs italic">
+                      <span>💡 LeetCode Profile</span>
+                      <span>Not linked</span>
+                    </div>
+                  )}
+
+                  {/* LinkedIn Profile Button */}
+                  {selectedLeaderboardUser.linkedinUrl ? (
+                    <a
+                      href={selectedLeaderboardUser.linkedinUrl.trim().startsWith('http') ? selectedLeaderboardUser.linkedinUrl.trim() : `https://${selectedLeaderboardUser.linkedinUrl.trim()}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center justify-between p-3 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/25 hover:border-blue-500/50 text-blue-400 font-bold text-xs transition duration-200 cursor-pointer shadow-md"
+                    >
+                      <span className="flex items-center gap-2">
+                        🔗 LinkedIn Profile
+                      </span>
+                      <span className="text-white text-[10px] truncate max-w-[200px]">View Profile</span>
+                    </a>
+                  ) : (
+                    <div className="w-full flex items-center justify-between p-3 rounded-xl bg-white/2 border border-white/5 text-white/30 text-xs italic">
+                      <span>🔗 LinkedIn Profile</span>
+                      <span>Not linked</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setSelectedLeaderboardUser(null)}
+                  className="px-4 py-2 border border-white/10 hover:border-white/20 text-white/60 hover:text-white rounded-xl text-xs font-bold cursor-pointer transition"
+                >
+                  CLOSE
+                </button>
               </div>
             </motion.div>
           </div>

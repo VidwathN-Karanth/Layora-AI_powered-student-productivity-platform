@@ -10,7 +10,7 @@ export async function POST(
   const { id: userId } = await params;
   
   try {
-    const { leetcodeUsername, githubUsername } = await request.json();
+    const { leetcodeUsername, githubUsername, linkedinUrl } = await request.json();
 
     // 1. Verify user exists
     const user = await User.findById(userId);
@@ -24,6 +24,7 @@ export async function POST(
     const updates: {
       leetcodeUsername?: string | null;
       githubUsername?: string | null;
+      linkedinUrl?: string | null;
       leetcodeEasyTotal?: number;
       leetcodeMediumTotal?: number;
       leetcodeHardTotal?: number;
@@ -65,6 +66,12 @@ export async function POST(
       }
     } else if (githubUsername === null || githubUsername === '') {
       updates.githubUsername = null;
+    }
+
+    // 3.5. Validate LinkedIn URL
+    if (linkedinUrl !== undefined) {
+      const trimmed = linkedinUrl ? linkedinUrl.trim() : '';
+      updates.linkedinUrl = trimmed === '' ? null : trimmed;
     }
 
     // 4. If no updates are specified, return existing user

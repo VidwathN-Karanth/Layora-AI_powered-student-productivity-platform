@@ -51,6 +51,7 @@ export interface UserProfile {
   lastActiveDate?: string;
   leetcodeUsername?: string | null;
   githubUsername?: string | null;
+  linkedinUrl?: string | null;
 }
 
 export interface RegisteredUser {
@@ -75,6 +76,7 @@ export interface RegisteredUser {
   lastActiveDate?: string;
   leetcodeUsername?: string | null;
   githubUsername?: string | null;
+  linkedinUrl?: string | null;
 }
 
 interface AppState {
@@ -242,7 +244,10 @@ export const useStore = create<AppState>()(
               collegeStart: existing.collegeStart,
               collegeEnd: existing.collegeEnd,
               freeBlocks: existing.freeBlocks,
-              lastActiveDate: existing.lastActiveDate
+              lastActiveDate: existing.lastActiveDate,
+              leetcodeUsername: existing.leetcodeUsername,
+              githubUsername: existing.githubUsername,
+              linkedinUrl: existing.linkedinUrl
             }
             // No data arrays — SyncProvider loads those from Supabase
           });
@@ -258,6 +263,9 @@ export const useStore = create<AppState>()(
             courses: [],
             tasks: [],
             timetable: [],
+            leetcodeUsername: null,
+            githubUsername: null,
+            linkedinUrl: null,
             ...profileDefaults
           };
 
@@ -275,7 +283,10 @@ export const useStore = create<AppState>()(
               collegeStart: newGoogleUser.collegeStart,
               collegeEnd: newGoogleUser.collegeEnd,
               freeBlocks: newGoogleUser.freeBlocks,
-              lastActiveDate: newGoogleUser.lastActiveDate
+              lastActiveDate: newGoogleUser.lastActiveDate,
+              leetcodeUsername: null,
+              githubUsername: null,
+              linkedinUrl: null
             }
             // No data arrays — SyncProvider loads those from Supabase
           });
@@ -317,7 +328,10 @@ export const useStore = create<AppState>()(
             collegeStart: matched.collegeStart,
             collegeEnd: matched.collegeEnd,
             freeBlocks: matched.freeBlocks,
-            lastActiveDate: matched.lastActiveDate
+            lastActiveDate: matched.lastActiveDate,
+            leetcodeUsername: matched.leetcodeUsername,
+            githubUsername: matched.githubUsername,
+            linkedinUrl: matched.linkedinUrl
           }
           // No data arrays — SyncProvider loads those from Supabase
         });
@@ -358,7 +372,10 @@ export const useStore = create<AppState>()(
           freeBlocks: [
             { id: 'free-1', start: '17:00', end: '19:00', label: 'Evening Study' },
             { id: 'free-2', start: '20:00', end: '22:00', label: 'Night Review' }
-          ]
+          ],
+          leetcodeUsername: null,
+          githubUsername: null,
+          linkedinUrl: null
         };
 
         set({
@@ -387,6 +404,9 @@ export const useStore = create<AppState>()(
                 collegeEnd: user.collegeEnd,
                 freeBlocks: user.freeBlocks,
                 lastActiveDate: user.lastActiveDate,
+                leetcodeUsername: user.leetcodeUsername,
+                githubUsername: user.githubUsername,
+                linkedinUrl: user.linkedinUrl,
                 subjects,
                 resources,
                 activities,
