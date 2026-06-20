@@ -255,12 +255,12 @@ export default function ResourcesPage() {
           <div className="glass-card rounded-2xl p-5 space-y-4 border border-white/10">
             
             {/* Tabs */}
-            <div className="grid grid-cols-2 gap-2 p-1.5 bg-white/5 border border-white/10 rounded-full w-full">
+            <div className="grid grid-cols-2 gap-2 p-1.5 bg-white/5 border border-white/10 rounded-xl w-full">
               <button
                 type="button"
                 disabled={subjects.length === 0}
                 onClick={() => setActiveTab('upload')}
-                className={`py-2.5 px-3 text-xs font-mono font-bold rounded-full flex items-center justify-center gap-1.5 transition ${
+                className={`py-2 px-2.5 text-xs font-mono font-bold rounded-lg flex items-center justify-center gap-1.5 transition ${
                   subjects.length === 0
                     ? 'opacity-40 cursor-not-allowed text-white/30'
                     : activeTab === 'upload'
@@ -269,20 +269,23 @@ export default function ResourcesPage() {
                 }`}
                 title={subjects.length === 0 ? "Create a subject first to upload materials" : undefined}
               >
-                <UploadCloud className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate">Upload Material</span>
+                <UploadCloud className="w-4 h-4 shrink-0" />
+                <span>Upload</span>
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab('subject')}
-                className={`py-2.5 px-3 text-xs font-mono font-bold rounded-full flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                className={`py-2 px-2.5 text-xs font-mono font-bold rounded-lg flex items-center justify-center gap-1.5 transition cursor-pointer ${
                   activeTab === 'subject'
                     ? 'bg-cyber-blue/20 text-cyber-blue border border-cyber-blue/30'
                     : 'text-white/50 hover:text-white hover:bg-white/10 border border-transparent'
                 }`}
               >
-                <Plus className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate">Add Subject</span>
+                <Plus className="w-4 h-4 shrink-0" />
+                <div className="flex flex-col text-left leading-none font-bold">
+                  <span className="text-[10px]">Add</span>
+                  <span className="text-[10px] mt-0.5">Subject</span>
+                </div>
               </button>
             </div>
 
