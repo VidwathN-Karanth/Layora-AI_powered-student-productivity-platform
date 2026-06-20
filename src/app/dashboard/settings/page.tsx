@@ -23,6 +23,12 @@ export default function SettingsPage() {
   const [collegeStart, setCollegeStart] = useState(store.user?.collegeStart || '09:00');
   const [collegeEnd, setCollegeEnd] = useState(store.user?.collegeEnd || '16:00');
 
+  const [leetcodeUsername, setLeetcodeUsername] = useState(store.user?.leetcodeUsername || '');
+  const [githubUsername, setGithubUsername] = useState(store.user?.githubUsername || '');
+  const [isLinking, setIsLinking] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const [linkSuccess, setLinkSuccess] = useState(false);
+
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isPurging, setIsPurging] = useState(false);
 
@@ -37,6 +43,65 @@ export default function SettingsPage() {
     });
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 2000);
+  };
+
+  const handleLinkAccounts = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLinkError(null);
+    setLinkSuccess(false);
+    setIsLinking(true);
+
+    const targetUserId = clerkUser?.id || store.user?.email || 'test_user';
+
+    try {
+      // 1. Register/Ensure User exists in the backend first
+      const registerRes = await fetch('http://localhost:4000/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: targetUserId,
+          name: name || clerkUser?.fullName || 'Anonymous User',
+          email: store.user?.email || clerkUser?.primaryEmailAddress?.emailAddress || 'email@example.com'
+        })
+      });
+
+      if (!registerRes.ok && registerRes.status !== 409) {
+        const errorData = await registerRes.json();
+        throw new Error(errorData.error || 'Failed to initialize user in backend');
+      }
+
+      // 2. Perform Account Link with Username verification
+      const linkRes = await fetch(`http://localhost:4000/api/users/${targetUserId}/link-accounts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leetcodeUsername: leetcodeUsername || null,
+          githubUsername: githubUsername || null
+        })
+      });
+
+      if (!linkRes.ok) {
+        const errorData = await linkRes.json();
+        throw new Error(errorData.error || 'Account linking failed');
+      }
+
+      // 3. Update Zustand Store
+      store.updateRoutine({
+        leetcodeUsername: leetcodeUsername || null,
+        githubUsername: githubUsername || null
+      });
+
+      setLinkSuccess(true);
+    } catch (err: any) {
+      console.error('Account link failed:', err);
+      if (err instanceof TypeError && err.message.toLowerCase().includes('fetch')) {
+        setLinkError('Could not connect to the activity sync backend. Please ensure the backend server is running on port 4000.');
+      } else {
+        setLinkError(err.message || 'An unexpected error occurred.');
+      }
+    } finally {
+      setIsLinking(false);
+    }
   };
 
   const handleSystemReset = async () => {
@@ -162,6 +227,69 @@ export default function SettingsPage() {
               className="bg-primary hover:bg-primary-container text-on-surface rounded-lg px-4 py-2 text-xs font-mono font-bold transition cursor-pointer"
             >
               Save Rhythm Cycles
+            </button>
+          </form>
+        </div>
+
+        {/* --- PANEL 2: LEETCODE & GITHUB LINKING --- */}
+        <div className="glass-card rounded-2xl p-5 space-y-4">
+          <div className="flex items-center gap-2.5 border-b border-outline-variant pb-2">
+            <ShieldCheck className="w-4 h-4 text-primary" />
+            <h3 className="text-xs font-mono font-bold tracking-wider text-primary">LeetCode & GitHub Accounts</h3>
+          </div>
+
+          <form onSubmit={handleLinkAccounts} className="space-y-4">
+            <p className="text-[10px] text-outline font-mono leading-relaxed">
+              Link your public LeetCode and GitHub profiles to earn points daily for your solving activity and contributions! Leaderboard scores update every midnight UTC.
+            </p>
+
+            {linkError && (
+              <div className="bg-rose-950/40 border border-rose-500/30 text-rose-300 p-3 rounded-xl text-[10px] font-mono leading-normal">
+                ❌ {linkError}
+              </div>
+            )}
+
+            {linkSuccess && (
+              <div className="bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 p-3 rounded-xl text-[10px] font-mono">
+                ✅ Accounts linked and verified successfully!
+              </div>
+            )}
+
+            <div>
+              <label className="block text-[10px] font-mono text-outline mb-1">LeetCode Username</label>
+              <input
+                type="text"
+                value={leetcodeUsername}
+                onChange={(e) => setLeetcodeUsername(e.target.value)}
+                placeholder="e.g. leetcode_user"
+                className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-mono text-outline mb-1">GitHub Username</label>
+              <input
+                type="text"
+                value={githubUsername}
+                onChange={(e) => setGithubUsername(e.target.value)}
+                placeholder="e.g. github_user"
+                className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLinking}
+              className="bg-primary hover:bg-primary-container text-on-surface rounded-lg px-4 py-2 text-xs font-mono font-bold transition cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98]"
+            >
+              {isLinking ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Verifying & Linking...
+                </>
+              ) : (
+                'Link & Verify Accounts'
+              )}
             </button>
           </form>
         </div>
