@@ -350,10 +350,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <button
                         key={item.name}
                         onClick={() => { router.push(item.path); setMobileMenuOpen(false); }}
-                        className={`w-full flex items-center gap-3 py-1.5 rounded-lg text-xs font-mono transition border-l-[3px] ${
+                        className={`w-full flex items-center gap-3 py-1.5 rounded-lg text-xs font-mono transition border ${
                           active 
-                            ? 'bg-white/10 text-cyber-blue font-bold border-l-cyber-blue pl-2 pr-3' 
-                            : 'text-white/60 hover:bg-white/5 hover:text-white border-l-transparent pl-2 pr-3'
+                            ? 'bg-white/10 text-cyber-blue font-bold border-white/10 pl-2 pr-3' 
+                            : 'text-white/60 hover:bg-white/5 hover:text-white border-transparent pl-2 pr-3'
                         }`}
                       >
                         <Icon className="w-4 h-4" strokeWidth={1.5} />
@@ -438,10 +438,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <button
                   key={item.name}
                   onClick={() => router.push(item.path)}
-                  className={`w-full flex items-center gap-3 py-2.5 rounded-xl text-xs font-mono transition relative border border-l-[3px] ${
+                  className={`w-full flex items-center gap-3 py-2.5 rounded-xl text-xs font-mono transition relative border ${
                     active 
-                      ? 'bg-gradient-to-r from-cyber-purple/25 to-cyber-blue/15 text-white font-bold border-white/15 border-l-cyber-blue pl-2 pr-3' 
-                      : 'text-white/60 hover:bg-white/5 hover:text-white border-transparent border-l-transparent pl-2 pr-3'
+                      ? 'bg-gradient-to-r from-cyber-purple/25 to-cyber-blue/15 text-white font-bold border-white/15 pl-2 pr-3' 
+                      : 'text-white/60 hover:bg-white/5 hover:text-white border-transparent pl-2 pr-3'
                   }`}
                 >
                   <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-cyber-blue' : ''}`} strokeWidth={1.5} />
