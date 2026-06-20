@@ -8,7 +8,7 @@ import { sendAIChatMessage, resolveScheduleOverlaps } from '@/lib/aiService';
 import { 
   LayoutDashboard, CalendarRange, BookMarked, CheckSquare, Calendar, 
   FolderLock, BarChart3, Settings, UserCheck, LogOut, ChevronLeft, 
-  ChevronRight, Send, Paperclip, Sparkles, MessageCircle, Clock, 
+  ChevronRight, Send, Sparkles, MessageCircle, Clock, 
   Pause, Check, Menu, X, ArrowUpRight, ShieldAlert, Trophy
 } from 'lucide-react';
 import { UserButton, useUser, useAuth } from '@clerk/nextjs';
@@ -634,14 +634,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Chat footer input */}
             <form onSubmit={handleSendMessage} className="p-3 pb-5 md:pb-3 border-t border-white/10 bg-white/5">
               <div className="flex gap-2 bg-black/40 border border-white/10 rounded-xl px-2.5 py-1.5 items-center">
-                <button type="button" className="text-white/40 hover:text-white" title="Attach file">
-                  <Paperclip className="w-4 h-4" />
-                </button>
                 <input
                   type="text"
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
-                  placeholder="Ask for schedule tweaks, break suggestion, advice..."
+                  placeholder="Ask AI to schedule your tasks..."
                   className="bg-transparent border-0 focus:outline-none text-xs flex-1 text-white placeholder-white/30"
                 />
                 <button 
