@@ -49,6 +49,8 @@ export interface UserProfile {
   collegeEnd: string;
   freeBlocks: { id: string; start: string; end: string; label?: string }[];
   lastActiveDate?: string;
+  leetcodeUsername?: string | null;
+  githubUsername?: string | null;
 }
 
 export interface RegisteredUser {
@@ -71,6 +73,8 @@ export interface RegisteredUser {
   collegeEnd: string;
   freeBlocks: { id: string; start: string; end: string; label?: string }[];
   lastActiveDate?: string;
+  leetcodeUsername?: string | null;
+  githubUsername?: string | null;
 }
 
 interface AppState {
