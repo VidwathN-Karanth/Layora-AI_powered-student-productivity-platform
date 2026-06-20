@@ -1,53 +1,81 @@
-const axios = require('axios');
+import axios from 'axios';
+
+interface GitHubValidationError {
+  message: string;
+}
+
+interface GitHubUserResponse {
+  data?: {
+    user?: {
+      login: string;
+      contributionsCollection?: {
+        contributionCalendar?: {
+          weeks?: Array<{
+            contributionDays?: Array<{
+              date: string;
+              contributionCount: number;
+            }>;
+          }>;
+        };
+      };
+    };
+  };
+  errors?: GitHubValidationError[];
+}
+
+interface AxiosErrorLike {
+  message: string;
+  response?: {
+    data?: {
+      errors?: GitHubValidationError[];
+    };
+  };
+}
 
 /**
  * Helper to query GitHub GraphQL API.
- * Requires GITHUB_TOKEN environment variable.
  */
-async function queryGitHub(query, variables = {}) {
+async function queryGitHub(query: string, variables: Record<string, unknown> = {}): Promise<GitHubUserResponse> {
   const token = process.env.GITHUB_TOKEN;
   if (!token) {
     throw new Error('GITHUB_TOKEN environment variable is not configured');
   }
 
   try {
-    const response = await axios.post(
+    const response = await axios.post<GitHubUserResponse>(
       'https://api.github.com/graphql',
-      {
-        query,
-        variables
-      },
+      { query, variables },
       {
         headers: {
           'Authorization': `bearer ${token}`,
           'Content-Type': 'application/json',
           'User-Agent': 'Layora-Backend'
         },
-        timeout: 10000 // 10s timeout
+        timeout: 10000
       }
     );
 
-    // GitHub returns errors array in GraphQL response if query is invalid or entity not found
     if (response.data.errors) {
-      const errorMsg = response.data.errors.map(err => err.message).join(', ');
+      const errorMsg = response.data.errors.map((err) => err.message).join(', ');
       throw new Error(`GitHub GraphQL Error: ${errorMsg}`);
     }
 
     return response.data;
-  } catch (error) {
-    if (error.response && error.response.data && error.response.data.errors) {
-      const errorMsg = error.response.data.errors.map(err => err.message).join(', ');
+  } catch (error: unknown) {
+    const axiosErr = error as AxiosErrorLike;
+    if (axiosErr.response?.data?.errors) {
+      const errorMsg = axiosErr.response.data.errors.map((err) => err.message).join(', ');
       throw new Error(`GitHub service error: ${errorMsg}`);
     }
-    throw new Error(`GitHub service communication error: ${error.message}`);
+    const errMessage = axiosErr.message || (error instanceof Error ? error.message : String(error));
+    throw new Error(`GitHub service communication error: ${errMessage}`);
   }
 }
 
 /**
- * Validates whether a GitHub username exists.
- * Throws a descriptive error if user cannot be found or is private.
+ * Validates if a GitHub username exists.
  */
-async function validateUsername(username) {
+export async function validateUsername(username: string): Promise<boolean> {
   if (!username) throw new Error('GitHub username is required');
 
   const query = `
@@ -64,21 +92,24 @@ async function validateUsername(username) {
       throw new Error(`GitHub user "${username}" not found.`);
     }
     return true;
-  } catch (error) {
-    // Clarify error message for missing user
-    if (error.message.includes('Could not resolve to a User')) {
+  } catch (error: unknown) {
+    const err = error as Error;
+    if (err.message && err.message.includes('Could not resolve to a User')) {
       throw new Error(`GitHub profile for username "${username}" does not exist.`);
     }
     throw error;
   }
 }
 
+interface ContributionDay {
+  date: string;
+  contributionCount: number;
+}
+
 /**
- * Fetches the public contribution count for a GitHub user on a target date (UTC).
- * Returns the number of contributions.
+ * Fetches contribution calendar count on the target date.
  */
-async function fetchActivityForDate(username, targetDateStr) {
-  // Validate targetDateStr (format: 'YYYY-MM-DD')
+export async function fetchActivityForDate(username: string, targetDateStr: string): Promise<number> {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(targetDateStr)) {
     throw new Error(`Invalid date format: ${targetDateStr}. Expected YYYY-MM-DD.`);
   }
@@ -103,28 +134,17 @@ async function fetchActivityForDate(username, targetDateStr) {
   const result = await queryGitHub(query, { login: username });
   const weeks = result?.data?.user?.contributionsCollection?.contributionCalendar?.weeks || [];
 
-  // Flatten the weeks to get all contribution days
-  const allDays = [];
+  const allDays: ContributionDay[] = [];
   for (const week of weeks) {
     if (week.contributionDays) {
       allDays.push(...week.contributionDays);
     }
   }
 
-  // Find the entry matching the target date
-  // NOTE: This only reflects what's already visible on the user's public contribution graph.
-  // Private repository activity won't show up unless the user has opted to make private contributions visible in their GitHub settings.
-  const targetDay = allDays.find(day => day.date === targetDateStr);
-  
+  const targetDay = allDays.find((day) => day.date === targetDateStr);
   if (!targetDay) {
-    console.warn(`No GitHub contribution entry found for date ${targetDateStr} on user ${username}. Returning 0.`);
     return 0;
   }
 
-  return targetDay.contributionCount;
+  return targetDay.contributionCount || 0;
 }
-
-module.exports = {
-  validateUsername,
-  fetchActivityForDate
-};
