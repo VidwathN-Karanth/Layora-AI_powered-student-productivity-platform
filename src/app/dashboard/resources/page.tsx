@@ -87,6 +87,19 @@ export default function ResourcesPage() {
     };
   }, [activeTab, uploadMethod]);
 
+  React.useEffect(() => {
+    if (subjects.length === 0) {
+      setTimeout(() => {
+        setActiveTab('subject');
+        setActiveSubjectId('');
+      }, 0);
+    } else if (!activeSubjectId && subjects.length > 0) {
+      setTimeout(() => {
+        setActiveSubjectId(subjects[0].id);
+      }, 0);
+    }
+  }, [subjects, activeSubjectId]);
+
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     const targetSubjectId = activeSubjectId || subjects[0]?.id;
@@ -135,7 +148,7 @@ export default function ResourcesPage() {
         body: formData,
       });
 
-      // Safely check status and parse JSON/text response to show the real error (like Vercel Payload Too Large)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let data: any = {};
       if (!res.ok) {
         const errorText = await res.text().catch(() => 'Unknown error');
@@ -160,6 +173,7 @@ export default function ResourcesPage() {
       setFileName('');
       setFileData(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       alert(`Google Drive Upload Failed: ${err.message}\n\nFalling back: You can use the "Web Link" tab to link your files if your Google integration isn't authorized.`);
       console.error(err);
@@ -244,12 +258,16 @@ export default function ResourcesPage() {
             <div className="flex gap-2 p-1 bg-white/5 border border-white/10 rounded-xl">
               <button
                 type="button"
+                disabled={subjects.length === 0}
                 onClick={() => setActiveTab('upload')}
-                className={`flex-1 py-2 text-xs font-mono font-bold rounded-lg flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                  activeTab === 'upload'
-                    ? 'bg-cyber-blue/20 text-cyber-blue border border-cyber-blue/30'
-                    : 'text-white/50 hover:text-white hover:bg-white/10 border border-transparent'
+                className={`flex-1 py-2 text-xs font-mono font-bold rounded-lg flex items-center justify-center gap-1.5 transition ${
+                  subjects.length === 0
+                    ? 'opacity-40 cursor-not-allowed text-white/30'
+                    : activeTab === 'upload'
+                    ? 'bg-cyber-blue/20 text-cyber-blue border border-cyber-blue/30 cursor-pointer'
+                    : 'text-white/50 hover:text-white hover:bg-white/10 border border-transparent cursor-pointer'
                 }`}
+                title={subjects.length === 0 ? "Create a subject first to upload materials" : undefined}
               >
                 <UploadCloud className="w-3.5 h-3.5" />
                 Upload Material
@@ -486,7 +504,7 @@ export default function ResourcesPage() {
                       <label className="block text-[10px] font-mono text-white/50 mb-1">Difficulty</label>
                       <select
                         value={subDifficulty}
-                        onChange={(e) => setSubDifficulty(e.target.value as any)}
+                        onChange={(e) => setSubDifficulty(e.target.value as 'Easy' | 'Medium' | 'Hard')}
                         className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyber-purple"
                       >
                         <option value="Easy">Easy</option>
@@ -498,7 +516,7 @@ export default function ResourcesPage() {
                       <label className="block text-[10px] font-mono text-white/50 mb-1">Priority</label>
                       <select
                         value={subPriority}
-                        onChange={(e) => setSubPriority(e.target.value as any)}
+                        onChange={(e) => setSubPriority(e.target.value as 'Low' | 'Medium' | 'High')}
                         className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyber-purple"
                       >
                         <option value="Low">Low</option>
