@@ -478,10 +478,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <main className="flex-1 min-w-0 flex flex-col min-h-screen pb-16 md:pb-0">
         
         {/* --- DESKTOP TOP NAVIGATION BAR --- */}
-        <header className="h-14 border-b border-white/10 bg-black/20 backdrop-blur-md px-6 hidden md:flex items-center justify-between z-20">
+        <header className="relative h-14 border-b border-white/10 bg-black/20 backdrop-blur-md px-6 hidden md:flex items-center justify-between z-20">
           <div className="flex items-center gap-2 font-mono text-xs text-white/40">
             <span>Workspace:</span>
             <span className="text-cyber-blue font-bold uppercase">{pathname.split('/').pop() || 'DASHBOARD'}</span>
+          </div>
+
+          {/* Live digital clock with 12/24 toggle */}
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2.5 border border-white/10 bg-white/5 px-4 py-1.5 rounded-full font-mono">
+            <span 
+              className={`w-2 h-2 rounded-full shrink-0 ${isSupabaseConfigured ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]'}`}
+              title={isSupabaseConfigured ? "Synced to Supabase" : "Running in Local Demo Mode"}
+            />
+            <Clock className="w-4 h-4 text-cyber-blue animate-spin-slow" strokeWidth={1.5} />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 font-black font-mono text-xl tracking-wider min-w-[110px] text-center">
+              {timeStr || '00:00:00'}
+            </span>
+            <button 
+              onClick={() => store.setIs24HourFormat(!store.is24HourFormat)}
+              className="ml-1 text-[9px] font-bold uppercase bg-white/10 hover:bg-white/20 text-cyber-blue px-1.5 py-0.5 rounded cursor-pointer transition border border-white/10"
+              title="Toggle 12h/24h Format"
+            >
+              {store.is24HourFormat ? '24H' : '12H'}
+            </button>
           </div>
 
           <div className="flex items-center gap-4">
@@ -503,27 +522,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </button>
               </div>
             )}
-
-
-
-            {/* Live digital clock with 12/24 toggle */}
-            <div className="flex items-center gap-2.5 border border-white/10 bg-white/5 px-4 py-1.5 rounded-full font-mono">
-              <span 
-                className={`w-2 h-2 rounded-full shrink-0 ${isSupabaseConfigured ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]'}`}
-                title={isSupabaseConfigured ? "Synced to Supabase" : "Running in Local Demo Mode"}
-              />
-              <Clock className="w-4 h-4 text-cyber-blue animate-spin-slow" strokeWidth={1.5} />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 font-black font-mono text-xl tracking-wider min-w-[110px] text-center">
-                {timeStr || '00:00:00'}
-              </span>
-              <button 
-                onClick={() => store.setIs24HourFormat(!store.is24HourFormat)}
-                className="ml-1 text-[9px] font-bold uppercase bg-white/10 hover:bg-white/20 text-cyber-blue px-1.5 py-0.5 rounded cursor-pointer transition border border-white/10"
-                title="Toggle 12h/24h Format"
-              >
-                {store.is24HourFormat ? '24H' : '12H'}
-              </button>
-            </div>
 
             {/* Chatbot trigger */}
             <button 
