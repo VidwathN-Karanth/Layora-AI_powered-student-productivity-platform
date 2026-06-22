@@ -5,7 +5,7 @@ export const pointsConfig = {
     Hard: 30
   },
   github: {
-    activeBonus: 10,
-    perContribution: 5
+    activeBonus: 0,
+    perContribution: 0
   }
 };
