@@ -120,9 +120,19 @@ export default function SettingsPage() {
 
     if (supabase && clerkUser?.id) {
       try {
-        const { error } = await supabase.from('user_states').delete().eq('id', clerkUser.id);
-        if (error) throw error;
-        console.log('Purge: Supabase row deleted for', clerkUser.id);
+        // 1. Delete from user_states
+        const { error: stateError } = await supabase.from('user_states').delete().eq('id', clerkUser.id);
+        if (stateError) throw stateError;
+
+        // 2. Delete from daily_activities
+        const { error: activityError } = await supabase.from('daily_activities').delete().eq('user_id', clerkUser.id);
+        if (activityError) throw activityError;
+
+        // 3. Delete from users
+        const { error: userError } = await supabase.from('users').delete().eq('id', clerkUser.id);
+        if (userError) throw userError;
+
+        console.log('Purge: All Supabase data deleted for', clerkUser.id);
       } catch (err) {
         console.error('Supabase delete failed:', err);
       }

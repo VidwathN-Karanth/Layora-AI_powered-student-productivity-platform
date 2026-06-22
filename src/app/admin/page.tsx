@@ -189,12 +189,26 @@ export default function AdminPage() {
     try {
       setLoadingData(true);
       if (isSupabaseConfigured && supabase) {
-        const { error } = await supabase
+        // 1. Delete from user_states
+        const { error: stateError } = await supabase
           .from('user_states')
           .delete()
           .eq('id', userId);
-        
-        if (error) throw error;
+        if (stateError) throw stateError;
+
+        // 2. Delete from daily_activities
+        const { error: activityError } = await supabase
+          .from('daily_activities')
+          .delete()
+          .eq('user_id', userId);
+        if (activityError) throw activityError;
+
+        // 3. Delete from users
+        const { error: userError } = await supabase
+          .from('users')
+          .delete()
+          .eq('id', userId);
+        if (userError) throw userError;
       } else {
         // Local mode delete
         const registeredUsers = useStore.getState().registeredUsers || [];
