@@ -50,6 +50,15 @@ export default function LoginPage() {
             />
           </div>
         </div>
+
+        <footer className="mt-8 text-center font-mono text-[9px] text-white/30 space-y-1.5 z-10">
+          <div>© {new Date().getFullYear()} Vidwath N Karanth. All rights reserved.</div>
+          <div className="flex items-center justify-center gap-3">
+            <a href="/privacy" className="text-cyber-blue hover:text-white transition hover:underline">Privacy Policy</a>
+            <span className="text-white/10">•</span>
+            <a href="/terms" className="text-cyber-blue hover:text-white transition hover:underline">Terms & Conditions</a>
+          </div>
+        </footer>
       </div>
     </main>
   );
