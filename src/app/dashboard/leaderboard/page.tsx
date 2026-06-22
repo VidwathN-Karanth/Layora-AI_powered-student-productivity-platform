@@ -304,13 +304,13 @@ export default function LeaderboardPage() {
                 <GitBranch className="w-3.5 h-3.5 text-cyan-400" /> GitHub Contributions
               </h4>
               <ul className="list-disc pl-4 space-y-1">
-                <li>Active sync day bonus: <strong className="text-on-surface">10 pts</strong> (earned on any day with commits/PRs)</li>
-                <li>Per contribution: <strong className="text-on-surface">5 pts</strong> (each commit, PR, or review)</li>
+                <li>Contributions tracked and displayed: <strong className="text-on-surface">Yes</strong></li>
+                <li>Points awarded: <strong className="text-on-surface">0 pts</strong></li>
               </ul>
             </div>
 
             <div className="bg-surface-container rounded-xl p-3 border border-outline-variant/20 text-[9px] mt-2">
-              ℹ️ <strong>System Sync Schedule</strong>: All public profile syncs run daily at <strong>00:05 UTC</strong>. Only accepts accepted (AC) problem submissions and contributions from public GitHub repositories.
+              ℹ️ <strong>System Sync Schedule</strong>: All public profile syncs run daily at <strong>12:00 AM UTC (00:00 UTC)</strong>. Only accepts accepted (AC) problem submissions and contributions from public GitHub repositories.
             </div>
           </div>
         </div>

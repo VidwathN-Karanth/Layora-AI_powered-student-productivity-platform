@@ -235,7 +235,7 @@ export default function SettingsPage() {
 
             <form onSubmit={handleLinkAccounts} className="space-y-4">
               <p className="text-[10px] text-outline font-mono leading-relaxed">
-                Link your public LeetCode and GitHub profiles to earn points daily for your solving activity and contributions! Leaderboard scores update every midnight UTC.
+                Link your public LeetCode profile to earn points daily for your solving activity, and GitHub profile to display your contributions! Leaderboard scores update every midnight UTC.
                 <br />
                 <strong className="text-amber-500 block mt-1.5 uppercase tracking-wide">⚠️ For LeetCode and GitHub, only your username should be given, not the full link.</strong>
               </p>

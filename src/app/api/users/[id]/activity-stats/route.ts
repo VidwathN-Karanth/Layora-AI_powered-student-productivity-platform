@@ -49,10 +49,9 @@ export async function GET(
       }
     };
 
-    // Calculate helper for git points
+    // Calculate helper for git points (GitHub points are disabled, always 0)
     const getGitPoints = (commits: number) => {
-      if (commits <= 0) return 0;
-      return pointsConfig.github.activeBonus + (commits * pointsConfig.github.perContribution);
+      return 0;
     };
 
     for (const act of activities) {

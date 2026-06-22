@@ -154,9 +154,7 @@ export class DailyActivity {
       if (summary) {
         if (range === 'all') {
           // For all-time, we accumulate GitHub contributions and GitHub points from ledger
-          const ghPoints = act.github_contributions_today > 0 
-            ? (10 + act.github_contributions_today * 5) 
-            : 0;
+          const ghPoints = 0;
           summary.totalGithubContributions += act.github_contributions_today;
           summary.totalPoints += ghPoints;
         } else {
