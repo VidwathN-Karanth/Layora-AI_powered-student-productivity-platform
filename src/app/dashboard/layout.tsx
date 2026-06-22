@@ -549,9 +549,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex-1">
             {children}
           </div>
-          <footer className="mt-12 pt-4 border-t border-white/5 text-center font-mono text-[9px] text-white/30 space-y-1">
+          <footer className="mt-12 pt-4 border-t border-white/5 text-center font-mono text-[9px] text-white/30 space-y-1.5">
             <div>© {new Date().getFullYear()} Vidwath N Karanth. All rights reserved.</div>
-            <div>Contact: <a href="mailto:4mt24cs239@mite.ac.in" className="text-cyber-blue hover:underline">4mt24cs239@mite.ac.in</a></div>
+            <div className="flex items-center justify-center gap-3">
+              <span>Contact: <a href="mailto:4mt24cs239@mite.ac.in" className="text-cyber-blue hover:underline">4mt24cs239@mite.ac.in</a></span>
+              <span className="text-white/15">•</span>
+              <a href="/privacy" className="text-cyber-blue hover:text-white transition hover:underline">Privacy Policy</a>
+              <span className="text-white/15">•</span>
+              <a href="/terms" className="text-cyber-blue hover:text-white transition hover:underline">Terms & Conditions</a>
+            </div>
           </footer>
         </div>
       </main>
