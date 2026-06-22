@@ -114,6 +114,23 @@ export async function runSyncForDate(targetDateStr: string): Promise<SyncStats> 
           }
 
           console.log(`[Sync] [GitHub] User ${user.githubUsername} made ${githubContributionsToday} contributions (Points: ${githubPoints})`);
+
+          // Also sync yesterday's contributions to catch any late night pushes made after 10 PM yesterday
+          try {
+            const yesterday = new Date(targetDateStr);
+            yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            const githubContributionsYesterday = await githubService.fetchActivityForDate(user.githubUsername, yesterdayStr);
+            
+            await supabaseAdmin
+              .from('daily_activities')
+              .update({ github_contributions_today: githubContributionsYesterday })
+              .eq('user_id', user.id)
+              .eq('date', yesterdayStr);
+            console.log(`[Sync] [GitHub] Updated yesterday's (${yesterdayStr}) contributions for ${user.githubUsername} to ${githubContributionsYesterday}`);
+          } catch (yesterdayErr) {
+            console.error(`[Sync] [GitHub] Failed to update yesterday's contributions for ${user.githubUsername}:`, yesterdayErr);
+          }
         } catch (err: unknown) {
           const errMsg = err instanceof Error ? err.message : String(err);
           console.error(`[Sync] [GitHub] Failed to sync for user ${user.githubUsername}:`, errMsg);

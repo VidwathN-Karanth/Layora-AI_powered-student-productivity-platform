@@ -13,17 +13,16 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Sync for the day that just ended (yesterday UTC)
-    const yesterday = new Date();
-    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    // Sync for the current day (today) since cron runs at 10:00 PM IST (4:30 PM UTC)
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
 
-    console.log(`[Cron Route] Starting cron sync run for: ${yesterdayStr}`);
-    const stats = await runSyncForDate(yesterdayStr);
+    console.log(`[Cron Route] Starting cron sync run for: ${todayStr}`);
+    const stats = await runSyncForDate(todayStr);
 
     return NextResponse.json({
       success: true,
-      message: `Cron sync completed for date: ${yesterdayStr}`,
+      message: `Cron sync completed for date: ${todayStr}`,
       stats
     });
   } catch (error: unknown) {

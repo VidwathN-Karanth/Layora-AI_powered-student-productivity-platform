@@ -310,7 +310,7 @@ export default function LeaderboardPage() {
             </div>
 
             <div className="bg-surface-container rounded-xl p-3 border border-outline-variant/20 text-[9px] mt-2">
-              ℹ️ <strong>System Sync Schedule</strong>: All public profile syncs run daily at <strong>12:00 AM UTC (00:00 UTC)</strong>. Only accepts accepted (AC) problem submissions and contributions from public GitHub repositories.
+              ℹ️ <strong>System Sync Schedule</strong>: All public profile syncs run daily at <strong>10:00 PM IST (16:30 UTC)</strong>. Only accepts accepted (AC) problem submissions and contributions from public GitHub repositories.
             </div>
           </div>
         </div>
