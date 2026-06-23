@@ -122,14 +122,95 @@ export async function runSyncForDate(targetDateStr: string): Promise<SyncStats> 
             const yesterdayStr = yesterday.toISOString().split('T')[0];
             const githubContributionsYesterday = await githubService.fetchActivityForDate(user.githubUsername, yesterdayStr);
             
-            await supabaseAdmin
+            const githubPointsYesterday = githubContributionsYesterday > 0
+              ? pointsConfig.github.activeBonus + (githubContributionsYesterday * pointsConfig.github.perContribution)
+              : 0;
+
+            // Check if yesterday's row exists
+            const { data: yesterdayRows } = await supabaseAdmin
               .from('daily_activities')
-              .update({ github_contributions_today: githubContributionsYesterday })
+              .select('*')
               .eq('user_id', user.id)
               .eq('date', yesterdayStr);
-            console.log(`[Sync] [GitHub] Updated yesterday's (${yesterdayStr}) contributions for ${user.githubUsername} to ${githubContributionsYesterday}`);
+
+            const yesterdayRow = yesterdayRows && yesterdayRows.length > 0 ? yesterdayRows[0] : null;
+
+            if (yesterdayRow) {
+              // Row exists, recalculate points
+              // Get baseline before yesterday
+              const { data: baselineRows } = await supabaseAdmin
+                .from('daily_activities')
+                .select('leetcode_easy_accumulated, leetcode_medium_accumulated, leetcode_hard_accumulated')
+                .eq('user_id', user.id)
+                .lt('date', yesterdayStr)
+                .order('date', { ascending: false })
+                .limit(1);
+
+              const baseline = baselineRows && baselineRows.length > 0 
+                ? {
+                    Easy: baselineRows[0].leetcode_easy_accumulated || 0,
+                    Medium: baselineRows[0].leetcode_medium_accumulated || 0,
+                    Hard: baselineRows[0].leetcode_hard_accumulated || 0
+                  }
+                : { Easy: 0, Medium: 0, Hard: 0 };
+
+              const easyDiff = Math.max(0, (yesterdayRow.leetcode_easy_accumulated || 0) - baseline.Easy);
+              const mediumDiff = Math.max(0, (yesterdayRow.leetcode_medium_accumulated || 0) - baseline.Medium);
+              const hardDiff = Math.max(0, (yesterdayRow.leetcode_hard_accumulated || 0) - baseline.Hard);
+
+              const leetcodePoints = 
+                easyDiff * pointsConfig.leetcode.Easy +
+                mediumDiff * pointsConfig.leetcode.Medium +
+                hardDiff * pointsConfig.leetcode.Hard;
+
+              const totalPointsYesterday = leetcodePoints + githubPointsYesterday;
+
+              await supabaseAdmin
+                .from('daily_activities')
+                .update({ 
+                  github_contributions_today: githubContributionsYesterday,
+                  points_earned: totalPointsYesterday
+                })
+                .eq('user_id', user.id)
+                .eq('date', yesterdayStr);
+              
+              console.log(`[Sync] [GitHub] Updated yesterday's (${yesterdayStr}) contributions for ${user.githubUsername} to ${githubContributionsYesterday} (Points: ${totalPointsYesterday})`);
+            } else {
+              // Row does not exist, create it with baseline stats
+              const { data: baselineRows } = await supabaseAdmin
+                .from('daily_activities')
+                .select('leetcode_easy_accumulated, leetcode_medium_accumulated, leetcode_hard_accumulated')
+                .eq('user_id', user.id)
+                .lt('date', yesterdayStr)
+                .order('date', { ascending: false })
+                .limit(1);
+
+              const baseline = baselineRows && baselineRows.length > 0 
+                ? {
+                    Easy: baselineRows[0].leetcode_easy_accumulated || 0,
+                    Medium: baselineRows[0].leetcode_medium_accumulated || 0,
+                    Hard: baselineRows[0].leetcode_hard_accumulated || 0
+                  }
+                : { 
+                    Easy: user.leetcodeEasyTotal || 0, 
+                    Medium: user.leetcodeMediumTotal || 0, 
+                    Hard: user.leetcodeHardTotal || 0 
+                  };
+
+              await DailyActivity.upsert({
+                userId: user.id,
+                date: yesterdayStr,
+                leetcodeSolvedToday: 0,
+                githubContributionsToday: githubContributionsYesterday,
+                pointsEarned: githubPointsYesterday,
+                leetcodeEasyAccumulated: baseline.Easy,
+                leetcodeMediumAccumulated: baseline.Medium,
+                leetcodeHardAccumulated: baseline.Hard
+              });
+              console.log(`[Sync] [GitHub] Created missing daily_activity row for yesterday (${yesterdayStr}) for ${user.githubUsername} with ${githubContributionsYesterday} contributions (Points: ${githubPointsYesterday})`);
+            }
           } catch (yesterdayErr) {
-            console.error(`[Sync] [GitHub] Failed to update yesterday's contributions for ${user.githubUsername}:`, yesterdayErr);
+            console.error(`[Sync] [GitHub] Failed to update/create yesterday's contributions for ${user.githubUsername}:`, yesterdayErr);
           }
         } catch (err: unknown) {
           const errMsg = err instanceof Error ? err.message : String(err);
