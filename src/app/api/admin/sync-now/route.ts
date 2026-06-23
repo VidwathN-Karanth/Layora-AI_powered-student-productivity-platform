@@ -15,10 +15,9 @@ export async function POST(request: Request) {
         );
       }
     } else {
-      // Default to yesterday (UTC)
-      const yesterday = new Date();
-      yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-      targetDate = yesterday.toISOString().split('T')[0];
+      // Default to today (UTC)
+      const today = new Date();
+      targetDate = today.toISOString().split('T')[0];
     }
 
     const stats = await runSyncForDate(targetDate);

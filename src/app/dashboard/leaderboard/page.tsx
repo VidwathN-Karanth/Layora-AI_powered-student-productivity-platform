@@ -36,6 +36,10 @@ export default function LeaderboardPage() {
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
   const [leaderboardError, setLeaderboardError] = useState('');
 
+  // Syncing States
+  const [syncingStats, setSyncingStats] = useState(false);
+  const [syncFeedback, setSyncFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
   const isAdmin = clerkUser?.primaryEmailAddress?.emailAddress?.toLowerCase() === 'vidwathkaranth@gmail.com' || 
                   store.user?.email?.toLowerCase() === 'vidwathkaranth@gmail.com';
 
@@ -73,6 +77,38 @@ export default function LeaderboardPage() {
     }
   };
 
+  const handleSyncNow = async () => {
+    setSyncingStats(true);
+    setSyncFeedback(null);
+    try {
+      const res = await fetch('/api/admin/sync-now', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!res.ok) {
+        throw new Error('Sync endpoint failed');
+      }
+      const data = await res.json();
+      if (data.success) {
+        setSyncFeedback({ type: 'success', message: 'Synchronization completed successfully!' });
+        await Promise.all([
+          fetchUserStats(),
+          fetchLeaderboard(leaderboardRange)
+        ]);
+      } else {
+        throw new Error(data.error || 'Failed to sync data.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      setSyncFeedback({ type: 'error', message: err.message || 'Verification & synchronization failed.' });
+    } finally {
+      setSyncingStats(false);
+      setTimeout(() => {
+        setSyncFeedback((prev) => prev?.type === 'success' ? null : prev);
+      }, 4000);
+    }
+  };
+
   useEffect(() => {
     fetchUserStats();
   }, [clerkUser?.id]);
@@ -84,12 +120,31 @@ export default function LeaderboardPage() {
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div className="border-b border-outline-variant pb-4 flex items-center justify-between">
+      <div className="border-b border-outline-variant pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-mono font-bold tracking-wide">🏆 Global Scoreboard</h2>
           <p className="text-xs text-outline font-mono mt-0.5">Compare study progress, coding accomplishments, and contribution streaks.</p>
         </div>
+        <button
+          onClick={handleSyncNow}
+          disabled={syncingStats}
+          className="flex items-center gap-2 px-3.5 py-2 rounded-xl border border-primary/30 hover:border-primary bg-primary/5 hover:bg-primary/10 text-primary text-xs font-mono font-bold transition duration-200 cursor-pointer disabled:opacity-50 active:scale-[0.98]"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${syncingStats ? 'animate-spin' : ''}`} />
+          {syncingStats ? 'Syncing...' : 'Sync Accounts Now'}
+        </button>
       </div>
+
+      {/* Sync Feedback Message */}
+      {syncFeedback && (
+        <div className={`p-4 rounded-2xl text-xs font-mono border ${
+          syncFeedback.type === 'success'
+            ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300'
+            : 'bg-rose-950/40 border-rose-500/30 text-rose-300'
+        }`}>
+          {syncFeedback.type === 'success' ? '✅' : '❌'} {syncFeedback.message}
+        </div>
+      )}
 
       {/* --- PERSONALIZED USER STATS BLOCK --- */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">

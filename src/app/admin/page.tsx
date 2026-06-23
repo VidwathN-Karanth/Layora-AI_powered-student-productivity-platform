@@ -54,6 +54,7 @@ export default function AdminPage() {
   const [editStreak, setEditStreak] = useState<number>(0);
   const [editHours, setEditHours] = useState<number>(0);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isSyncingSystem, setIsSyncingSystem] = useState(false);
 
   // Leaderboard States & Handlers
   const [adminView, setAdminView] = useState<'nodes' | 'leaderboard'>('nodes');
@@ -78,6 +79,35 @@ export default function AdminPage() {
       setLeaderboardError('Could not load leaderboard data. Please verify your database connection or if the endpoint is deployed.');
     } finally {
       setLoadingLeaderboard(false);
+    }
+  };
+
+  const handleSystemSync = async () => {
+    setIsSyncingSystem(true);
+    setErrorMsg('');
+    try {
+      const res = await fetch('/api/admin/sync-now', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!res.ok) {
+        throw new Error('System sync request failed');
+      }
+      const data = await res.json();
+      if (data.success) {
+        alert('Global activity sync completed successfully!');
+        await Promise.all([
+          fetchTelemetry(),
+          fetchLeaderboard(leaderboardRange)
+        ]);
+      } else {
+        throw new Error(data.error || 'Failed to trigger global sync');
+      }
+    } catch (err: any) {
+      console.error("Global sync failed:", err);
+      setErrorMsg(err.message || 'Failed to trigger global activity sync.');
+    } finally {
+      setIsSyncingSystem(false);
     }
   };
 
@@ -382,6 +412,14 @@ export default function AdminPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={handleSystemSync}
+              disabled={isSyncingSystem}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyber-purple/20 to-cyber-blue/20 hover:from-cyber-purple/30 hover:to-cyber-blue/30 border border-cyber-purple/30 hover:border-cyber-blue text-white/90 hover:text-cyber-blue transition cursor-pointer text-xs disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isSyncingSystem ? 'animate-spin' : ''}`} />
+              TRIGGER GLOBAL SYNC
+            </button>
             <button
               onClick={fetchTelemetry}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:border-cyber-blue text-white/70 hover:text-white transition cursor-pointer text-xs"
