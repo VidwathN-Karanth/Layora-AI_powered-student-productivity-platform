@@ -7,8 +7,9 @@ import { useStore } from '@/store/useStore';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
 import { 
   Clock, BookOpen, UploadCloud, Dumbbell, Globe, Award, CheckCircle, 
-  Plus, Trash, ChevronRight, ChevronLeft, ArrowRight, ShieldCheck, File 
+  Plus, Trash, ChevronRight, ChevronLeft, ArrowRight, ShieldCheck, File, ExternalLink
 } from 'lucide-react';
+import { getPlatformDisplay, formatCourseLink } from '@/lib/courseUtils';
 import { formatTimeStr } from '@/lib/timeUtils';
 
 export default function OnboardingPage() {
@@ -120,7 +121,8 @@ export default function OnboardingPage() {
 
   const handleAddCourse = () => {
     if (!newCourseName) return;
-    setCourses([...courses, { name: newCourseName, platform: newCoursePlatform || 'Coursera', progress: newCourseProgress, weeklyGoal: newCourseGoal, deadline: newCourseDeadline }]);
+    const formattedLink = formatCourseLink(newCoursePlatform) || 'Self-Study';
+    setCourses([...courses, { name: newCourseName, platform: formattedLink, progress: newCourseProgress, weeklyGoal: newCourseGoal, deadline: newCourseDeadline }]);
     setNewCourseName('');
     setNewCoursePlatform('');
   };
@@ -686,7 +688,7 @@ export default function OnboardingPage() {
                     <Award className="w-6 h-6 text-primary" />
                     <div>
                       <h3 className="text-lg font-mono font-bold">Active Online Courses</h3>
-                      <p className="text-xs text-outline">Track Coursera, Udemy, or platform courses, progress, and goals.</p>
+                      <p className="text-xs text-outline">Track online courses, course links, progress, and goals.</p>
                     </div>
                   </div>
  
@@ -706,13 +708,13 @@ export default function OnboardingPage() {
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-[10px] font-mono text-outline mb-1">PLATFORM</label>
+                          <label className="block text-[10px] font-mono text-outline mb-1">Course Link (URL)</label>
                           <input 
                             type="text" 
                             value={newCoursePlatform} 
                             onChange={(e) => setNewCoursePlatform(e.target.value)}
-                            placeholder="Udemy, Coursera"
-                            className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs"
+                            placeholder="https://coursera.org/..."
+                            className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-primary"
                           />
                         </div>
                         <div>
@@ -764,8 +766,18 @@ export default function OnboardingPage() {
                         <div key={index} className="flex items-center justify-between bg-surface-container border border-outline-variant rounded-xl p-3">
                           <div className="flex-1 mr-4">
                             <span className="font-mono font-bold text-sm text-on-surface">{c.name}</span>
-                            <div className="flex gap-4 text-[10px] text-outline mt-1 font-mono">
-                              <span>Platform: {c.platform}</span>
+                            <div className="flex gap-4 text-[10px] text-outline mt-1 font-mono items-center">
+                              <span>Link: {getPlatformDisplay(c.platform)}</span>
+                              {c.platform && c.platform.startsWith('http') && (
+                                <a 
+                                  href={c.platform} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="text-primary hover:text-primary-container hover:underline flex items-center gap-0.5 transition cursor-pointer"
+                                >
+                                  Visit <ExternalLink className="w-2.5 h-2.5" />
+                                </a>
+                              )}
                               <span>Weekly Target: {c.weeklyGoal}h</span>
                               <span>Ends: {c.deadline}</span>
                             </div>
