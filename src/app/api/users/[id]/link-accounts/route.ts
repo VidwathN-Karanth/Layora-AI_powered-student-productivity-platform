@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { User } from '@/lib/models/User';
 import * as leetcodeService from '@/lib/leetcodeService';
 import * as githubService from '@/lib/githubService';
+import { syncUser } from '@/lib/syncLogic';
 
 export async function POST(
   request: Request,
@@ -81,6 +82,18 @@ export async function POST(
 
     // 5. Update user credentials in database
     const updatedUser = await User.update(userId, updates);
+
+    // 6. Run sync immediately for this user so they appear on the leaderboard
+    if (updatedUser && (updatedUser.leetcodeUsername || updatedUser.githubUsername)) {
+      try {
+        const todayStr = new Date().toISOString().split('T')[0];
+        await syncUser(updatedUser, todayStr);
+      } catch (syncErr) {
+        console.error(`Failed to trigger immediate sync for user ${userId}:`, syncErr);
+        // We do not fail the linking request if the sync fails, as the accounts are still linked.
+      }
+    }
+
     return NextResponse.json(updatedUser);
 
   } catch (error: unknown) {
