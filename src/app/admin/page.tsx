@@ -9,8 +9,9 @@ import { useStore } from '@/store/useStore';
 import { 
   Users, Clock, Flame, BookOpen, Search, ArrowLeft, 
   Trash2, Settings, Activity, Calendar, ListTodo, 
-  CheckCircle2, Building2, LogOut, X, FileText, Globe, RefreshCw, Eye, Sparkles, AlertTriangle
+  CheckCircle2, Building2, LogOut, X, FileText, Globe, RefreshCw, Eye, Sparkles, AlertTriangle, ExternalLink
 } from 'lucide-react';
+import { getPlatformDisplay } from '@/lib/courseUtils';
 
 interface TelemetryUser {
   id: string;
@@ -1090,7 +1091,21 @@ export default function AdminPage() {
                             <div className="flex items-center justify-between">
                               <div>
                                 <h4 className="text-xs font-bold text-white">{course.name}</h4>
-                                <p className="text-[10px] text-white/40 mt-0.5 font-mono">{course.platform} • Due {course.deadline}</p>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="text-[10px] text-white/40 font-mono">
+                                    {getPlatformDisplay(course.platform)} • Due {course.deadline}
+                                  </span>
+                                  {course.platform && course.platform.startsWith('http') && (
+                                    <a
+                                      href={course.platform}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-[9px] text-cyber-blue hover:underline flex items-center gap-0.5"
+                                    >
+                                      Visit <ExternalLink className="w-2.5 h-2.5" />
+                                    </a>
+                                  )}
+                                </div>
                               </div>
                               <span className="text-xs text-cyber-blue font-bold font-mono">{course.progress}%</span>
                             </div>

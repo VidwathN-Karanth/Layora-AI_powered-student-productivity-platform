@@ -4,9 +4,10 @@ import { useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { 
   BookMarked, PlusCircle, Trash, Award, 
-  BookOpen, Calendar, HelpCircle, GraduationCap, Clock
+  BookOpen, Calendar, HelpCircle, GraduationCap, Clock, ExternalLink
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getPlatformDisplay, formatCourseLink } from '@/lib/courseUtils';
 
 export default function CoursesPage() {
   const store = useStore();
@@ -22,9 +23,11 @@ export default function CoursesPage() {
     e.preventDefault();
     if (!name) return;
 
+    const formattedLink = formatCourseLink(platform) || 'Self-Study';
+
     store.addCourse({
       name,
-      platform: platform || 'Self-Study',
+      platform: formattedLink,
       progress,
       weeklyGoal: goal,
       deadline
@@ -67,47 +70,64 @@ export default function CoursesPage() {
           </div>
         ) : (
           store.courses.map((course) => (
-            <div key={course.id} className="glass-card rounded-2xl p-5 border border-outline-variant space-y-4">
-              <div className="flex justify-between items-start gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary-fixed border border-primary flex items-center justify-center text-primary shrink-0">
-                    <GraduationCap className="w-5 h-5" />
+            <div key={course.id} className="glass-card rounded-2xl p-5 border border-outline-variant space-y-4 flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary-fixed border border-primary flex items-center justify-center text-primary shrink-0">
+                      <GraduationCap className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-mono font-bold text-sm text-on-surface">{course.name}</h3>
+                      <span className="text-[10px] font-mono text-outline truncate block max-w-[200px]" title={course.platform}>
+                        {getPlatformDisplay(course.platform)}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-mono font-bold text-sm text-on-surface">{course.name}</h3>
-                    <span className="text-[10px] font-mono text-outline">{course.platform}</span>
-                  </div>
+
+                  <button 
+                    onClick={() => store.removeCourse(course.id)}
+                    className="p-1 hover:bg-red-950/40 text-on-surface/20 hover:text-red-400 rounded-lg transition shrink-0"
+                    title="Remove course"
+                  >
+                    <Trash className="w-3.5 h-3.5" />
+                  </button>
                 </div>
 
-                <button 
-                  onClick={() => store.removeCourse(course.id)}
-                  className="p-1 hover:bg-red-950/40 text-on-surface/20 hover:text-red-400 rounded-lg transition"
-                  title="Remove course"
-                >
-                  <Trash className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {/* Slider Controller */}
-              <div className="space-y-1.5 pt-2">
-                <div className="flex justify-between text-[10px] font-mono text-outline">
-                  <span>Progress Meter</span>
-                  <span className="text-secondary font-bold">{course.progress}%</span>
+                {/* Slider Controller */}
+                <div className="space-y-1.5 pt-2">
+                  <div className="flex justify-between text-[10px] font-mono text-outline">
+                    <span>Progress Meter</span>
+                    <span className="text-secondary font-bold">{course.progress}%</span>
+                  </div>
+                  
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={course.progress}
+                    onChange={(e) => handleProgressChange(course.id, parseInt(e.target.value))}
+                    className="w-full accent-purple-500 bg-surface-container-high rounded-lg cursor-pointer h-1.5"
+                  />
                 </div>
-                
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={course.progress}
-                  onChange={(e) => handleProgressChange(course.id, parseInt(e.target.value))}
-                  className="w-full accent-purple-500 bg-surface-container-high rounded-lg cursor-pointer h-1.5"
-                />
               </div>
 
-              <div className="flex justify-between items-center text-[10px] font-mono text-outline pt-2 border-t border-outline-variant">
-                <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Target: {course.weeklyGoal}h/wk</span>
-                <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> Due: {course.deadline}</span>
+              <div className="flex justify-between items-center pt-2 border-t border-outline-variant gap-4 mt-auto">
+                <div className="flex flex-col gap-1 text-[10px] font-mono text-outline">
+                  <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Target: {course.weeklyGoal}h/wk</span>
+                  <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> Due: {course.deadline}</span>
+                </div>
+
+                {course.platform && course.platform.startsWith('http') && (
+                  <a
+                    href={course.platform}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-primary/10 hover:bg-primary/20 border border-primary/30 hover:border-primary text-primary px-3 py-1.5 rounded-xl text-[10px] font-mono font-bold flex items-center gap-1 transition active:scale-95 cursor-pointer shadow-sm shrink-0"
+                  >
+                    Continue Course <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
               </div>
             </div>
           ))
@@ -141,12 +161,12 @@ export default function CoursesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-mono text-outline mb-1">Platform / Academy</label>
+                  <label className="block text-[10px] font-mono text-outline mb-1">Course Link (URL)</label>
                   <input
                     type="text"
                     value={platform}
                     onChange={(e) => setPlatform(e.target.value)}
-                    placeholder="E.g., Coursera, Udemy, YouTube"
+                    placeholder="E.g., https://coursera.org/learn/..."
                     className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none"
                   />
                 </div>

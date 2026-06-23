@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { formatTimeStr } from '@/lib/timeUtils';
+import { getPlatformDisplay } from '@/lib/courseUtils';
 
 export default function DashboardHome() {
   const store = useStore();
@@ -449,11 +450,25 @@ export default function DashboardHome() {
                 courses.map((course) => (
                   <div key={course.id} className="space-y-2">
                     <div className="flex justify-between items-start">
-                      <div>
-                        <div className="text-xs font-mono font-bold text-white leading-tight">{course.name}</div>
-                        <span className="text-[9px] font-mono text-white/50">{course.platform}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-mono font-bold text-white leading-tight truncate" title={course.name}>{course.name}</div>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <span className="text-[9px] font-mono text-white/50 truncate max-w-[150px]" title={course.platform}>
+                            {getPlatformDisplay(course.platform)}
+                          </span>
+                          {course.platform && course.platform.startsWith('http') && (
+                            <a
+                              href={course.platform}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[9px] font-mono text-cyber-blue hover:text-cyber-blue/80 hover:underline flex items-center gap-0.5 transition cursor-pointer"
+                            >
+                              Continue <ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          )}
+                        </div>
                       </div>
-                      <span className="text-xs font-mono font-black text-cyber-blue text-glow-cyan">{course.progress}%</span>
+                      <span className="text-xs font-mono font-black text-cyber-blue text-glow-cyan shrink-0 ml-2">{course.progress}%</span>
                     </div>
                     
                     {/* Progress Slider */}
