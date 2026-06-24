@@ -32,6 +32,8 @@ export default function ResourcesPage() {
 
   // Form states - Add Subject
   const [subName, setSubName] = useState('');
+  const [uploadErrors, setUploadErrors] = useState<Record<string, string | undefined>>({});
+  const [subjectErrors, setSubjectErrors] = useState<Record<string, string | undefined>>({});
   const [subCode, setSubCode] = useState('');
   const [subCredits, setSubCredits] = useState(3);
   const [subDifficulty, setSubDifficulty] = useState<'Easy' | 'Medium' | 'Hard'>('Medium');
@@ -44,6 +46,7 @@ export default function ResourcesPage() {
     setFileName(nameWithoutExt);
     setFileType(ext);
     setFileData(file);
+    setUploadErrors(prev => ({ ...prev, file: undefined, fileName: undefined }));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -104,11 +107,21 @@ export default function ResourcesPage() {
     e.preventDefault();
     const targetSubjectId = activeSubjectId || subjects[0]?.id;
     
-    if (!targetSubjectId) return;
+    const errors: Record<string, string> = {};
+    if (!targetSubjectId) {
+      errors.subject = "This field is required";
+    }
 
     if (uploadMethod === 'link') {
-      if (!linkUrl) {
-        alert("Please enter a web link.");
+      if (!linkUrl.trim()) {
+        errors.link = "This field is required";
+      }
+      if (!fileName.trim()) {
+        errors.fileName = "This field is required";
+      }
+      
+      if (Object.keys(errors).length > 0) {
+        setUploadErrors(errors);
         return;
       }
 
@@ -120,12 +133,20 @@ export default function ResourcesPage() {
 
       setFileName('');
       setLinkUrl('');
+      setUploadErrors({});
       alert("Web Link resource added successfully!");
       return;
     }
 
     if (!fileData) {
-      alert("Please select a file to upload.");
+      errors.file = "This field is required";
+    }
+    if (!fileName.trim()) {
+      errors.fileName = "This field is required";
+    }
+
+    if (Object.keys(errors).length > 0 || !fileData) {
+      setUploadErrors(errors);
       return;
     }
 
@@ -137,6 +158,7 @@ export default function ResourcesPage() {
     }
 
     setIsUploading(true);
+    setUploadErrors({});
 
     try {
       const formData = new FormData();
@@ -184,7 +206,18 @@ export default function ResourcesPage() {
 
   const handleAddSubject = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subName) return;
+    const errors: Record<string, string> = {};
+    if (!subName.trim()) {
+      errors.subName = "This field cannot be empty";
+    }
+    if (!subCode.trim()) {
+      errors.subCode = "This field cannot be empty";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setSubjectErrors(errors);
+      return;
+    }
 
     store.addSubject({
       name: subName,
@@ -200,6 +233,7 @@ export default function ResourcesPage() {
     setSubCredits(3);
     setSubDifficulty('Medium');
     setSubPriority('Medium');
+    setSubjectErrors({});
 
     // Switch back to upload tab
     setActiveTab('upload');
@@ -296,12 +330,15 @@ export default function ResourcesPage() {
                 {subjects.length === 0 ? (
                   <p className="text-xs text-red-400 font-mono">No subjects available. Add a subject using the tab above to get started.</p>
                 ) : (
-                  <form onSubmit={handleUpload} className="space-y-4">
+                  <form onSubmit={handleUpload} noValidate className="space-y-4">
                     <div>
                       <label className="block text-[10px] font-mono text-white/50 mb-1">Target Subject</label>
                       <select
                         value={activeSubjectId || subjects[0]?.id || ''}
-                        onChange={(e) => setActiveSubjectId(e.target.value)}
+                        onChange={(e) => {
+                          setActiveSubjectId(e.target.value);
+                          setUploadErrors(prev => ({ ...prev, subject: undefined }));
+                        }}
                         className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyber-blue"
                       >
                         {subjects.map((sub) => (
@@ -310,6 +347,7 @@ export default function ResourcesPage() {
                           </option>
                         ))}
                       </select>
+                      {uploadErrors.subject && <p className="text-red-500 text-[10px] font-mono mt-1">{uploadErrors.subject}</p>}
                     </div>
 
                     {/* Storage / Upload Location Selector */}
@@ -352,12 +390,15 @@ export default function ResourcesPage() {
                         <label className="block text-[10px] font-mono text-white/50 mb-1">Resource Web URL / Link</label>
                         <input
                           type="url"
-                          required
                           value={linkUrl}
-                          onChange={(e) => setLinkUrl(e.target.value)}
+                          onChange={(e) => {
+                            setLinkUrl(e.target.value);
+                            setUploadErrors(prev => ({ ...prev, link: undefined }));
+                          }}
                           placeholder="Paste Google Drive, OneDrive, or web link"
                           className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyber-purple"
                         />
+                        {uploadErrors.link && <p className="text-red-500 text-[10px] font-mono mt-1">{uploadErrors.link}</p>}
                       </div>
                     ) : (
                       <div className="space-y-1">
@@ -376,7 +417,9 @@ export default function ResourcesPage() {
                                 ? fileData.size > 4.5 * 1024 * 1024
                                   ? 'border-red-500/50 bg-red-500/5 hover:border-red-400'
                                   : 'border-emerald-500/50 bg-emerald-500/5 hover:border-emerald-400' 
-                                : 'border-white/15 bg-black/20 hover:border-cyber-blue/50 hover:bg-black/30'
+                                : uploadErrors.file
+                                  ? 'border-red-500/50 bg-red-500/5 hover:border-red-400'
+                                  : 'border-white/15 bg-black/20 hover:border-cyber-blue/50 hover:bg-black/30'
                           }`}
                         >
                           <input
@@ -417,6 +460,7 @@ export default function ResourcesPage() {
                             </>
                           )}
                         </div>
+                        {uploadErrors.file && <p className="text-red-500 text-[10px] font-mono mt-1">{uploadErrors.file}</p>}
                       </div>
                     )}
 
@@ -424,12 +468,15 @@ export default function ResourcesPage() {
                       <label className="block text-[10px] font-mono text-white/50 mb-1">Document Title / Name</label>
                       <input
                         type="text"
-                        required
                         value={fileName}
-                        onChange={(e) => setFileName(e.target.value)}
+                        onChange={(e) => {
+                          setFileName(e.target.value);
+                          setUploadErrors(prev => ({ ...prev, fileName: undefined }));
+                        }}
                         placeholder="E.g. Calculus Cheat Sheet"
                         className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyber-blue"
                       />
+                      {uploadErrors.fileName && <p className="text-red-500 text-[10px] font-mono mt-1">{uploadErrors.fileName}</p>}
                     </div>
 
                     <div>
@@ -461,17 +508,20 @@ export default function ResourcesPage() {
               <>
                 <h3 className="text-xs font-mono font-bold text-cyber-purple border-b border-white/10 pb-2">Add New Subject</h3>
                 
-                <form onSubmit={handleAddSubject} className="space-y-4">
+                <form onSubmit={handleAddSubject} noValidate className="space-y-4">
                   <div>
                     <label className="block text-[10px] font-mono text-white/50 mb-1">Subject Name</label>
                     <input
                       type="text"
-                      required
                       value={subName}
-                      onChange={(e) => setSubName(e.target.value)}
+                      onChange={(e) => {
+                        setSubName(e.target.value);
+                        setSubjectErrors(prev => ({ ...prev, subName: undefined }));
+                      }}
                       placeholder="Subject Name"
                       className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyber-purple"
                     />
+                    {subjectErrors.subName && <p className="text-red-500 text-[10px] font-mono mt-1">{subjectErrors.subName}</p>}
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -480,10 +530,14 @@ export default function ResourcesPage() {
                       <input
                         type="text"
                         value={subCode}
-                        onChange={(e) => setSubCode(e.target.value)}
+                        onChange={(e) => {
+                          setSubCode(e.target.value);
+                          setSubjectErrors(prev => ({ ...prev, subCode: undefined }));
+                        }}
                         placeholder="Course Code (e.g. SUB101)"
                         className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyber-purple"
                       />
+                      {subjectErrors.subCode && <p className="text-red-500 text-[10px] font-mono mt-1">{subjectErrors.subCode}</p>}
                     </div>
                     <div>
                       <label className="block text-[10px] font-mono text-white/50 mb-1">Credits</label>

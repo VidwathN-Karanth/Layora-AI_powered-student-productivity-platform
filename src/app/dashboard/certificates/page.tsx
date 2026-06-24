@@ -46,6 +46,7 @@ export default function CertificatesPage() {
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string | undefined>>({});
 
   // Preview state
   const [activeCert, setActiveCert] = useState<Certificate | null>(null);
@@ -155,6 +156,7 @@ export default function CertificatesPage() {
       const validTypes = ['image/png', 'image/jpeg', 'image/jpg'];
       if (validTypes.includes(droppedFile.type)) {
         setFile(droppedFile);
+        setFormErrors(prev => ({ ...prev, file: undefined }));
       } else {
         alert('Invalid file format. Please upload a PNG or JPG/JPEG image.');
       }
@@ -164,6 +166,7 @@ export default function CertificatesPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
+      setFormErrors(prev => ({ ...prev, file: undefined }));
     }
   };
 
@@ -173,12 +176,24 @@ export default function CertificatesPage() {
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !file) {
-      alert('Please fill out the certificate name and select a file.');
+    const errors: Record<string, string> = {};
+    if (!name.trim()) {
+      errors.name = "This field is required";
+    }
+    if (!file) {
+      errors.file = "This field is required";
+    }
+    if (platform === 'Other' && !customPlatform.trim()) {
+      errors.customPlatform = "This field is required";
+    }
+
+    if (Object.keys(errors).length > 0 || !file) {
+      setFormErrors(errors);
       return;
     }
 
     setUploading(true);
+    setFormErrors({});
     setUploadSuccess(false);
     setError('');
 
@@ -217,6 +232,7 @@ export default function CertificatesPage() {
       setPlatform(PLATFORMS[0]);
       setCustomPlatform('');
       setFile(null);
+      setFormErrors({});
       setUploadSuccess(true);
       setTimeout(() => setUploadSuccess(false), 3000);
     } catch (err: any) {
@@ -304,24 +320,30 @@ export default function CertificatesPage() {
             <h3 className="text-xs font-mono font-bold tracking-wider text-primary">Upload New Certificate</h3>
           </div>
 
-          <form onSubmit={handleUpload} className="space-y-4">
+          <form onSubmit={handleUpload} noValidate className="space-y-4">
             <div>
               <label className="block text-[10px] font-mono text-outline mb-1">Certificate Title / Name</label>
               <input
                 type="text"
-                required
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setFormErrors(prev => ({ ...prev, name: undefined }));
+                }}
                 placeholder="e.g. Java Programming Basics"
                 className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
               />
+              {formErrors.name && <p className="text-red-500 text-[10px] font-mono mt-1">{formErrors.name}</p>}
             </div>
 
             <div>
               <label className="block text-[10px] font-mono text-outline mb-1">Certification Platform</label>
               <select
                 value={platform}
-                onChange={(e) => setPlatform(e.target.value)}
+                onChange={(e) => {
+                  setPlatform(e.target.value);
+                  setFormErrors(prev => ({ ...prev, customPlatform: undefined }));
+                }}
                 className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
               >
                 {PLATFORMS.map((pf) => (
@@ -335,12 +357,15 @@ export default function CertificatesPage() {
                 <label className="block text-[10px] font-mono text-outline mb-1">Specify Custom Platform</label>
                 <input
                   type="text"
-                  required
                   value={customPlatform}
-                  onChange={(e) => setCustomPlatform(e.target.value)}
+                  onChange={(e) => {
+                    setCustomPlatform(e.target.value);
+                    setFormErrors(prev => ({ ...prev, customPlatform: undefined }));
+                  }}
                   placeholder="e.g. Coursera, Udemy"
                   className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                 />
+                {formErrors.customPlatform && <p className="text-red-500 text-[10px] font-mono mt-1">{formErrors.customPlatform}</p>}
               </div>
             )}
 
@@ -353,6 +378,8 @@ export default function CertificatesPage() {
                     ? 'border-primary bg-primary/5' 
                     : file 
                     ? 'border-primary/50 bg-primary/2' 
+                    : formErrors.file
+                    ? 'border-rose-500/50 bg-rose-500/5 hover:border-rose-400'
                     : 'border-outline-variant bg-black/20 hover:border-outline'
                 }`}
                 onDragEnter={handleDrag}
@@ -383,11 +410,12 @@ export default function CertificatesPage() {
                   )}
                 </div>
               </div>
+              {formErrors.file && <p className="text-red-500 text-[10px] font-mono mt-1">{formErrors.file}</p>}
             </div>
 
             <button
               type="submit"
-              disabled={uploading || !name.trim() || !file || dbMissing}
+              disabled={uploading || dbMissing}
               className="w-full bg-primary hover:bg-primary-container text-on-surface rounded-xl py-2.5 text-xs font-mono font-bold transition cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 active:scale-[0.98]"
             >
               {uploading ? (

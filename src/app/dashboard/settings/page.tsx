@@ -33,9 +33,22 @@ export default function SettingsPage() {
 
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isPurging, setIsPurging] = useState(false);
+  const [profileErrors, setProfileErrors] = useState<Record<string, string | undefined>>({});
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
+    const errors: Record<string, string> = {};
+    if (!name.trim()) errors.name = "This field cannot be empty";
+    if (!wakeTime) errors.wakeTime = "This field cannot be empty";
+    if (!sleepTime) errors.sleepTime = "This field cannot be empty";
+    if (!collegeStart) errors.collegeStart = "This field cannot be empty";
+    if (!collegeEnd) errors.collegeEnd = "This field cannot be empty";
+
+    if (Object.keys(errors).length > 0) {
+      setProfileErrors(errors);
+      return;
+    }
+
     store.updateRoutine({
       name,
       wakeTime,
@@ -43,11 +56,23 @@ export default function SettingsPage() {
       collegeStart,
       collegeEnd
     });
+    setProfileErrors({});
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 2000);
   };
 
   const handleLinkAccount = async (field: 'leetcode' | 'github' | 'codechef' | 'linkedin') => {
+    let val = '';
+    if (field === 'leetcode') val = leetcodeUsername.trim();
+    if (field === 'codechef') val = codechefUsername.trim();
+    if (field === 'github') val = githubUsername.trim();
+    if (field === 'linkedin') val = linkedinUrl.trim();
+
+    if (!val) {
+      setLinkErrors(prev => ({ ...prev, [field]: "This field cannot be empty" }));
+      return;
+    }
+
     setLinkingField(field);
     setLinkErrors(prev => ({ ...prev, [field]: undefined }));
     setLinkSuccesses(prev => ({ ...prev, [field]: false }));
@@ -169,15 +194,19 @@ export default function SettingsPage() {
               <h3 className="text-xs font-mono font-bold tracking-wider text-primary">Academic Rhythm Profile</h3>
             </div>
 
-            <form onSubmit={handleSaveProfile} className="space-y-4">
+            <form onSubmit={handleSaveProfile} noValidate className="space-y-4">
               <div>
                 <label className="block text-[10px] font-mono text-outline mb-1">Username / Alias</label>
                 <input
                   type="text"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    setProfileErrors(prev => ({ ...prev, name: undefined }));
+                  }}
                   className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                 />
+                {profileErrors.name && <p className="text-red-500 text-[10px] font-mono mt-1">{profileErrors.name}</p>}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -186,18 +215,26 @@ export default function SettingsPage() {
                   <input
                     type="time"
                     value={wakeTime}
-                    onChange={(e) => setWakeTime(e.target.value)}
+                    onChange={(e) => {
+                      setWakeTime(e.target.value);
+                      setProfileErrors(prev => ({ ...prev, wakeTime: undefined }));
+                    }}
                     className="w-full bg-surface-container border border-outline-variant rounded-lg px-2 py-1 text-xs text-on-surface"
                   />
+                  {profileErrors.wakeTime && <p className="text-red-500 text-[10px] font-mono mt-1">{profileErrors.wakeTime}</p>}
                 </div>
                 <div>
                   <label className="block text-[10px] font-mono text-outline mb-1">Sleep Cycle</label>
                   <input
                     type="time"
                     value={sleepTime}
-                    onChange={(e) => setSleepTime(e.target.value)}
+                    onChange={(e) => {
+                      setSleepTime(e.target.value);
+                      setProfileErrors(prev => ({ ...prev, sleepTime: undefined }));
+                    }}
                     className="w-full bg-surface-container border border-outline-variant rounded-lg px-2 py-1 text-xs text-on-surface"
                   />
+                  {profileErrors.sleepTime && <p className="text-red-500 text-[10px] font-mono mt-1">{profileErrors.sleepTime}</p>}
                 </div>
               </div>
 
@@ -207,18 +244,26 @@ export default function SettingsPage() {
                   <input
                     type="time"
                     value={collegeStart}
-                    onChange={(e) => setCollegeStart(e.target.value)}
+                    onChange={(e) => {
+                      setCollegeStart(e.target.value);
+                      setProfileErrors(prev => ({ ...prev, collegeStart: undefined }));
+                    }}
                     className="w-full bg-surface-container border border-outline-variant rounded-lg px-2 py-1 text-xs text-on-surface"
                   />
+                  {profileErrors.collegeStart && <p className="text-red-500 text-[10px] font-mono mt-1">{profileErrors.collegeStart}</p>}
                 </div>
                 <div>
                   <label className="block text-[10px] font-mono text-outline mb-1">College End</label>
                   <input
                     type="time"
                     value={collegeEnd}
-                    onChange={(e) => setCollegeEnd(e.target.value)}
+                    onChange={(e) => {
+                      setCollegeEnd(e.target.value);
+                      setProfileErrors(prev => ({ ...prev, collegeEnd: undefined }));
+                    }}
                     className="w-full bg-surface-container border border-outline-variant rounded-lg px-2 py-1 text-xs text-on-surface"
                   />
+                  {profileErrors.collegeEnd && <p className="text-red-500 text-[10px] font-mono mt-1">{profileErrors.collegeEnd}</p>}
                 </div>
               </div>
 
@@ -252,7 +297,10 @@ export default function SettingsPage() {
                   <input
                     type="text"
                     value={leetcodeUsername}
-                    onChange={(e) => setLeetcodeUsername(e.target.value)}
+                    onChange={(e) => {
+                      setLeetcodeUsername(e.target.value);
+                      setLinkErrors(prev => ({ ...prev, leetcode: undefined }));
+                    }}
                     placeholder="e.g. leetcode_user"
                     className="flex-1 bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                   />
@@ -284,7 +332,10 @@ export default function SettingsPage() {
                   <input
                     type="text"
                     value={codechefUsername}
-                    onChange={(e) => setCodechefUsername(e.target.value)}
+                    onChange={(e) => {
+                      setCodechefUsername(e.target.value);
+                      setLinkErrors(prev => ({ ...prev, codechef: undefined }));
+                    }}
                     placeholder="e.g. codechef_user"
                     className="flex-1 bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                   />
@@ -316,7 +367,10 @@ export default function SettingsPage() {
                   <input
                     type="text"
                     value={githubUsername}
-                    onChange={(e) => setGithubUsername(e.target.value)}
+                    onChange={(e) => {
+                      setGithubUsername(e.target.value);
+                      setLinkErrors(prev => ({ ...prev, github: undefined }));
+                    }}
                     placeholder="e.g. github_user"
                     className="flex-1 bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                   />
@@ -348,7 +402,10 @@ export default function SettingsPage() {
                   <input
                     type="url"
                     value={linkedinUrl}
-                    onChange={(e) => setLinkedinUrl(e.target.value)}
+                    onChange={(e) => {
+                      setLinkedinUrl(e.target.value);
+                      setLinkErrors(prev => ({ ...prev, linkedin: undefined }));
+                    }}
                     placeholder="e.g. https://www.linkedin.com/in/username"
                     className="flex-1 bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                   />
