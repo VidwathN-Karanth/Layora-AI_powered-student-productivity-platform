@@ -363,7 +363,7 @@ export default function LeaderboardPage() {
                 <Terminal className="w-3.5 h-3.5 text-orange-500" /> CodeChef Solves (Cumulative)
               </h4>
               <ul className="list-disc pl-4 space-y-1">
-                <li>Problem solved: <strong className="text-on-surface">15 pts each</strong></li>
+                <li>Problem solved: <strong className="text-on-surface">5 pts each</strong></li>
               </ul>
             </div>
 
