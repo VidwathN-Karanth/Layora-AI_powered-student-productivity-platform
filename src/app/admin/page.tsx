@@ -9,7 +9,7 @@ import { useStore } from '@/store/useStore';
 import { 
   Users, Clock, Flame, BookOpen, Search, ArrowLeft, 
   Trash2, Settings, Activity, Calendar, ListTodo, 
-  CheckCircle2, Building2, LogOut, X, FileText, Globe, RefreshCw, Eye, Sparkles, AlertTriangle, ExternalLink
+  CheckCircle2, Building2, LogOut, X, FileText, Globe, RefreshCw, Eye, Sparkles, AlertTriangle, ExternalLink, Download
 } from 'lucide-react';
 import { getPlatformDisplay } from '@/lib/courseUtils';
 
@@ -59,6 +59,7 @@ export default function AdminPage() {
   const [editHours, setEditHours] = useState<number>(0);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isSyncingSystem, setIsSyncingSystem] = useState(false);
+  const [isDownloadingCsv, setIsDownloadingCsv] = useState(false);
 
   // Leaderboard States & Handlers
   const [adminView, setAdminView] = useState<'nodes' | 'leaderboard'>('nodes');
@@ -112,6 +113,84 @@ export default function AdminPage() {
       setErrorMsg(err.message || 'Failed to trigger global activity sync.');
     } finally {
       setIsSyncingSystem(false);
+    }
+  };
+
+  const handleDownloadCsv = async () => {
+    setIsDownloadingCsv(true);
+    setErrorMsg('');
+    try {
+      const res = await fetch('/api/admin/export-users');
+      if (!res.ok) {
+        throw new Error('Failed to fetch export data');
+      }
+      const data = await res.json();
+      
+      const csvHeaders = [
+        'Name',
+        'Email',
+        'LinkedIn URL',
+        'LeetCode URL',
+        'GitHub URL',
+        'CodeChef URL',
+        'LeetCode Easy Solves',
+        'LeetCode Medium Solves',
+        'LeetCode Hard Solves',
+        'LeetCode Total Solves',
+        'CodeChef Solves',
+        'GitHub Commits'
+      ];
+
+      const csvRows = data.map((user: any) => {
+        const leetcodeUrl = user.leetcodeUsername
+          ? (user.leetcodeUsername.trim().startsWith('http')
+              ? user.leetcodeUsername.trim()
+              : `https://leetcode.com/u/${user.leetcodeUsername.trim()}`)
+          : '';
+
+        const githubUrl = user.githubUsername
+          ? (user.githubUsername.trim().startsWith('http')
+              ? user.githubUsername.trim()
+              : `https://github.com/${user.githubUsername.trim()}`)
+          : '';
+
+        const codechefUrl = user.codechefUsername
+          ? (user.codechefUsername.trim().startsWith('http')
+              ? user.codechefUsername.trim()
+              : `https://www.codechef.com/users/${user.codechefUsername.trim()}`)
+          : '';
+
+        return [
+          user.name || '',
+          user.email || '',
+          user.linkedinUrl || '',
+          leetcodeUrl,
+          githubUrl,
+          codechefUrl,
+          user.leetcodeEasyTotal || 0,
+          user.leetcodeMediumTotal || 0,
+          user.leetcodeHardTotal || 0,
+          (user.leetcodeEasyTotal || 0) + (user.leetcodeMediumTotal || 0) + (user.leetcodeHardTotal || 0),
+          user.codechefSolvedTotal || 0,
+          user.githubContributions || 0
+        ].map((val: any) => `"${String(val).replace(/"/g, '""')}"`).join(',');
+      });
+
+      const csvContent = [csvHeaders.join(','), ...csvRows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `layora_users_stats_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err: any) {
+      console.error("CSV Download failed:", err);
+      setErrorMsg(err.message || 'Failed to generate and download CSV export.');
+    } finally {
+      setIsDownloadingCsv(false);
     }
   };
 
@@ -446,6 +525,14 @@ export default function AdminPage() {
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isSyncingSystem ? 'animate-spin' : ''}`} />
               TRIGGER GLOBAL SYNC
+            </button>
+            <button
+              onClick={handleDownloadCsv}
+              disabled={isDownloadingCsv}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 border border-emerald-500/30 hover:border-emerald-400 text-white/90 hover:text-emerald-400 transition cursor-pointer text-xs disabled:opacity-50"
+            >
+              <Download className={`w-3.5 h-3.5 ${isDownloadingCsv ? 'animate-pulse' : ''}`} />
+              EXPORT USERS CSV
             </button>
             <button
               onClick={fetchTelemetry}
