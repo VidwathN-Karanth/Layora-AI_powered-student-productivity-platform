@@ -142,6 +142,11 @@ export default function AdminPage() {
       ];
 
       const csvRows = data.map((user: any) => {
+        const wrapLink = (url: string) => {
+          if (!url) return '';
+          return `=HYPERLINK("${url}", "${url}")`;
+        };
+
         const leetcodeUrl = user.leetcodeUsername
           ? (user.leetcodeUsername.trim().startsWith('http')
               ? user.leetcodeUsername.trim()
@@ -163,10 +168,10 @@ export default function AdminPage() {
         return [
           user.name || '',
           user.email || '',
-          user.linkedinUrl || '',
-          leetcodeUrl,
-          githubUrl,
-          codechefUrl,
+          wrapLink(user.linkedinUrl || ''),
+          wrapLink(leetcodeUrl),
+          wrapLink(githubUrl),
+          wrapLink(codechefUrl),
           user.leetcodeEasyTotal || 0,
           user.leetcodeMediumTotal || 0,
           user.leetcodeHardTotal || 0,
