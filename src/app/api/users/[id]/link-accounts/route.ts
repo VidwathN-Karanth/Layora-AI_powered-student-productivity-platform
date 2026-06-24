@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { User } from '@/lib/models/User';
 import * as leetcodeService from '@/lib/leetcodeService';
 import * as githubService from '@/lib/githubService';
+import * as codechefService from '@/lib/codechefService';
 import { syncUser } from '@/lib/syncLogic';
 
 export async function POST(
@@ -11,7 +12,7 @@ export async function POST(
   const { id: userId } = await params;
   
   try {
-    const { leetcodeUsername, githubUsername, linkedinUrl } = await request.json();
+    const { leetcodeUsername, githubUsername, codechefUsername, linkedinUrl } = await request.json();
 
     // 1. Verify user exists
     const user = await User.findById(userId);
@@ -25,10 +26,12 @@ export async function POST(
     const updates: {
       leetcodeUsername?: string | null;
       githubUsername?: string | null;
+      codechefUsername?: string | null;
       linkedinUrl?: string | null;
       leetcodeEasyTotal?: number;
       leetcodeMediumTotal?: number;
       leetcodeHardTotal?: number;
+      codechefSolvedTotal?: number;
     } = {};
 
     // 2. Validate LeetCode username and load initial totals
@@ -51,6 +54,24 @@ export async function POST(
       updates.leetcodeEasyTotal = 0;
       updates.leetcodeMediumTotal = 0;
       updates.leetcodeHardTotal = 0;
+    }
+
+    // 2.5. Validate CodeChef username and load initial totals
+    if (codechefUsername !== undefined && codechefUsername !== null && codechefUsername !== '') {
+      try {
+        const total = await codechefService.fetchTotalSolves(codechefUsername);
+        updates.codechefUsername = codechefUsername;
+        updates.codechefSolvedTotal = total;
+      } catch (err: unknown) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        return NextResponse.json(
+          { error: `CodeChef validation failed: ${errMsg}` },
+          { status: 400 }
+        );
+      }
+    } else if (codechefUsername === null || codechefUsername === '') {
+      updates.codechefUsername = null;
+      updates.codechefSolvedTotal = 0;
     }
 
     // 3. Validate GitHub username
@@ -84,7 +105,7 @@ export async function POST(
     const updatedUser = await User.update(userId, updates);
 
     // 6. Run sync immediately for this user so they appear on the leaderboard
-    if (updatedUser && (updatedUser.leetcodeUsername || updatedUser.githubUsername)) {
+    if (updatedUser && (updatedUser.leetcodeUsername || updatedUser.githubUsername || updatedUser.codechefUsername)) {
       try {
         const todayStr = new Date().toISOString().split('T')[0];
         await syncUser(updatedUser, todayStr);

@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../supabaseAdmin';
 import { User } from './User';
+import { pointsConfig } from '../points';
 
 export interface DailyActivityRow {
   id: number;
@@ -7,10 +8,12 @@ export interface DailyActivityRow {
   date: string;
   leetcodeSolvedToday: number;
   githubContributionsToday: number;
+  codechefSolvedToday: number;
   pointsEarned: number;
   leetcodeEasyAccumulated: number;
   leetcodeMediumAccumulated: number;
   leetcodeHardAccumulated: number;
+  codechefSolvedAccumulated: number;
   createdAt: string;
 }
 
@@ -19,10 +22,12 @@ export interface LeaderboardUser {
   name: string;
   leetcodeUsername: string | null;
   githubUsername: string | null;
+  codechefUsername: string | null;
   linkedinUrl: string | null;
   totalPoints: number;
   totalLeetcodeSolved: number;
   totalGithubContributions: number;
+  totalCodechefSolved: number;
 }
 
 interface DatabaseDailyActivityRow {
@@ -31,10 +36,12 @@ interface DatabaseDailyActivityRow {
   date: string;
   leetcode_solved_today: number;
   github_contributions_today: number;
+  codechef_solved_today: number;
   points_earned: number;
   leetcode_easy_accumulated: number;
   leetcode_medium_accumulated: number;
   leetcode_hard_accumulated: number;
+  codechef_solved_accumulated: number;
   created_at: string;
 }
 
@@ -49,10 +56,12 @@ function mapActivityRow(row: DatabaseDailyActivityRow | null | undefined): Daily
     date: row.date,
     leetcodeSolvedToday: row.leetcode_solved_today,
     githubContributionsToday: row.github_contributions_today,
+    codechefSolvedToday: row.codechef_solved_today || 0,
     pointsEarned: row.points_earned,
     leetcodeEasyAccumulated: row.leetcode_easy_accumulated || 0,
     leetcodeMediumAccumulated: row.leetcode_medium_accumulated || 0,
     leetcodeHardAccumulated: row.leetcode_hard_accumulated || 0,
+    codechefSolvedAccumulated: row.codechef_solved_accumulated || 0,
     createdAt: row.created_at
   };
 }
@@ -66,19 +75,23 @@ export class DailyActivity {
     date,
     leetcodeSolvedToday,
     githubContributionsToday,
+    codechefSolvedToday = 0,
     pointsEarned,
     leetcodeEasyAccumulated = 0,
     leetcodeMediumAccumulated = 0,
-    leetcodeHardAccumulated = 0
+    leetcodeHardAccumulated = 0,
+    codechefSolvedAccumulated = 0
   }: {
     userId: string;
     date: string;
     leetcodeSolvedToday: number;
     githubContributionsToday: number;
+    codechefSolvedToday?: number;
     pointsEarned: number;
     leetcodeEasyAccumulated?: number;
     leetcodeMediumAccumulated?: number;
     leetcodeHardAccumulated?: number;
+    codechefSolvedAccumulated?: number;
   }): Promise<DailyActivityRow | null> {
     const { data, error } = await supabaseAdmin
       .from('daily_activities')
@@ -87,10 +100,12 @@ export class DailyActivity {
         date,
         leetcode_solved_today: leetcodeSolvedToday,
         github_contributions_today: githubContributionsToday,
+        codechef_solved_today: codechefSolvedToday,
         points_earned: pointsEarned,
         leetcode_easy_accumulated: leetcodeEasyAccumulated,
         leetcode_medium_accumulated: leetcodeMediumAccumulated,
-        leetcode_hard_accumulated: leetcodeHardAccumulated
+        leetcode_hard_accumulated: leetcodeHardAccumulated,
+        codechef_solved_accumulated: codechefSolvedAccumulated
       }, {
         onConflict: 'user_id,date'
       })
@@ -139,10 +154,12 @@ export class DailyActivity {
         name: user.name,
         leetcodeUsername: user.leetcodeUsername,
         githubUsername: user.githubUsername,
+        codechefUsername: user.codechefUsername,
         linkedinUrl: user.linkedinUrl,
         totalPoints: 0,
         totalLeetcodeSolved: 0,
-        totalGithubContributions: 0
+        totalGithubContributions: 0,
+        totalCodechefSolved: 0
       };
     }
 
@@ -158,23 +175,31 @@ export class DailyActivity {
           summary.totalGithubContributions += act.github_contributions_today;
           summary.totalPoints += ghPoints;
         } else {
-          // For today/week, we sum the daily points_earned and leetcode_solved_today directly
+          // For today/week, we sum the daily points_earned, leetcode_solved_today, and codechef_solved_today directly
           summary.totalPoints += act.points_earned;
           summary.totalLeetcodeSolved += act.leetcode_solved_today;
           summary.totalGithubContributions += act.github_contributions_today;
+          summary.totalCodechefSolved += act.codechef_solved_today || 0;
         }
       }
     }
 
-    // 4.5 For all-time, add the cumulative LeetCode solved counts from the User profile
+    // 4.5 For all-time, add the cumulative LeetCode and CodeChef solved counts from the User profile
     if (range === 'all') {
       for (const user of users) {
         const summary = leaderboardMap[user.id];
         if (summary) {
           const lcSolved = user.leetcodeEasyTotal + user.leetcodeMediumTotal + user.leetcodeHardTotal;
-          const lcPoints = user.leetcodeEasyTotal * 10 + user.leetcodeMediumTotal * 20 + user.leetcodeHardTotal * 30;
+          const lcPoints = user.leetcodeEasyTotal * pointsConfig.leetcode.Easy +
+                           user.leetcodeMediumTotal * pointsConfig.leetcode.Medium +
+                           user.leetcodeHardTotal * pointsConfig.leetcode.Hard;
+          
+          const ccSolved = user.codechefSolvedTotal || 0;
+          const ccPoints = ccSolved * (pointsConfig.codechef?.perSolve || 15);
+
           summary.totalLeetcodeSolved = lcSolved;
-          summary.totalPoints += lcPoints;
+          summary.totalCodechefSolved = ccSolved;
+          summary.totalPoints += lcPoints + ccPoints;
         }
       }
     }
@@ -184,8 +209,10 @@ export class DailyActivity {
       if (b.totalPoints !== a.totalPoints) {
         return b.totalPoints - a.totalPoints;
       }
-      if (b.totalLeetcodeSolved !== a.totalLeetcodeSolved) {
-        return b.totalLeetcodeSolved - a.totalLeetcodeSolved;
+      const totalSolvedB = b.totalLeetcodeSolved + b.totalCodechefSolved;
+      const totalSolvedA = a.totalLeetcodeSolved + a.totalCodechefSolved;
+      if (totalSolvedB !== totalSolvedA) {
+        return totalSolvedB - totalSolvedA;
       }
       return b.totalGithubContributions - a.totalGithubContributions;
     });

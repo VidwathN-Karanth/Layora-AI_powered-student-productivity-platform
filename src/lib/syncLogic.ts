@@ -2,6 +2,7 @@ import { User, UserRow } from '@/lib/models/User';
 import { DailyActivity } from '@/lib/models/DailyActivity';
 import * as leetcodeService from '@/lib/leetcodeService';
 import * as githubService from '@/lib/githubService';
+import * as codechefService from '@/lib/codechefService';
 import { pointsConfig } from '@/lib/points';
 import { supabaseAdmin } from './supabaseAdmin';
 
@@ -13,6 +14,7 @@ export interface SyncDetail {
   success: boolean;
   leetcodeSolved?: number;
   githubContributions?: number;
+  codechefSolved?: number;
   pointsEarned?: number;
   error?: string;
 }
@@ -35,10 +37,13 @@ export async function syncUser(user: UserRow, targetDateStr: string): Promise<Sy
     let leetcodePoints = 0;
     let githubContributionsToday = 0;
     let githubPoints = 0;
+    let codechefSolvedToday = 0;
+    let codechefPoints = 0;
 
     let newEasyTotal = user.leetcodeEasyTotal || 0;
     let newMediumTotal = user.leetcodeMediumTotal || 0;
     let newHardTotal = user.leetcodeHardTotal || 0;
+    let newCodechefTotal = user.codechefSolvedTotal || 0;
 
     // 1. LeetCode Sync (Cumulative Solves)
     if (user.leetcodeUsername) {
@@ -82,6 +87,35 @@ export async function syncUser(user: UserRow, targetDateStr: string): Promise<Sy
       }
     }
 
+    // 1.5. CodeChef Sync (Cumulative Solves)
+    if (user.codechefUsername) {
+      try {
+        const total = await codechefService.fetchTotalSolves(user.codechefUsername);
+        newCodechefTotal = total;
+
+        // Retrieve the closest baseline snapshot before targetDateStr
+        const { data: baselineRows } = await supabaseAdmin
+          .from('daily_activities')
+          .select('codechef_solved_accumulated')
+          .eq('user_id', user.id)
+          .lt('date', targetDateStr)
+          .order('date', { ascending: false })
+          .limit(1);
+
+        const baselineCodechef = baselineRows && baselineRows.length > 0 
+          ? (baselineRows[0].codechef_solved_accumulated || 0)
+          : 0;
+
+        codechefSolvedToday = Math.max(0, newCodechefTotal - baselineCodechef);
+        codechefPoints = codechefSolvedToday * pointsConfig.codechef.perSolve;
+
+        console.log(`[Sync] [CodeChef] User ${user.codechefUsername} solved diff: ${codechefSolvedToday} (Points: ${codechefPoints})`);
+      } catch (err: unknown) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        console.error(`[Sync] [CodeChef] Failed to sync for user ${user.codechefUsername}:`, errMsg);
+      }
+    }
+
     // 2. GitHub Sync
     if (user.githubUsername) {
       try {
@@ -120,7 +154,7 @@ export async function syncUser(user: UserRow, targetDateStr: string): Promise<Sy
             // Get baseline before yesterday
             const { data: baselineRows } = await supabaseAdmin
               .from('daily_activities')
-              .select('leetcode_easy_accumulated, leetcode_medium_accumulated, leetcode_hard_accumulated')
+              .select('leetcode_easy_accumulated, leetcode_medium_accumulated, leetcode_hard_accumulated, codechef_solved_accumulated')
               .eq('user_id', user.id)
               .lt('date', yesterdayStr)
               .order('date', { ascending: false })
@@ -130,20 +164,24 @@ export async function syncUser(user: UserRow, targetDateStr: string): Promise<Sy
               ? {
                   Easy: baselineRows[0].leetcode_easy_accumulated || 0,
                   Medium: baselineRows[0].leetcode_medium_accumulated || 0,
-                  Hard: baselineRows[0].leetcode_hard_accumulated || 0
+                  Hard: baselineRows[0].leetcode_hard_accumulated || 0,
+                  Codechef: baselineRows[0].codechef_solved_accumulated || 0
                 }
-              : { Easy: 0, Medium: 0, Hard: 0 };
+              : { Easy: 0, Medium: 0, Hard: 0, Codechef: 0 };
 
             const easyDiff = Math.max(0, (yesterdayRow.leetcode_easy_accumulated || 0) - baseline.Easy);
             const mediumDiff = Math.max(0, (yesterdayRow.leetcode_medium_accumulated || 0) - baseline.Medium);
             const hardDiff = Math.max(0, (yesterdayRow.leetcode_hard_accumulated || 0) - baseline.Hard);
+            const codechefDiff = Math.max(0, (yesterdayRow.codechef_solved_accumulated || 0) - baseline.Codechef);
 
             const leetcodePoints = 
               easyDiff * pointsConfig.leetcode.Easy +
               mediumDiff * pointsConfig.leetcode.Medium +
               hardDiff * pointsConfig.leetcode.Hard;
 
-            const totalPointsYesterday = leetcodePoints + githubPointsYesterday;
+            const codechefPointsYesterday = codechefDiff * pointsConfig.codechef.perSolve;
+
+            const totalPointsYesterday = leetcodePoints + githubPointsYesterday + codechefPointsYesterday;
 
             await supabaseAdmin
               .from('daily_activities')
@@ -159,7 +197,7 @@ export async function syncUser(user: UserRow, targetDateStr: string): Promise<Sy
             // Row does not exist, create it with baseline stats
             const { data: baselineRows } = await supabaseAdmin
               .from('daily_activities')
-              .select('leetcode_easy_accumulated, leetcode_medium_accumulated, leetcode_hard_accumulated')
+              .select('leetcode_easy_accumulated, leetcode_medium_accumulated, leetcode_hard_accumulated, codechef_solved_accumulated')
               .eq('user_id', user.id)
               .lt('date', yesterdayStr)
               .order('date', { ascending: false })
@@ -169,12 +207,14 @@ export async function syncUser(user: UserRow, targetDateStr: string): Promise<Sy
               ? {
                   Easy: baselineRows[0].leetcode_easy_accumulated || 0,
                   Medium: baselineRows[0].leetcode_medium_accumulated || 0,
-                  Hard: baselineRows[0].leetcode_hard_accumulated || 0
+                  Hard: baselineRows[0].leetcode_hard_accumulated || 0,
+                  Codechef: baselineRows[0].codechef_solved_accumulated || 0
                 }
               : { 
                   Easy: user.leetcodeEasyTotal || 0, 
                   Medium: user.leetcodeMediumTotal || 0, 
-                  Hard: user.leetcodeHardTotal || 0 
+                  Hard: user.leetcodeHardTotal || 0,
+                  Codechef: user.codechefSolvedTotal || 0
                 };
 
             await DailyActivity.upsert({
@@ -182,10 +222,12 @@ export async function syncUser(user: UserRow, targetDateStr: string): Promise<Sy
               date: yesterdayStr,
               leetcodeSolvedToday: 0,
               githubContributionsToday: githubContributionsYesterday,
+              codechefSolvedToday: 0,
               pointsEarned: githubPointsYesterday,
               leetcodeEasyAccumulated: baseline.Easy,
               leetcodeMediumAccumulated: baseline.Medium,
-              leetcodeHardAccumulated: baseline.Hard
+              leetcodeHardAccumulated: baseline.Hard,
+              codechefSolvedAccumulated: baseline.Codechef
             });
             console.log(`[Sync] [GitHub] Created missing daily_activity row for yesterday (${yesterdayStr}) for ${user.githubUsername} with ${githubContributionsYesterday} contributions (Points: ${githubPointsYesterday})`);
           }
@@ -198,14 +240,15 @@ export async function syncUser(user: UserRow, targetDateStr: string): Promise<Sy
       }
     }
 
-    const totalPointsEarned = leetcodePoints + githubPoints;
+    const totalPointsEarned = leetcodePoints + githubPoints + codechefPoints;
 
     // Update user model totals in the database
-    if (user.leetcodeUsername) {
+    if (user.leetcodeUsername || user.codechefUsername) {
       await User.update(user.id, {
         leetcodeEasyTotal: newEasyTotal,
         leetcodeMediumTotal: newMediumTotal,
-        leetcodeHardTotal: newHardTotal
+        leetcodeHardTotal: newHardTotal,
+        codechefSolvedTotal: newCodechefTotal
       });
     }
 
@@ -215,10 +258,12 @@ export async function syncUser(user: UserRow, targetDateStr: string): Promise<Sy
       date: targetDateStr,
       leetcodeSolvedToday,
       githubContributionsToday,
+      codechefSolvedToday,
       pointsEarned: totalPointsEarned,
       leetcodeEasyAccumulated: newEasyTotal,
       leetcodeMediumAccumulated: newMediumTotal,
-      leetcodeHardAccumulated: newHardTotal
+      leetcodeHardAccumulated: newHardTotal,
+      codechefSolvedAccumulated: newCodechefTotal
     });
 
     return {
@@ -227,6 +272,7 @@ export async function syncUser(user: UserRow, targetDateStr: string): Promise<Sy
       success: true,
       leetcodeSolved: leetcodeSolvedToday,
       githubContributions: githubContributionsToday,
+      codechefSolved: codechefSolvedToday,
       pointsEarned: totalPointsEarned
     };
 

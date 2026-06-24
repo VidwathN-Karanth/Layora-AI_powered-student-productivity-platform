@@ -25,6 +25,7 @@ export default function SettingsPage() {
 
   const [leetcodeUsername, setLeetcodeUsername] = useState(store.user?.leetcodeUsername || '');
   const [githubUsername, setGithubUsername] = useState(store.user?.githubUsername || '');
+  const [codechefUsername, setCodechefUsername] = useState(store.user?.codechefUsername || '');
   const [linkedinUrl, setLinkedinUrl] = useState(store.user?.linkedinUrl || '');
   const [isLinking, setIsLinking] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
@@ -78,6 +79,7 @@ export default function SettingsPage() {
         body: JSON.stringify({
           leetcodeUsername: leetcodeUsername || null,
           githubUsername: githubUsername || null,
+          codechefUsername: codechefUsername || null,
           linkedinUrl: linkedinUrl || null
         })
       });
@@ -91,6 +93,7 @@ export default function SettingsPage() {
       store.updateRoutine({
         leetcodeUsername: leetcodeUsername || null,
         githubUsername: githubUsername || null,
+        codechefUsername: codechefUsername || null,
         linkedinUrl: linkedinUrl || null
       });
 
@@ -240,14 +243,14 @@ export default function SettingsPage() {
           <div className="glass-card rounded-2xl p-5 space-y-4">
             <div className="flex items-center gap-2.5 border-b border-outline-variant pb-2">
               <ShieldCheck className="w-4 h-4 text-primary" />
-              <h3 className="text-xs font-mono font-bold tracking-wider text-primary">LeetCode & GitHub Accounts</h3>
+              <h3 className="text-xs font-mono font-bold tracking-wider text-primary">LeetCode, GitHub & CodeChef Accounts</h3>
             </div>
 
             <form onSubmit={handleLinkAccounts} className="space-y-4">
               <p className="text-[10px] text-outline font-mono leading-relaxed">
-                Link your public LeetCode profile to earn points daily for your solving activity, and GitHub profile to display your contributions! Leaderboard scores update every midnight UTC.
+                Link your public LeetCode and CodeChef profiles to earn points daily for your solving activity, and GitHub profile to display your contributions! Leaderboard scores update every midnight UTC.
                 <br />
-                <strong className="text-amber-500 block mt-1.5 uppercase tracking-wide">⚠️ For LeetCode and GitHub, only your username should be given, not the full link.</strong>
+                <strong className="text-amber-500 block mt-1.5 uppercase tracking-wide">⚠️ For LeetCode, GitHub and CodeChef, only your username should be given, not the full link.</strong>
               </p>
 
               {linkError && (
@@ -269,6 +272,17 @@ export default function SettingsPage() {
                   value={leetcodeUsername}
                   onChange={(e) => setLeetcodeUsername(e.target.value)}
                   placeholder="e.g. leetcode_user"
+                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-mono text-outline mb-1">CodeChef Username</label>
+                <input
+                  type="text"
+                  value={codechefUsername}
+                  onChange={(e) => setCodechefUsername(e.target.value)}
+                  placeholder="e.g. codechef_user"
                   className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                 />
               </div>

@@ -715,7 +715,8 @@ export default function AdminPage() {
                         <th className="p-4 font-normal text-center w-16">Rank</th>
                         <th className="p-4 font-normal">Student</th>
                         <th className="p-4 font-normal">Linked Accounts</th>
-                        <th className="p-4 font-normal text-right">LeetCode Solved</th>
+                        <th className="p-4 font-normal text-right">LC Solves</th>
+                        <th className="p-4 font-normal text-right">CC Solves</th>
                         <th className="p-4 font-normal text-right">GitHub Contributions</th>
                         <th className="p-4 font-normal text-right">Points Earned</th>
                         <th className="p-4 font-normal text-center">Inspect</th>
@@ -766,6 +767,18 @@ export default function AdminPage() {
                                 ) : (
                                   <span className="text-[9px] text-white/20 font-mono italic">No LeetCode linked</span>
                                 )}
+                                {item.codechefUsername ? (
+                                  <a
+                                    href={item.codechefUsername.trim().startsWith('http') ? item.codechefUsername.trim() : `https://www.codechef.com/users/${item.codechefUsername.trim()}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/25 hover:border-orange-500/40 text-[10px] text-orange-500 font-bold transition duration-200 cursor-pointer w-fit"
+                                  >
+                                    🍳 codechef: <strong className="text-white hover:underline">{item.codechefUsername}</strong>
+                                  </a>
+                                ) : (
+                                  <span className="text-[9px] text-white/20 font-mono italic">No CodeChef linked</span>
+                                )}
                                 {item.githubUsername ? (
                                   <a
                                     href={item.githubUsername.trim().startsWith('http') ? item.githubUsername.trim() : `https://github.com/${item.githubUsername.trim()}`}
@@ -782,6 +795,9 @@ export default function AdminPage() {
                             </td>
                             <td className="p-4 text-right font-black text-white text-sm">
                               {item.totalLeetcodeSolved} <span className="text-[10px] font-normal text-white/40">solved</span>
+                            </td>
+                            <td className="p-4 text-right font-black text-white text-sm">
+                              {item.totalCodechefSolved || 0} <span className="text-[10px] font-normal text-white/40">solved</span>
                             </td>
                             <td className="p-4 text-right font-black text-white text-sm">
                               {item.totalGithubContributions} <span className="text-[10px] font-normal text-white/40">contribs</span>
@@ -1282,6 +1298,26 @@ export default function AdminPage() {
                   ) : (
                     <div className="w-full flex items-center justify-between p-3 rounded-xl bg-white/2 border border-white/5 text-white/30 text-xs italic">
                       <span>💡 LeetCode Profile</span>
+                      <span>Not linked</span>
+                    </div>
+                  )}
+
+                  {/* CodeChef Profile Button */}
+                  {selectedLeaderboardUser.codechefUsername ? (
+                    <a
+                      href={selectedLeaderboardUser.codechefUsername.trim().startsWith('http') ? selectedLeaderboardUser.codechefUsername.trim() : `https://www.codechef.com/users/${selectedLeaderboardUser.codechefUsername.trim()}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center justify-between p-3 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/25 hover:border-orange-500/50 text-orange-500 font-bold text-xs transition duration-200 cursor-pointer shadow-md"
+                    >
+                      <span className="flex items-center gap-2">
+                        🍳 CodeChef Profile
+                      </span>
+                      <span className="text-white text-[10px]">{selectedLeaderboardUser.codechefUsername}</span>
+                    </a>
+                  ) : (
+                    <div className="w-full flex items-center justify-between p-3 rounded-xl bg-white/2 border border-white/5 text-white/30 text-xs italic">
+                      <span>🍳 CodeChef Profile</span>
                       <span>Not linked</span>
                     </div>
                   )}
