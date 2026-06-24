@@ -9,6 +9,6 @@ export const pointsConfig = {
     perContribution: 0
   },
   codechef: {
-    perSolve: 15
+    perSolve: 5
   }
 };
