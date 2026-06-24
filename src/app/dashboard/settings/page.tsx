@@ -1,19 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useClerk, useUser } from '@clerk/nextjs';
-import { suppressSupabaseSync } from '@/components/SyncProvider';
+import { useUser } from '@clerk/nextjs';
 import { useStore } from '@/store/useStore';
-import { supabase } from '@/lib/supabaseClient';
 import { 
   Settings, Key, Eye, EyeOff, Check, Sparkles, 
   User, Bell, Calendar, ShieldCheck, RefreshCw,
-  AlertTriangle, Trash2, Loader2
+  Loader2
 } from 'lucide-react';
 
 export default function SettingsPage() {
   const store = useStore();
-  const { signOut } = useClerk();
   const { user: clerkUser } = useUser();
 
   // Local profile states
@@ -32,7 +29,6 @@ export default function SettingsPage() {
   const [linkSuccesses, setLinkSuccesses] = useState<{ leetcode?: boolean; github?: boolean; codechef?: boolean; linkedin?: boolean }>({});
 
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [isPurging, setIsPurging] = useState(false);
   const [profileErrors, setProfileErrors] = useState<Record<string, string | undefined>>({});
 
   const handleSaveProfile = (e: React.FormEvent) => {
@@ -127,40 +123,7 @@ export default function SettingsPage() {
     }
   };
 
-  const handleSystemReset = async () => {
-    if (!confirm("Are you absolutely sure you want to erase all registration and application data? This action cannot be undone.")) {
-      return;
-    }
 
-    setIsPurging(true);
-
-    suppressSupabaseSync();
-    window.localStorage.removeItem('layora-productivity-store');
-    store.resetStore();
-
-    if (supabase && clerkUser?.id) {
-      try {
-        // 1. Delete from user_states
-        const { error: stateError } = await supabase.from('user_states').delete().eq('id', clerkUser.id);
-        if (stateError) throw stateError;
-
-        // 2. Delete from daily_activities
-        const { error: activityError } = await supabase.from('daily_activities').delete().eq('user_id', clerkUser.id);
-        if (activityError) throw activityError;
-
-        // 3. Delete from users
-        const { error: userError } = await supabase.from('users').delete().eq('id', clerkUser.id);
-        if (userError) throw userError;
-
-        console.log('Purge: All Supabase data deleted for', clerkUser.id);
-      } catch (err) {
-        console.error('Supabase delete failed:', err);
-      }
-    }
-
-    try { await signOut(); } catch (_) {}
-    window.location.replace('/');
-  };
 
   const themeAccents = [
     { name: 'purple', label: 'Neon Purple', color: 'bg-[#B026FF] border-[#e1a6ff]' },
@@ -528,31 +491,7 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* --- PANEL 5: DANGER ZONE (SYSTEM RESET) --- */}
-          <div className="glass-card rounded-2xl p-5 space-y-4 border border-rose-500/20 bg-rose-950/5">
-            <div className="flex items-center gap-2.5 border-b border-outline-variant pb-2">
-              <AlertTriangle className="w-4 h-4 text-rose-500" />
-              <h3 className="text-xs font-mono font-bold tracking-wider text-rose-500 uppercase">Danger Zone: Data Erasure</h3>
-            </div>
 
-            <div className="space-y-4">
-              <p className="text-[10px] text-outline font-mono leading-relaxed">
-                Permanently clear your student registration details, timetable rhythm, tasks, and custom AI configurations. All local caches will be wiped. This action is irreversible.
-              </p>
-
-              <button
-                onClick={handleSystemReset}
-                disabled={isPurging}
-                className="w-full bg-rose-600/10 hover:bg-rose-600 border border-rose-500/20 hover:border-rose-500 text-rose-300 hover:text-on-surface text-xs font-mono font-bold py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {isPurging ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Purging Data...</>
-                ) : (
-                  <><Trash2 className="w-4 h-4" /> Erase All Registration & Store Data</>
-                )}
-              </button>
-            </div>
-          </div>
       </div>
     </div>
   );
