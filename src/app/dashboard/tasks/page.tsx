@@ -22,6 +22,7 @@ export default function TasksPage() {
   const [newTaskSubjectId, setNewTaskSubjectId] = useState('');
   const [newTaskDeadline, setNewTaskDeadline] = useState('2026-05-30');
   const [newTaskEstimate, setNewTaskEstimate] = useState(60);
+  const [formErrors, setFormErrors] = useState<Record<string, string | undefined>>({});
 
   if (!mounted) {
     return (
@@ -78,7 +79,24 @@ export default function TasksPage() {
 
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTaskTitle || !newTaskSubjectId) return;
+    const errors: Record<string, string> = {};
+    if (!newTaskTitle.trim()) {
+      errors.title = "This field cannot be empty";
+    }
+    if (!newTaskSubjectId) {
+      errors.subject = "This field cannot be empty";
+    }
+    if (!newTaskDeadline) {
+      errors.deadline = "This field cannot be empty";
+    }
+    if (!newTaskEstimate) {
+      errors.estimate = "This field cannot be empty";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
 
     const matchedSubject = store.subjects.find((s) => s.id === newTaskSubjectId);
     const subjectName = matchedSubject ? matchedSubject.name : 'General study';
@@ -92,6 +110,7 @@ export default function TasksPage() {
     });
 
     setNewTaskTitle('');
+    setFormErrors({});
     setShowAddTask(false);
   };
 
@@ -124,6 +143,7 @@ export default function TasksPage() {
             if (store.subjects.length > 0) {
               setNewTaskSubjectId(store.subjects[0].id);
             }
+            setFormErrors({});
             setShowAddTask(true);
           }}
           className="btn-neon px-4 py-2.5 text-xs flex items-center gap-2 active:scale-95 transition cursor-pointer"
@@ -349,17 +369,20 @@ export default function TasksPage() {
             >
               <h3 className="text-sm font-geist font-bold text-cyber-blue border-b border-white/10 pb-2 mb-4">Create Academic Milestone</h3>
               
-              <form onSubmit={handleCreateTask} className="space-y-4">
+              <form onSubmit={handleCreateTask} noValidate className="space-y-4">
                 <div>
                   <label className="block text-[10px] font-mono text-white/50 mb-1">Milestone Title</label>
                   <input
                     type="text"
-                    required
                     value={newTaskTitle}
-                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                    onChange={(e) => {
+                      setNewTaskTitle(e.target.value);
+                      setFormErrors(prev => ({ ...prev, title: undefined }));
+                    }}
                     placeholder="E.g., Complete calculus integration exercises"
                     className="w-full input-hud"
                   />
+                  {formErrors.title && <p className="text-red-500 text-[10px] font-mono mt-1">{formErrors.title}</p>}
                 </div>
 
                 <div>
@@ -369,17 +392,23 @@ export default function TasksPage() {
                       No subjects configured. Add subjects first in Settings.
                     </div>
                   ) : (
-                    <select
-                      value={newTaskSubjectId}
-                      onChange={(e) => setNewTaskSubjectId(e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white"
-                    >
-                      {store.subjects.map((sub) => (
-                        <option key={sub.id} value={sub.id}>
-                          {sub.name} ({sub.code})
-                        </option>
-                      ))}
-                    </select>
+                    <>
+                      <select
+                        value={newTaskSubjectId}
+                        onChange={(e) => {
+                          setNewTaskSubjectId(e.target.value);
+                          setFormErrors(prev => ({ ...prev, subject: undefined }));
+                        }}
+                        className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                      >
+                        {store.subjects.map((sub) => (
+                          <option key={sub.id} value={sub.id}>
+                            {sub.name} ({sub.code})
+                          </option>
+                        ))}
+                      </select>
+                      {formErrors.subject && <p className="text-red-500 text-[10px] font-mono mt-1">{formErrors.subject}</p>}
+                    </>
                   )}
                 </div>
 
@@ -389,20 +418,28 @@ export default function TasksPage() {
                     <input
                       type="date"
                       value={newTaskDeadline}
-                      onChange={(e) => setNewTaskDeadline(e.target.value)}
+                      onChange={(e) => {
+                        setNewTaskDeadline(e.target.value);
+                        setFormErrors(prev => ({ ...prev, deadline: undefined }));
+                      }}
                       className="w-full bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-xs text-white"
                     />
+                    {formErrors.deadline && <p className="text-red-500 text-[10px] font-mono mt-1">{formErrors.deadline}</p>}
                   </div>
                   <div>
                     <label className="block text-[10px] font-mono text-white/50 mb-1">Est. Duration (Mins)</label>
                     <input
                       type="number"
                       value={newTaskEstimate}
-                      onChange={(e) => setNewTaskEstimate(parseInt(e.target.value) || 60)}
+                      onChange={(e) => {
+                        setNewTaskEstimate(parseInt(e.target.value) || 0);
+                        setFormErrors(prev => ({ ...prev, estimate: undefined }));
+                      }}
                       min={10}
                       max={480}
                       className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-white text-center"
                     />
+                    {formErrors.estimate && <p className="text-red-500 text-[10px] font-mono mt-1">{formErrors.estimate}</p>}
                   </div>
                 </div>
 

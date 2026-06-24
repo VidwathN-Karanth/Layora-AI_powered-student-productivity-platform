@@ -18,10 +18,19 @@ export default function CoursesPage() {
   const [progress, setProgress] = useState(0);
   const [goal, setGoal] = useState(2);
   const [deadline, setDeadline] = useState('2026-06-30');
+  const [formErrors, setFormErrors] = useState<Record<string, string | undefined>>({});
 
   const handleCreateCourse = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name) return;
+    const errors: Record<string, string> = {};
+    if (!name.trim()) {
+      errors.name = "This field cannot be empty";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
 
     const formattedLink = formatCourseLink(platform) || 'Self-Study';
 
@@ -37,6 +46,7 @@ export default function CoursesPage() {
     setPlatform('');
     setProgress(0);
     setGoal(2);
+    setFormErrors({});
     setShowAddCourse(false);
   };
 
@@ -54,7 +64,10 @@ export default function CoursesPage() {
         </div>
 
         <button
-          onClick={() => setShowAddCourse(true)}
+          onClick={() => {
+            setFormErrors({});
+            setShowAddCourse(true);
+          }}
           className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-on-surface rounded-xl px-4 py-2.5 text-xs font-mono font-bold flex items-center gap-2 active:scale-95 transition cursor-pointer shadow-lg shadow-purple-500/10"
         >
           <PlusCircle className="w-4 h-4" />
@@ -147,17 +160,20 @@ export default function CoursesPage() {
             >
               <h3 className="text-sm font-mono font-bold text-primary border-b border-outline-variant pb-2 mb-4">Log Online Course</h3>
               
-              <form onSubmit={handleCreateCourse} className="space-y-4">
+              <form onSubmit={handleCreateCourse} noValidate className="space-y-4">
                 <div>
                   <label className="block text-[10px] font-mono text-outline mb-1">Course Title</label>
                   <input
                     type="text"
-                    required
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      setFormErrors(prev => ({ ...prev, name: undefined }));
+                    }}
                     placeholder="E.g., Next.js 15 Web Apps"
                     className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none"
                   />
+                  {formErrors.name && <p className="text-red-500 text-[10px] font-mono mt-1">{formErrors.name}</p>}
                 </div>
 
                 <div>

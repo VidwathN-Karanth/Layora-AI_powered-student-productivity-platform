@@ -44,6 +44,7 @@ export default function OnboardingModal() {
   // Study materials (simulated file names uploaded)
   const [uploadedFiles, setUploadedFiles] = useState<{ [subIndex: number]: { name: string; type: string }[] }>({});
   const [mockFileName, setMockFileName] = useState('');
+  const [stepErrors, setStepErrors] = useState<Record<string, string | undefined>>({});
 
   const [activities, setActivities] = useState<{
     name: string;
@@ -69,57 +70,88 @@ export default function OnboardingModal() {
   const [newCourseDeadline, setNewCourseDeadline] = useState('2026-06-30');
 
   const handleAddFreeBlock = () => {
+    if (!newFreeLabel.trim()) {
+      setStepErrors({ newFreeLabel: "This field cannot be empty" });
+      return;
+    }
     setFreeBlocks([...freeBlocks, { id: Date.now().toString(), start: newFreeStart, end: newFreeEnd, label: newFreeLabel }]);
+    setStepErrors({});
   };
   const handleRemoveFreeBlock = (id: string) => {
     setFreeBlocks(freeBlocks.filter(b => b.id !== id));
   };
 
   const handleAddSubject = () => {
-    if (!newSubName) return;
+    const errors: Record<string, string> = {};
+    if (!newSubName.trim()) errors.newSubName = "This field cannot be empty";
+    if (!newSubCode.trim()) errors.newSubCode = "This field cannot be empty";
+    if (Object.keys(errors).length > 0) {
+      setStepErrors(errors);
+      return;
+    }
     setSubjects([...subjects, { name: newSubName, code: newSubCode || 'SUB101', credits: newSubCredits, difficulty: newSubDiff, priority: newSubPriority }]);
     setNewSubName('');
     setNewSubCode('');
+    setStepErrors({});
   };
   const handleRemoveSubject = (index: number) => {
     setSubjects(subjects.filter((_, i) => i !== index));
   };
 
   const handleMockUpload = (subIndex: number) => {
-    if (!mockFileName) return;
+    if (!mockFileName.trim()) {
+      setStepErrors({ [`mockFileName-${subIndex}`]: "This field cannot be empty" });
+      return;
+    }
     const currentFiles = uploadedFiles[subIndex] || [];
     setUploadedFiles({
       ...uploadedFiles,
       [subIndex]: [...currentFiles, { name: mockFileName.endsWith('.pdf') ? mockFileName : `${mockFileName}.pdf`, type: 'pdf' }]
     });
     setMockFileName('');
+    setStepErrors({});
   };
 
   const handleAddActivity = () => {
-    if (!newActName) return;
+    if (!newActName.trim()) {
+      setStepErrors({ newActName: "This field cannot be empty" });
+      return;
+    }
     setActivities([...activities, { name: newActName, duration: newActDuration, preferredTimings: newActTiming, priority: newActPriority }]);
     setNewActName('');
+    setStepErrors({});
   };
   const handleRemoveActivity = (index: number) => {
     setActivities(activities.filter((_, i) => i !== index));
   };
 
   const handleAddWebsite = () => {
-    if (!newWebName || !newWebUrl) return;
+    const errors: Record<string, string> = {};
+    if (!newWebName.trim()) errors.newWebName = "This field cannot be empty";
+    if (!newWebUrl.trim()) errors.newWebUrl = "This field cannot be empty";
+    if (Object.keys(errors).length > 0) {
+      setStepErrors(errors);
+      return;
+    }
     setWebsites([...websites, { name: newWebName, url: newWebUrl, timeSpentGoal: newWebGoal }]);
     setNewWebName('');
     setNewWebUrl('');
+    setStepErrors({});
   };
   const handleRemoveWebsite = (index: number) => {
     setWebsites(websites.filter((_, i) => i !== index));
   };
 
   const handleAddCourse = () => {
-    if (!newCourseName) return;
+    if (!newCourseName.trim()) {
+      setStepErrors({ newCourseName: "This field cannot be empty" });
+      return;
+    }
     const formattedLink = formatCourseLink(newCoursePlatform) || 'Self-Study';
     setCourses([...courses, { name: newCourseName, platform: formattedLink, progress: newCourseProgress, weeklyGoal: newCourseGoal, deadline: newCourseDeadline }]);
     setNewCourseName('');
     setNewCoursePlatform('');
+    setStepErrors({});
   };
   const handleRemoveCourse = (index: number) => {
     setCourses(courses.filter((_, i) => i !== index));
@@ -268,18 +300,26 @@ export default function OnboardingModal() {
                           <input 
                             type="time" 
                             value={wakeTime}
-                            onChange={(e) => setWakeTime(e.target.value)}
+                            onChange={(e) => {
+                              setWakeTime(e.target.value);
+                              setStepErrors(prev => ({ ...prev, wakeTime: undefined }));
+                            }}
                             className="bg-surface-container border border-outline-variant rounded-xl px-3 py-2 text-xs text-center w-full focus:outline-none focus:border-primary text-on-surface"
                           />
+                          {stepErrors.wakeTime && <p className="text-red-500 text-[10px] font-mono mt-1">{stepErrors.wakeTime}</p>}
                         </div>
                         <div>
                           <label className="block text-[10px] font-mono text-primary/70 mb-1.5 uppercase">Sleep Time</label>
                           <input 
                             type="time" 
                             value={sleepTime}
-                            onChange={(e) => setSleepTime(e.target.value)}
+                            onChange={(e) => {
+                              setSleepTime(e.target.value);
+                              setStepErrors(prev => ({ ...prev, sleepTime: undefined }));
+                            }}
                             className="bg-surface-container border border-outline-variant rounded-xl px-3 py-2 text-xs text-center w-full focus:outline-none focus:border-primary text-on-surface"
                           />
+                          {stepErrors.sleepTime && <p className="text-red-500 text-[10px] font-mono mt-1">{stepErrors.sleepTime}</p>}
                         </div>
                       </div>
 
@@ -289,18 +329,26 @@ export default function OnboardingModal() {
                           <input 
                             type="time" 
                             value={collegeStart}
-                            onChange={(e) => setCollegeStart(e.target.value)}
+                            onChange={(e) => {
+                              setCollegeStart(e.target.value);
+                              setStepErrors(prev => ({ ...prev, collegeStart: undefined }));
+                            }}
                             className="bg-surface-container border border-secondary rounded-xl px-3 py-2 text-xs text-center w-full focus:outline-none focus:border-secondary text-on-surface"
                           />
+                          {stepErrors.collegeStart && <p className="text-red-500 text-[10px] font-mono mt-1">{stepErrors.collegeStart}</p>}
                         </div>
                         <div>
                           <label className="block text-[10px] font-mono text-cyan-300/70 mb-1.5 uppercase">College End</label>
                           <input 
                             type="time" 
                             value={collegeEnd}
-                            onChange={(e) => setCollegeEnd(e.target.value)}
+                            onChange={(e) => {
+                              setCollegeEnd(e.target.value);
+                              setStepErrors(prev => ({ ...prev, collegeEnd: undefined }));
+                            }}
                             className="bg-surface-container border border-secondary rounded-xl px-3 py-2 text-xs text-center w-full focus:outline-none focus:border-secondary text-on-surface"
                           />
+                          {stepErrors.collegeEnd && <p className="text-red-500 text-[10px] font-mono mt-1">{stepErrors.collegeEnd}</p>}
                         </div>
                       </div>
                     </div>
@@ -328,9 +376,13 @@ export default function OnboardingModal() {
                             type="text" 
                             placeholder="Study slot label" 
                             value={newFreeLabel}
-                            onChange={(e) => setNewFreeLabel(e.target.value)}
+                            onChange={(e) => {
+                              setNewFreeLabel(e.target.value);
+                              setStepErrors(prev => ({ ...prev, newFreeLabel: undefined }));
+                            }}
                             className="bg-surface-container border border-outline-variant rounded-lg px-2 py-1 text-xs w-full mb-1 text-on-surface placeholder-white/30"
                           />
+                          {stepErrors.newFreeLabel && <p className="text-red-500 text-[10px] font-mono mb-2">{stepErrors.newFreeLabel}</p>}
                         </div>
                         <div>
                           <span className="text-[9px] font-mono text-outline block mb-0.5">Start</span>
@@ -373,10 +425,14 @@ export default function OnboardingModal() {
                         <input 
                           type="text" 
                           value={newSubName} 
-                          onChange={(e) => setNewSubName(e.target.value)}
+                          onChange={(e) => {
+                            setNewSubName(e.target.value);
+                            setStepErrors(prev => ({ ...prev, newSubName: undefined }));
+                          }}
                           placeholder="Subject Name"
                           className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                         />
+                        {stepErrors.newSubName && <p className="text-red-500 text-[10px] font-mono mt-1">{stepErrors.newSubName}</p>}
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
@@ -384,10 +440,14 @@ export default function OnboardingModal() {
                           <input 
                             type="text" 
                             value={newSubCode} 
-                            onChange={(e) => setNewSubCode(e.target.value)}
+                            onChange={(e) => {
+                              setNewSubCode(e.target.value);
+                              setStepErrors(prev => ({ ...prev, newSubCode: undefined }));
+                            }}
                             placeholder="Course Code"
                             className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                           />
+                          {stepErrors.newSubCode && <p className="text-red-500 text-[10px] font-mono mt-1">{stepErrors.newSubCode}</p>}
                         </div>
                         <div>
                           <label className="block text-[9px] font-mono text-outline mb-0.5">Credits</label>
@@ -499,20 +559,26 @@ export default function OnboardingModal() {
                           </div>
 
                           {/* Mock file upload field */}
-                          <div className="flex gap-2">
-                            <input 
-                              type="text" 
-                              placeholder="Notes Chapter 1.pdf" 
-                              value={mockFileName}
-                              onChange={(e) => setMockFileName(e.target.value)}
-                              className="bg-surface-container border border-outline-variant rounded-lg px-2 py-1 text-[9px] flex-1 focus:outline-none text-on-surface placeholder-white/30"
-                            />
-                            <button 
-                              onClick={() => handleMockUpload(sIdx)}
-                              className="bg-primary hover:bg-primary-container text-on-surface text-[9px] font-mono font-bold px-2.5 py-1 rounded-lg cursor-pointer"
-                            >
-                              Mock Upload
-                            </button>
+                          <div>
+                            <div className="flex gap-2">
+                              <input 
+                                type="text" 
+                                placeholder="Notes Chapter 1.pdf" 
+                                value={mockFileName}
+                                onChange={(e) => {
+                                  setMockFileName(e.target.value);
+                                  setStepErrors(prev => ({ ...prev, [`mockFileName-${sIdx}`]: undefined }));
+                                }}
+                                className="bg-surface-container border border-outline-variant rounded-lg px-2 py-1 text-[9px] flex-1 focus:outline-none text-on-surface placeholder-white/30"
+                              />
+                              <button 
+                                onClick={() => handleMockUpload(sIdx)}
+                                className="bg-primary hover:bg-primary-container text-on-surface text-[9px] font-mono font-bold px-2.5 py-1 rounded-lg cursor-pointer"
+                              >
+                                Mock Upload
+                              </button>
+                            </div>
+                            {stepErrors[`mockFileName-${sIdx}`] && <p className="text-red-500 text-[10px] font-mono mt-1">{stepErrors[`mockFileName-${sIdx}`]}</p>}
                           </div>
                         </div>
                       );
@@ -541,10 +607,14 @@ export default function OnboardingModal() {
                         <input 
                           type="text" 
                           value={newActName} 
-                          onChange={(e) => setNewActName(e.target.value)}
+                          onChange={(e) => {
+                            setNewActName(e.target.value);
+                            setStepErrors(prev => ({ ...prev, newActName: undefined }));
+                          }}
                           placeholder="Gym, Chess..."
                           className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                         />
+                        {stepErrors.newActName && <p className="text-red-500 text-[10px] font-mono mt-1">{stepErrors.newActName}</p>}
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
@@ -634,20 +704,28 @@ export default function OnboardingModal() {
                         <input 
                           type="text" 
                           value={newWebName} 
-                          onChange={(e) => setNewWebName(e.target.value)}
+                          onChange={(e) => {
+                            setNewWebName(e.target.value);
+                            setStepErrors(prev => ({ ...prev, newWebName: undefined }));
+                          }}
                           placeholder="LeetCode, GitHub"
                           className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                         />
+                        {stepErrors.newWebName && <p className="text-red-500 text-[10px] font-mono mt-1">{stepErrors.newWebName}</p>}
                       </div>
                       <div>
                         <label className="block text-[9px] font-mono text-outline mb-0.5">URL</label>
                         <input 
                           type="url" 
                           value={newWebUrl} 
-                          onChange={(e) => setNewWebUrl(e.target.value)}
+                          onChange={(e) => {
+                            setNewWebUrl(e.target.value);
+                            setStepErrors(prev => ({ ...prev, newWebUrl: undefined }));
+                          }}
                           placeholder="https://leetcode.com"
                           className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                         />
+                        {stepErrors.newWebUrl && <p className="text-red-500 text-[10px] font-mono mt-1">{stepErrors.newWebUrl}</p>}
                       </div>
                       <div>
                         <label className="block text-[9px] font-mono text-outline mb-0.5">Daily Focus (mins)</label>
@@ -710,10 +788,14 @@ export default function OnboardingModal() {
                         <input 
                           type="text" 
                           value={newCourseName} 
-                          onChange={(e) => setNewCourseName(e.target.value)}
+                          onChange={(e) => {
+                            setNewCourseName(e.target.value);
+                            setStepErrors(prev => ({ ...prev, newCourseName: undefined }));
+                          }}
                           placeholder="Next.js 15 Web Apps"
                           className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                         />
+                        {stepErrors.newCourseName && <p className="text-red-500 text-[10px] font-mono mt-1">{stepErrors.newCourseName}</p>}
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
@@ -840,7 +922,10 @@ export default function OnboardingModal() {
         {/* Modal Footer Controls */}
         <div className="flex justify-between items-center p-5 border-t border-outline-variant bg-white/2">
           <button
-            onClick={() => setStep(Math.max(1, step - 1))}
+            onClick={() => {
+              setStepErrors({});
+              setStep(Math.max(1, step - 1));
+            }}
             disabled={step === 1}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-mono border border-outline-variant bg-surface-container hover:bg-surface-container-high active:scale-95 transition cursor-pointer text-on-surface ${
               step === 1 ? 'opacity-30 pointer-events-none' : ''
@@ -851,7 +936,10 @@ export default function OnboardingModal() {
 
           {step < totalSteps ? (
             <button
-              onClick={() => setStep(Math.min(totalSteps, step + 1))}
+              onClick={() => {
+                setStepErrors({});
+                setStep(Math.min(totalSteps, step + 1));
+              }}
               className="flex items-center gap-1 bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-on-surface px-5 py-2 rounded-xl text-xs font-mono font-bold active:scale-95 transition cursor-pointer shadow-lg shadow-purple-500/10"
             >
               Next <ChevronRight className="w-4 h-4" />
