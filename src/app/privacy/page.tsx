@@ -104,7 +104,7 @@ export default function PrivacyPolicyPage() {
               <span>5. User Rights & Data Erasure</span>
             </div>
             <p>
-              You maintain full ownership of your data profile. You have the right to edit your username mappings, clear active integrations, or wipe all saved account records at any time. A self-serve <strong className="text-white">"Erase All Registration & Store Data"</strong> button is available in the Settings Panel under the Danger Zone to let you permanently delete all cached parameters, databases rows, and sync configurations.
+              You maintain full ownership of your data profile. You have the right to edit your username mappings, clear active integrations, or wipe all saved account records at any time. Please contact us to request the permanent deletion of your cached parameters, database rows, and sync configurations.
             </p>
           </section>
 
