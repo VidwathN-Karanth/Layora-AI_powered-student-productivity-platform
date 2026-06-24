@@ -51,7 +51,10 @@ export default function AdminPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [isLocalMode, setIsLocalMode] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'subjects' | 'tasks' | 'courses' | 'timetable' | 'chat'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'subjects' | 'tasks' | 'courses' | 'timetable' | 'certificates' | 'chat'>('profile');
+  const [inspectedCerts, setInspectedCerts] = useState<any[]>([]);
+  const [loadingInspectedCerts, setLoadingInspectedCerts] = useState(false);
+  const [activeCertPreview, setActiveCertPreview] = useState<any | null>(null);
   const [editStreak, setEditStreak] = useState<number>(0);
   const [editHours, setEditHours] = useState<number>(0);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
@@ -124,6 +127,29 @@ export default function AdminPage() {
       setEditHours(selectedUser.state.user?.totalStudyHours || 0);
     }
   }, [selectedUser]);
+
+  useEffect(() => {
+    if (selectedUser && activeTab === 'certificates') {
+      const fetchUserCerts = async () => {
+        setLoadingInspectedCerts(true);
+        try {
+          const res = await fetch(`/api/admin/certificates?userId=${selectedUser.id}`);
+          if (res.ok) {
+            const data = await res.json();
+            setInspectedCerts(data);
+          } else {
+            setInspectedCerts([]);
+          }
+        } catch (err) {
+          console.error('Failed to load user certificates for admin:', err);
+          setInspectedCerts([]);
+        } finally {
+          setLoadingInspectedCerts(false);
+        }
+      };
+      fetchUserCerts();
+    }
+  }, [selectedUser, activeTab]);
 
   // Verify Admin Access
   useEffect(() => {
@@ -914,7 +940,7 @@ export default function AdminPage() {
 
               {/* Drawer Navigation Tabs */}
               <div className="flex border-b border-white/5 bg-black/40 overflow-x-auto shrink-0 scrollbar-none">
-                {(['profile', 'subjects', 'tasks', 'courses', 'timetable', 'chat'] as const).map((tab) => (
+                {(['profile', 'subjects', 'tasks', 'courses', 'timetable', 'certificates', 'chat'] as const).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -1170,6 +1196,52 @@ export default function AdminPage() {
                   </div>
                 )}
 
+                {/* 5.5 Tab Certificates */}
+                {activeTab === 'certificates' && (
+                  <div className="space-y-4">
+                    {loadingInspectedCerts ? (
+                      <div className="p-8 text-center text-white/40 text-xs flex flex-col items-center gap-3">
+                        <RefreshCw className="w-5 h-5 animate-spin text-cyber-blue" />
+                        Fetching academic certificates...
+                      </div>
+                    ) : inspectedCerts.length === 0 ? (
+                      <div className="text-center py-8 text-white/30 text-xs">
+                        No verified credentials or skill certificates uploaded by this user.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {inspectedCerts.map((cert) => (
+                          <div key={cert.id} className="bg-black/45 border border-white/5 rounded-xl overflow-hidden flex flex-col justify-between hover:border-cyber-blue/30 transition group">
+                            <div 
+                              className="relative aspect-[4/3] bg-black flex items-center justify-center overflow-hidden border-b border-white/5 cursor-pointer"
+                              onClick={() => setActiveCertPreview(cert)}
+                            >
+                              <img src={cert.file_url} alt={cert.name} className="w-full h-full object-cover group-hover:scale-[1.02] transition" />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition animate-fade-in">
+                                <Eye className="w-4 h-4 text-white" />
+                              </div>
+                            </div>
+                            <div className="p-3 space-y-1.5">
+                              <div>
+                                <h4 className="text-xs font-bold text-white line-clamp-1">{cert.name}</h4>
+                                <span className="inline-block text-[8px] font-bold tracking-wider px-1.5 py-0.5 mt-1 bg-cyber-blue/10 border border-cyber-blue/20 text-cyber-blue rounded uppercase">
+                                  {cert.platform}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between text-[9px] text-white/40 pt-1.5 border-t border-white/5">
+                                <span>{new Date(cert.created_at).toLocaleDateString()}</span>
+                                <a href={cert.file_url} target="_blank" rel="noopener noreferrer" className="text-cyber-blue hover:underline flex items-center gap-0.5">
+                                  Original <ExternalLink className="w-2.5 h-2.5" />
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* 6. Tab Chat History */}
                 {activeTab === 'chat' && (
                   <div className="space-y-4">
@@ -1351,6 +1423,43 @@ export default function AdminPage() {
                 >
                   CLOSE
                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Inspected Certificate Image Lightbox Overlay */}
+      <AnimatePresence>
+        {activeCertPreview && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setActiveCertPreview(null)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="glass-panel border border-white/10 p-4 rounded-2xl max-w-3xl w-full relative z-10 bg-[#0F0F16] flex flex-col"
+            >
+              <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
+                <div>
+                  <h3 className="text-xs font-bold text-white">{activeCertPreview.name}</h3>
+                  <p className="text-[9px] text-white/40 uppercase font-mono mt-0.5">{activeCertPreview.platform} credential</p>
+                </div>
+                <button
+                  onClick={() => setActiveCertPreview(null)}
+                  className="p-1.5 rounded-lg border border-white/10 hover:border-white/30 text-white/50 hover:text-white transition cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="bg-black/50 p-2 rounded-lg flex items-center justify-center overflow-auto max-h-[60vh]">
+                <img src={activeCertPreview.file_url} alt={activeCertPreview.name} className="max-w-full max-h-[50vh] object-contain rounded-lg border border-white/5" />
               </div>
             </motion.div>
           </div>
