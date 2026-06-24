@@ -7,5 +7,8 @@ export const pointsConfig = {
   github: {
     activeBonus: 0,
     perContribution: 0
+  },
+  codechef: {
+    perSolve: 15
   }
 };

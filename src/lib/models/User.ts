@@ -6,10 +6,12 @@ export interface UserRow {
   email: string;
   leetcodeUsername: string | null;
   githubUsername: string | null;
+  codechefUsername: string | null;
   linkedinUrl: string | null;
   leetcodeEasyTotal: number;
   leetcodeMediumTotal: number;
   leetcodeHardTotal: number;
+  codechefSolvedTotal: number;
   createdAt: string;
 }
 
@@ -19,10 +21,12 @@ interface DatabaseUserRow {
   email: string;
   leetcode_username: string | null;
   github_username: string | null;
+  codechef_username: string | null;
   linkedin_url: string | null;
   leetcode_easy_total: number;
   leetcode_medium_total: number;
   leetcode_hard_total: number;
+  codechef_solved_total: number;
   created_at: string;
 }
 
@@ -37,10 +41,12 @@ function mapUserRow(row: DatabaseUserRow | null | undefined): UserRow | null {
     email: row.email,
     leetcodeUsername: row.leetcode_username,
     githubUsername: row.github_username,
+    codechefUsername: row.codechef_username,
     linkedinUrl: row.linkedin_url,
     leetcodeEasyTotal: row.leetcode_easy_total || 0,
     leetcodeMediumTotal: row.leetcode_medium_total || 0,
     leetcodeHardTotal: row.leetcode_hard_total || 0,
+    codechefSolvedTotal: row.codechef_solved_total || 0,
     createdAt: row.created_at
   };
 }
@@ -55,20 +61,24 @@ export class User {
     email, 
     leetcodeUsername = null, 
     githubUsername = null,
+    codechefUsername = null,
     linkedinUrl = null,
     leetcodeEasyTotal = 0,
     leetcodeMediumTotal = 0,
-    leetcodeHardTotal = 0
+    leetcodeHardTotal = 0,
+    codechefSolvedTotal = 0
   }: { 
     id?: string; 
     name: string; 
     email: string; 
     leetcodeUsername?: string | null; 
     githubUsername?: string | null; 
+    codechefUsername?: string | null;
     linkedinUrl?: string | null;
     leetcodeEasyTotal?: number;
     leetcodeMediumTotal?: number;
     leetcodeHardTotal?: number;
+    codechefSolvedTotal?: number;
   }): Promise<UserRow | null> {
     const userId = id || `usr_${Math.random().toString(36).substring(2, 11)}`;
     const { data, error } = await supabaseAdmin
@@ -79,10 +89,12 @@ export class User {
         email,
         leetcode_username: leetcodeUsername,
         github_username: githubUsername,
+        codechef_username: codechefUsername,
         linkedin_url: linkedinUrl,
         leetcode_easy_total: leetcodeEasyTotal,
         leetcode_medium_total: leetcodeMediumTotal,
-        leetcode_hard_total: leetcodeHardTotal
+        leetcode_hard_total: leetcodeHardTotal,
+        codechef_solved_total: codechefSolvedTotal
       })
       .select()
       .single();
@@ -122,10 +134,12 @@ export class User {
       email?: string; 
       leetcodeUsername?: string | null; 
       githubUsername?: string | null;
+      codechefUsername?: string | null;
       linkedinUrl?: string | null;
       leetcodeEasyTotal?: number;
       leetcodeMediumTotal?: number;
       leetcodeHardTotal?: number;
+      codechefSolvedTotal?: number;
     }
   ): Promise<UserRow | null> {
     const dbUpdates: {
@@ -133,19 +147,23 @@ export class User {
       email?: string;
       leetcode_username?: string | null;
       github_username?: string | null;
+      codechef_username?: string | null;
       linkedin_url?: string | null;
       leetcode_easy_total?: number;
       leetcode_medium_total?: number;
       leetcode_hard_total?: number;
+      codechef_solved_total?: number;
     } = {};
     if (updates.name !== undefined) dbUpdates.name = updates.name;
     if (updates.email !== undefined) dbUpdates.email = updates.email;
     if (updates.leetcodeUsername !== undefined) dbUpdates.leetcode_username = updates.leetcodeUsername;
     if (updates.githubUsername !== undefined) dbUpdates.github_username = updates.githubUsername;
+    if (updates.codechefUsername !== undefined) dbUpdates.codechef_username = updates.codechefUsername;
     if (updates.linkedinUrl !== undefined) dbUpdates.linkedin_url = updates.linkedinUrl;
     if (updates.leetcodeEasyTotal !== undefined) dbUpdates.leetcode_easy_total = updates.leetcodeEasyTotal;
     if (updates.leetcodeMediumTotal !== undefined) dbUpdates.leetcode_medium_total = updates.leetcodeMediumTotal;
     if (updates.leetcodeHardTotal !== undefined) dbUpdates.leetcode_hard_total = updates.leetcodeHardTotal;
+    if (updates.codechefSolvedTotal !== undefined) dbUpdates.codechef_solved_total = updates.codechefSolvedTotal;
 
     const { data, error } = await supabaseAdmin
       .from('users')
@@ -168,7 +186,7 @@ export class User {
     const { data, error } = await supabaseAdmin
       .from('users')
       .select('*')
-      .or('leetcode_username.not.is.null,github_username.not.is.null');
+      .or('leetcode_username.not.is.null,github_username.not.is.null,codechef_username.not.is.null');
 
     if (error) {
       throw new Error(`Failed to retrieve linked users: ${error.message}`);

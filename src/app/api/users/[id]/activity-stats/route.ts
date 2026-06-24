@@ -40,12 +40,14 @@ export async function GET(
       month: { commits: 0, solves: 0, points: 0 },
       allTime: {
         commits: 0,
-        solves: user.leetcodeEasyTotal + user.leetcodeMediumTotal + user.leetcodeHardTotal,
+        solves: user.leetcodeEasyTotal + user.leetcodeMediumTotal + user.leetcodeHardTotal + (user.codechefSolvedTotal || 0),
         points: (user.leetcodeEasyTotal * pointsConfig.leetcode.Easy) +
                 (user.leetcodeMediumTotal * pointsConfig.leetcode.Medium) +
-                (user.leetcodeHardTotal * pointsConfig.leetcode.Hard),
+                (user.leetcodeHardTotal * pointsConfig.leetcode.Hard) +
+                ((user.codechefSolvedTotal || 0) * (pointsConfig.codechef?.perSolve || 15)),
         leetcodeUsername: user.leetcodeUsername,
-        githubUsername: user.githubUsername
+        githubUsername: user.githubUsername,
+        codechefUsername: user.codechefUsername
       }
     };
 
@@ -65,28 +67,28 @@ export async function GET(
       // Today
       if (actDate === todayStr) {
         stats.today.commits = act.githubContributionsToday;
-        stats.today.solves = act.leetcodeSolvedToday;
+        stats.today.solves = act.leetcodeSolvedToday + (act.codechefSolvedToday || 0);
         stats.today.points = act.pointsEarned;
       }
 
       // Yesterday
       if (actDate === yesterdayStr) {
         stats.yesterday.commits = act.githubContributionsToday;
-        stats.yesterday.solves = act.leetcodeSolvedToday;
+        stats.yesterday.solves = act.leetcodeSolvedToday + (act.codechefSolvedToday || 0);
         stats.yesterday.points = act.pointsEarned;
       }
 
       // Week (date >= lastWeekStr)
       if (actDate >= lastWeekStr) {
         stats.week.commits += act.githubContributionsToday;
-        stats.week.solves += act.leetcodeSolvedToday;
+        stats.week.solves += act.leetcodeSolvedToday + (act.codechefSolvedToday || 0);
         stats.week.points += act.pointsEarned;
       }
 
       // Month (date >= lastMonthStr)
       if (actDate >= lastMonthStr) {
         stats.month.commits += act.githubContributionsToday;
-        stats.month.solves += act.leetcodeSolvedToday;
+        stats.month.solves += act.leetcodeSolvedToday + (act.codechefSolvedToday || 0);
         stats.month.points += act.pointsEarned;
       }
     }

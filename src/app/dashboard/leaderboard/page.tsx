@@ -19,7 +19,7 @@ interface UserStats {
   yesterday: RangeStats;
   week: RangeStats;
   month: RangeStats;
-  allTime: RangeStats & { leetcodeUsername: string | null; githubUsername: string | null };
+  allTime: RangeStats & { leetcodeUsername: string | null; githubUsername: string | null; codechefUsername?: string | null };
 }
 
 export default function LeaderboardPage() {
@@ -270,7 +270,8 @@ export default function LeaderboardPage() {
                     <th className="p-3">Student</th>
                     {isAdmin && (
                       <>
-                        <th className="p-3 text-right">Solves</th>
+                        <th className="p-3 text-right">LC Solves</th>
+                        <th className="p-3 text-right">CC Solves</th>
                         <th className="p-3 text-right">Commits</th>
                       </>
                     )}
@@ -314,6 +315,9 @@ export default function LeaderboardPage() {
                               {item.totalLeetcodeSolved}
                             </td>
                             <td className="p-3 text-right font-bold text-on-surface">
+                              {item.totalCodechefSolved || 0}
+                            </td>
+                            <td className="p-3 text-right font-bold text-on-surface">
                               {item.totalGithubContributions}
                             </td>
                           </>
@@ -351,6 +355,15 @@ export default function LeaderboardPage() {
                 <li>Easy solves: <strong className="text-on-surface">10 pts each</strong></li>
                 <li>Medium solves: <strong className="text-on-surface">20 pts each</strong></li>
                 <li>Hard solves: <strong className="text-on-surface">30 pts each</strong></li>
+              </ul>
+            </div>
+
+            <div className="space-y-2 border-t border-outline-variant/30 pt-3">
+              <h4 className="text-[11px] font-bold text-on-surface flex items-center gap-1.5">
+                <Terminal className="w-3.5 h-3.5 text-orange-500" /> CodeChef Solves (Cumulative)
+              </h4>
+              <ul className="list-disc pl-4 space-y-1">
+                <li>Problem solved: <strong className="text-on-surface">15 pts each</strong></li>
               </ul>
             </div>
 

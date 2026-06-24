@@ -51,6 +51,7 @@ export interface UserProfile {
   lastActiveDate?: string;
   leetcodeUsername?: string | null;
   githubUsername?: string | null;
+  codechefUsername?: string | null;
   linkedinUrl?: string | null;
 }
 
@@ -76,6 +77,7 @@ export interface RegisteredUser {
   lastActiveDate?: string;
   leetcodeUsername?: string | null;
   githubUsername?: string | null;
+  codechefUsername?: string | null;
   linkedinUrl?: string | null;
 }
 
@@ -247,6 +249,7 @@ export const useStore = create<AppState>()(
               lastActiveDate: existing.lastActiveDate,
               leetcodeUsername: existing.leetcodeUsername,
               githubUsername: existing.githubUsername,
+              codechefUsername: existing.codechefUsername,
               linkedinUrl: existing.linkedinUrl
             }
             // No data arrays — SyncProvider loads those from Supabase
@@ -265,6 +268,7 @@ export const useStore = create<AppState>()(
             timetable: [],
             leetcodeUsername: null,
             githubUsername: null,
+            codechefUsername: null,
             linkedinUrl: null,
             ...profileDefaults
           };
@@ -286,6 +290,7 @@ export const useStore = create<AppState>()(
               lastActiveDate: newGoogleUser.lastActiveDate,
               leetcodeUsername: null,
               githubUsername: null,
+              codechefUsername: null,
               linkedinUrl: null
             }
             // No data arrays — SyncProvider loads those from Supabase
@@ -331,6 +336,7 @@ export const useStore = create<AppState>()(
             lastActiveDate: matched.lastActiveDate,
             leetcodeUsername: matched.leetcodeUsername,
             githubUsername: matched.githubUsername,
+            codechefUsername: matched.codechefUsername,
             linkedinUrl: matched.linkedinUrl
           }
           // No data arrays — SyncProvider loads those from Supabase
@@ -375,6 +381,7 @@ export const useStore = create<AppState>()(
           ],
           leetcodeUsername: null,
           githubUsername: null,
+          codechefUsername: null,
           linkedinUrl: null
         };
 
@@ -406,6 +413,7 @@ export const useStore = create<AppState>()(
                 lastActiveDate: user.lastActiveDate,
                 leetcodeUsername: user.leetcodeUsername,
                 githubUsername: user.githubUsername,
+                codechefUsername: user.codechefUsername,
                 linkedinUrl: user.linkedinUrl,
                 subjects,
                 resources,
