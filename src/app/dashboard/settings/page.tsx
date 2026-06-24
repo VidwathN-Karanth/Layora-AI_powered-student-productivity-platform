@@ -27,9 +27,9 @@ export default function SettingsPage() {
   const [githubUsername, setGithubUsername] = useState(store.user?.githubUsername || '');
   const [codechefUsername, setCodechefUsername] = useState(store.user?.codechefUsername || '');
   const [linkedinUrl, setLinkedinUrl] = useState(store.user?.linkedinUrl || '');
-  const [isLinking, setIsLinking] = useState(false);
-  const [linkError, setLinkError] = useState<string | null>(null);
-  const [linkSuccess, setLinkSuccess] = useState(false);
+  const [linkingField, setLinkingField] = useState<'leetcode' | 'github' | 'codechef' | 'linkedin' | null>(null);
+  const [linkErrors, setLinkErrors] = useState<{ leetcode?: string; github?: string; codechef?: string; linkedin?: string }>({});
+  const [linkSuccesses, setLinkSuccesses] = useState<{ leetcode?: boolean; github?: boolean; codechef?: boolean; linkedin?: boolean }>({});
 
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isPurging, setIsPurging] = useState(false);
@@ -47,11 +47,10 @@ export default function SettingsPage() {
     setTimeout(() => setSaveSuccess(false), 2000);
   };
 
-  const handleLinkAccounts = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLinkError(null);
-    setLinkSuccess(false);
-    setIsLinking(true);
+  const handleLinkAccount = async (field: 'leetcode' | 'github' | 'codechef' | 'linkedin') => {
+    setLinkingField(field);
+    setLinkErrors(prev => ({ ...prev, [field]: undefined }));
+    setLinkSuccesses(prev => ({ ...prev, [field]: false }));
 
     const targetUserId = clerkUser?.id || store.user?.email || 'test_user';
 
@@ -73,40 +72,33 @@ export default function SettingsPage() {
       }
 
       // 2. Perform Account Link with Username verification
+      const payload: Record<string, any> = {};
+      if (field === 'leetcode') payload.leetcodeUsername = leetcodeUsername || null;
+      if (field === 'codechef') payload.codechefUsername = codechefUsername || null;
+      if (field === 'github') payload.githubUsername = githubUsername || null;
+      if (field === 'linkedin') payload.linkedinUrl = linkedinUrl || null;
+
       const linkRes = await fetch(`/api/users/${targetUserId}/link-accounts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          leetcodeUsername: leetcodeUsername || null,
-          githubUsername: githubUsername || null,
-          codechefUsername: codechefUsername || null,
-          linkedinUrl: linkedinUrl || null
-        })
+        body: JSON.stringify(payload)
       });
 
       if (!linkRes.ok) {
         const errorData = await linkRes.json();
-        throw new Error(errorData.error || 'Account linking failed');
+        throw new Error(errorData.error || 'Verification failed');
       }
 
       // 3. Update Zustand Store
-      store.updateRoutine({
-        leetcodeUsername: leetcodeUsername || null,
-        githubUsername: githubUsername || null,
-        codechefUsername: codechefUsername || null,
-        linkedinUrl: linkedinUrl || null
-      });
+      store.updateRoutine(payload);
 
-      setLinkSuccess(true);
+      setLinkSuccesses(prev => ({ ...prev, [field]: true }));
     } catch (err: any) {
-      console.error('Account link failed:', err);
-      if (err instanceof TypeError && err.message.toLowerCase().includes('fetch')) {
-        setLinkError('Could not connect to the activity sync serverless backend. Please verify your internet connection.');
-      } else {
-        setLinkError(err.message || 'An unexpected error occurred.');
-      }
+      console.error(`${field} link failed:`, err);
+      const errMsg = err.message || 'An unexpected error occurred.';
+      setLinkErrors(prev => ({ ...prev, [field]: errMsg }));
     } finally {
-      setIsLinking(false);
+      setLinkingField(null);
     }
   };
 
@@ -239,91 +231,148 @@ export default function SettingsPage() {
             </form>
           </div>
 
-          {/* --- PANEL 2: LEETCODE & GITHUB LINKING --- */}
+          {/* --- PANEL 2: LEETCODE, GITHUB & CODECHEF LINKING --- */}
           <div className="glass-card rounded-2xl p-5 space-y-4">
             <div className="flex items-center gap-2.5 border-b border-outline-variant pb-2">
               <ShieldCheck className="w-4 h-4 text-primary" />
               <h3 className="text-xs font-mono font-bold tracking-wider text-primary">LeetCode, GitHub & CodeChef Accounts</h3>
             </div>
 
-            <form onSubmit={handleLinkAccounts} className="space-y-4">
+            <div className="space-y-5">
               <p className="text-[10px] text-outline font-mono leading-relaxed">
                 Link your public LeetCode and CodeChef profiles to earn points daily for your solving activity, and GitHub profile to display your contributions! Leaderboard scores update every midnight UTC.
                 <br />
                 <strong className="text-amber-500 block mt-1.5 uppercase tracking-wide">⚠️ For LeetCode, GitHub and CodeChef, only your username should be given, not the full link.</strong>
               </p>
 
-              {linkError && (
-                <div className="bg-rose-950/40 border border-rose-500/30 text-rose-300 p-3 rounded-xl text-[10px] font-mono leading-normal">
-                  ❌ {linkError}
-                </div>
-              )}
-
-              {linkSuccess && (
-                <div className="bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 p-3 rounded-xl text-[10px] font-mono">
-                  ✅ Accounts linked and verified successfully!
-                </div>
-              )}
-
-              <div>
+              {/* LeetCode Field */}
+              <div className="space-y-1">
                 <label className="block text-[10px] font-mono text-outline mb-1">LeetCode Username</label>
-                <input
-                  type="text"
-                  value={leetcodeUsername}
-                  onChange={(e) => setLeetcodeUsername(e.target.value)}
-                  placeholder="e.g. leetcode_user"
-                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-mono text-outline mb-1">CodeChef Username</label>
-                <input
-                  type="text"
-                  value={codechefUsername}
-                  onChange={(e) => setCodechefUsername(e.target.value)}
-                  placeholder="e.g. codechef_user"
-                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-mono text-outline mb-1">GitHub Username</label>
-                <input
-                  type="text"
-                  value={githubUsername}
-                  onChange={(e) => setGithubUsername(e.target.value)}
-                  placeholder="e.g. github_user"
-                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-mono text-outline mb-1">LinkedIn Account URL</label>
-                <input
-                  type="url"
-                  value={linkedinUrl}
-                  onChange={(e) => setLinkedinUrl(e.target.value)}
-                  placeholder="e.g. https://www.linkedin.com/in/username"
-                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLinking}
-                className="bg-primary hover:bg-primary-container text-on-surface rounded-lg px-4 py-2 text-xs font-mono font-bold transition cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98]"
-              >
-                {isLinking ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    Verifying & Linking...
-                  </>
-                ) : (
-                  'Link & Verify Accounts'
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={leetcodeUsername}
+                    onChange={(e) => setLeetcodeUsername(e.target.value)}
+                    placeholder="e.g. leetcode_user"
+                    className="flex-1 bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+                  />
+                  <button
+                    type="button"
+                    disabled={linkingField !== null}
+                    onClick={() => handleLinkAccount('leetcode')}
+                    className="bg-primary hover:bg-primary-container text-on-surface rounded-lg px-3 py-1.5 text-xs font-mono font-bold transition cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 active:scale-[0.98] h-[34px] min-w-[110px]"
+                  >
+                    {linkingField === 'leetcode' ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      'Link & Verify'
+                    )}
+                  </button>
+                </div>
+                {linkErrors.leetcode && (
+                  <div className="text-rose-400 text-[10px] font-mono mt-1">❌ {linkErrors.leetcode}</div>
                 )}
-              </button>
-            </form>
+                {linkSuccesses.leetcode && (
+                  <div className="text-emerald-400 text-[10px] font-mono mt-1">✅ LeetCode account linked successfully!</div>
+                )}
+              </div>
+
+              {/* CodeChef Field */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-mono text-outline mb-1">CodeChef Username</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={codechefUsername}
+                    onChange={(e) => setCodechefUsername(e.target.value)}
+                    placeholder="e.g. codechef_user"
+                    className="flex-1 bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+                  />
+                  <button
+                    type="button"
+                    disabled={linkingField !== null}
+                    onClick={() => handleLinkAccount('codechef')}
+                    className="bg-primary hover:bg-primary-container text-on-surface rounded-lg px-3 py-1.5 text-xs font-mono font-bold transition cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 active:scale-[0.98] h-[34px] min-w-[110px]"
+                  >
+                    {linkingField === 'codechef' ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      'Link & Verify'
+                    )}
+                  </button>
+                </div>
+                {linkErrors.codechef && (
+                  <div className="text-rose-400 text-[10px] font-mono mt-1">❌ {linkErrors.codechef}</div>
+                )}
+                {linkSuccesses.codechef && (
+                  <div className="text-emerald-400 text-[10px] font-mono mt-1">✅ CodeChef account linked successfully!</div>
+                )}
+              </div>
+
+              {/* GitHub Field */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-mono text-outline mb-1">GitHub Username</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={githubUsername}
+                    onChange={(e) => setGithubUsername(e.target.value)}
+                    placeholder="e.g. github_user"
+                    className="flex-1 bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+                  />
+                  <button
+                    type="button"
+                    disabled={linkingField !== null}
+                    onClick={() => handleLinkAccount('github')}
+                    className="bg-primary hover:bg-primary-container text-on-surface rounded-lg px-3 py-1.5 text-xs font-mono font-bold transition cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 active:scale-[0.98] h-[34px] min-w-[110px]"
+                  >
+                    {linkingField === 'github' ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      'Link & Verify'
+                    )}
+                  </button>
+                </div>
+                {linkErrors.github && (
+                  <div className="text-rose-400 text-[10px] font-mono mt-1">❌ {linkErrors.github}</div>
+                )}
+                {linkSuccesses.github && (
+                  <div className="text-emerald-400 text-[10px] font-mono mt-1">✅ GitHub account linked successfully!</div>
+                )}
+              </div>
+
+              {/* LinkedIn Field */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-mono text-outline mb-1">LinkedIn Account URL</label>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={linkedinUrl}
+                    onChange={(e) => setLinkedinUrl(e.target.value)}
+                    placeholder="e.g. https://www.linkedin.com/in/username"
+                    className="flex-1 bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+                  />
+                  <button
+                    type="button"
+                    disabled={linkingField !== null}
+                    onClick={() => handleLinkAccount('linkedin')}
+                    className="bg-primary hover:bg-primary-container text-on-surface rounded-lg px-3 py-1.5 text-xs font-mono font-bold transition cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 active:scale-[0.98] h-[34px] min-w-[110px]"
+                  >
+                    {linkingField === 'linkedin' ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      'Link & Verify'
+                    )}
+                  </button>
+                </div>
+                {linkErrors.linkedin && (
+                  <div className="text-rose-400 text-[10px] font-mono mt-1">❌ {linkErrors.linkedin}</div>
+                )}
+                {linkSuccesses.linkedin && (
+                  <div className="text-emerald-400 text-[10px] font-mono mt-1">✅ LinkedIn link saved successfully!</div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* --- PANEL 3: VISUAL THEMING --- */}
