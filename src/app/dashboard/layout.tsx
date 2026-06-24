@@ -283,10 +283,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Weekly Planner', path: '/dashboard/planner', icon: CalendarRange },
-    { name: 'Courses', path: '/dashboard/courses', icon: BookMarked },
-    { name: 'Certificates', path: '/dashboard/certificates', icon: Award },
     { name: 'Tasks', path: '/dashboard/tasks', icon: CheckSquare },
+    { name: 'Courses', path: '/dashboard/courses', icon: BookMarked },
     { name: 'Resources', path: '/dashboard/resources', icon: FolderLock },
+    { name: 'Certificates', path: '/dashboard/certificates', icon: Award },
     { name: 'Analytics', path: '/dashboard/analytics', icon: BarChart3 },
     { name: 'Leaderboard', path: '/dashboard/leaderboard', icon: Trophy },
     { name: 'Settings', path: '/dashboard/settings', icon: Settings },
