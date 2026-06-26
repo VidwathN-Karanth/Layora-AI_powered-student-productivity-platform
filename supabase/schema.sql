@@ -76,3 +76,8 @@ alter table public.daily_activities enable row level security;
 create policy "Allow read access to users for all" on public.users for select using (true);
 create policy "Allow read access to daily_activities for all" on public.daily_activities for select using (true);
 
+-- 8. Create Indexes for performance optimization
+create index if not exists idx_daily_activities_date on public.daily_activities(date);
+create index if not exists idx_users_codechef on public.users(codechef_username) where codechef_username is not null;
+
+
