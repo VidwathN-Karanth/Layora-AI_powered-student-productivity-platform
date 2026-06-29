@@ -12,6 +12,7 @@ import {
   CheckCircle2, Building2, LogOut, X, FileText, Globe, RefreshCw, Eye, Sparkles, AlertTriangle, ExternalLink, Download
 } from 'lucide-react';
 import { getPlatformDisplay } from '@/lib/courseUtils';
+import { isAdminEmail } from '@/lib/admin';
 
 interface TelemetryUser {
   id: string;
@@ -241,7 +242,7 @@ export default function AdminPage() {
 
     if (isSignedIn) {
       const email = user?.primaryEmailAddress?.emailAddress || '';
-      if (email.toLowerCase() === 'vidwathkaranth@gmail.com') {
+      if (isAdminEmail(email)) {
         setAuthorized(true);
         fetchTelemetry();
       } else {

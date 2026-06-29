@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { isAdminEmail } from '@/lib/admin';
 
 export async function GET(req: Request) {
   try {
@@ -9,7 +10,7 @@ export async function GET(req: Request) {
     const email = user?.primaryEmailAddress?.emailAddress || '';
 
     // Verify requesting user is the system admin
-    if (!authedUserId || email.toLowerCase() !== 'vidwathkaranth@gmail.com') {
+    if (!authedUserId || !isAdminEmail(email)) {
       return NextResponse.json({ error: 'Unauthorized admin access' }, { status: 401 });
     }
 
