@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth, useUser } from '@clerk/nextjs';
 import { ShieldAlert, UserCheck, LogOut } from 'lucide-react';
 import { useStore } from '@/store/useStore';
+import { isAdminEmail } from '@/lib/admin';
 
 export default function RootPage() {
   const router = useRouter();
@@ -24,7 +25,7 @@ export default function RootPage() {
     
     if (isSignedIn) {
       const email = user?.primaryEmailAddress?.emailAddress || '';
-      if (email.toLowerCase() === 'vidwathkaranth@gmail.com') {
+      if (isAdminEmail(email)) {
         setShowPortal(true);
       } else {
         const timeout = setTimeout(() => {

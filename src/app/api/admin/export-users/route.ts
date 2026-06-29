@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { User } from '@/lib/models/User';
 import { DailyActivity } from '@/lib/models/DailyActivity';
+import { isAdminEmail } from '@/lib/admin';
 
 export async function GET() {
   try {
@@ -10,7 +11,7 @@ export async function GET() {
     const email = clerkUser?.primaryEmailAddress?.emailAddress || '';
 
     // Verify requesting user is the system admin
-    if (!authedUserId || email.toLowerCase() !== 'vidwathkaranth@gmail.com') {
+    if (!authedUserId || !isAdminEmail(email)) {
       return NextResponse.json({ error: 'Unauthorized admin access' }, { status: 401 });
     }
 

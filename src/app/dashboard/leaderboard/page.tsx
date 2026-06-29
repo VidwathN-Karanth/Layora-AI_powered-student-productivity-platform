@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useStore } from '@/store/useStore';
+import { isAdminEmail } from '@/lib/admin';
 import { 
   Trophy, Award, TrendingUp, Calendar, RefreshCw,
   AlertTriangle, Terminal, GitBranch, ShieldAlert
@@ -40,8 +41,8 @@ export default function LeaderboardPage() {
   const [syncingStats, setSyncingStats] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  const isAdmin = clerkUser?.primaryEmailAddress?.emailAddress?.toLowerCase() === 'vidwathkaranth@gmail.com' || 
-                  store.user?.email?.toLowerCase() === 'vidwathkaranth@gmail.com';
+  const isAdmin = isAdminEmail(clerkUser?.primaryEmailAddress?.emailAddress) || 
+                  isAdminEmail(store.user?.email);
 
   const fetchUserStats = async () => {
     const targetUserId = clerkUser?.id || store.user?.email || 'test_user';

@@ -14,6 +14,7 @@ import {
 import { UserButton, useUser, useAuth } from '@clerk/nextjs';
 import OnboardingModal from '@/components/OnboardingModal';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
+import { isAdminEmail } from '@/lib/admin';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -279,7 +280,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return `${hours > 0 ? hours + ':' : ''}${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const isAdmin = store.user?.email?.toLowerCase() === 'vidwathkaranth@gmail.com';
+  const isAdmin = isAdminEmail(store.user?.email) || isAdminEmail(clerkUser?.primaryEmailAddress?.emailAddress);
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Weekly Planner', path: '/dashboard/planner', icon: CalendarRange },
