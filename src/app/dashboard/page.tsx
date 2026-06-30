@@ -449,7 +449,7 @@ export default function DashboardHome() {
               ) : (
                 courses.map((course) => (
                   <div key={course.id} className="space-y-2">
-                    <div className="flex justify-between items-start">
+                    <div className="flex justify-between items-center">
                       <div className="min-w-0 flex-1">
                         <div className="text-xs font-mono font-bold text-white leading-tight truncate" title={course.name}>{course.name}</div>
                         <div className="flex items-center gap-1.5 mt-1">
@@ -468,7 +468,20 @@ export default function DashboardHome() {
                           )}
                         </div>
                       </div>
-                      <span className="text-xs font-mono font-black text-cyber-blue text-glow-cyan shrink-0 ml-2">{course.progress}%</span>
+                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                        <span className="text-xs font-mono font-black text-cyber-blue text-glow-cyan">{course.progress}%</span>
+                        {course.platform && course.platform.startsWith('http') && (
+                          <a
+                            href={course.platform}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1 hover:bg-white/10 rounded-lg text-cyber-blue hover:text-glow-cyan hover:scale-110 transition duration-200 cursor-pointer flex items-center justify-center"
+                            title="Open course in new tab"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </a>
+                        )}
+                      </div>
                     </div>
                     
                     {/* Progress Slider */}
