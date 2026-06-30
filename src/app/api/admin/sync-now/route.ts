@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 import { runSyncForDate } from '@/lib/syncLogic';
+import { auth } from '@clerk/nextjs/server';
 
 export async function POST(request: Request) {
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json().catch(() => ({}));
     const { date } = body;
     let targetDate = date;

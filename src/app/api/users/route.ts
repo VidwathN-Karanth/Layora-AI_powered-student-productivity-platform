@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 import { User } from '@/lib/models/User';
 
 export async function POST(request: Request) {
   try {
     const { id, name, email } = await request.json();
+
+    const { userId: authedUserId } = await auth();
+    if (!authedUserId || authedUserId !== id) {
+      return NextResponse.json({ error: 'Unauthorized user access' }, { status: 401 });
+    }
 
     if (!name || !email) {
       return NextResponse.json(

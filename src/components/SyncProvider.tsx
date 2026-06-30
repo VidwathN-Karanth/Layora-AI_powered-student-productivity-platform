@@ -133,17 +133,21 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
       isHydrated.current = true;
 
-      if (isSupabaseConfigured && supabase) {
+      if (isSupabaseConfigured) {
         const migrationTimestamp = Date.now();
         lastLocalWriteTimestampRef.current = migrationTimestamp;
         const stateWithTimestamp = { ...stateToSave, clientTimestamp: migrationTimestamp };
 
-        supabase.from('user_states').upsert({
-          id: user!.id,
-          state: sanitizeStateForFirestore(stateWithTimestamp),
-          updated_at: new Date().toISOString()
-        }).then(({ error }) => {
-          if (error) console.error('Failed to initialise Supabase state:', error);
+        fetch('/api/user/state/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ state: sanitizeStateForFirestore(stateWithTimestamp) })
+        }).then((res) => {
+          if (!res.ok) {
+            console.error('Failed to initialise Supabase state: HTTP error', res.status);
+          }
+        }).catch((err) => {
+          console.error('Failed to initialise Supabase state:', err);
         });
       }
 

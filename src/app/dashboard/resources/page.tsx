@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { useUser } from '@clerk/nextjs';
-import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
+import { isSupabaseConfigured } from '@/lib/supabaseClient';
 import { 
   FolderLock, UploadCloud, File, BookOpen, Plus, 
   Trash, Download, FileText, ExternalLink 
@@ -675,14 +675,17 @@ export default function ResourcesPage() {
                                   e.stopPropagation();
                                   if (confirm(`Are you sure you want to delete the file "${file.name}"?`)) {
                                     try {
-                                      if (supabase && file.url && file.url.includes('/storage/v1/object/public/resources/')) {
+                                      if (file.url && file.url.includes('/storage/v1/object/public/resources/')) {
                                         const storagePath = file.url.split('/storage/v1/object/public/resources/')[1];
                                         if (storagePath) {
-                                          const { error } = await supabase.storage
-                                            .from('resources')
-                                            .remove([storagePath]);
-                                          if (error) {
-                                            console.warn("Failed to delete object from Supabase Storage:", error);
+                                          const res = await fetch('/api/resources/delete-storage', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ storagePath })
+                                          });
+                                          if (!res.ok) {
+                                            const errData = await res.json().catch(() => ({}));
+                                            console.warn("Failed to delete object from Supabase Storage:", errData.error || res.statusText);
                                           }
                                         }
                                       }

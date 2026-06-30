@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 import { generateLocalWeeklySchedule } from '@/lib/aiService';
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
@@ -11,6 +12,10 @@ export async function POST(req: NextRequest) {
   let tasks: any = [];
 
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const body = await req.json();
     routine = body.routine;
     subjects = body.subjects;

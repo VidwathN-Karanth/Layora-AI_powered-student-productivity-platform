@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useAuth } from '@clerk/nextjs';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
+import { isSupabaseConfigured } from '@/lib/supabaseClient';
 import { useStore } from '@/store/useStore';
 import { 
   Users, Clock, Flame, BookOpen, Search, ArrowLeft, 
@@ -255,7 +255,7 @@ export default function AdminPage() {
 
   // Fetch Supabase user states
   const fetchTelemetry = async () => {
-    if (!isSupabaseConfigured || !supabase) {
+    if (!isSupabaseConfigured) {
       setIsLocalMode(true);
       setErrorMsg('');
       setLoadingData(true);
@@ -302,11 +302,12 @@ export default function AdminPage() {
       setLoadingData(true);
       setIsLocalMode(false);
       setErrorMsg('');
-      const { data, error } = await supabase
-        .from('user_states')
-        .select('*');
-
-      if (error) throw error;
+      const res = await fetch('/api/admin/users');
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP error ${res.status}`);
+      }
+      const data = await res.json();
 
       const fetched: TelemetryUser[] = (data || []).map((row: any) => ({
         id: row.id,
@@ -330,27 +331,14 @@ export default function AdminPage() {
     setShowDeleteConfirm(null);
     try {
       setLoadingData(true);
-      if (isSupabaseConfigured && supabase) {
-        // 1. Delete from user_states
-        const { error: stateError } = await supabase
-          .from('user_states')
-          .delete()
-          .eq('id', userId);
-        if (stateError) throw stateError;
-
-        // 2. Delete from daily_activities
-        const { error: activityError } = await supabase
-          .from('daily_activities')
-          .delete()
-          .eq('user_id', userId);
-        if (activityError) throw activityError;
-
-        // 3. Delete from users
-        const { error: userError } = await supabase
-          .from('users')
-          .delete()
-          .eq('id', userId);
-        if (userError) throw userError;
+      if (isSupabaseConfigured) {
+        const res = await fetch(`/api/admin/users/${userId}`, {
+          method: 'DELETE'
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `HTTP error ${res.status}`);
+        }
       } else {
         // Local mode delete
         const registeredUsers = useStore.getState().registeredUsers || [];
@@ -389,16 +377,16 @@ export default function AdminPage() {
         user: updatedUser
       };
 
-      if (isSupabaseConfigured && supabase) {
-        const { error } = await supabase
-          .from('user_states')
-          .upsert({
-            id: selectedUser.id,
-            state: updatedState,
-            updated_at: new Date().toISOString()
-          });
-
-        if (error) throw error;
+      if (isSupabaseConfigured) {
+        const res = await fetch(`/api/admin/users/${selectedUser.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ state: updatedState })
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `HTTP error ${res.status}`);
+        }
       } else {
         // Local mode update
         const registeredUsers = useStore.getState().registeredUsers || [];
@@ -415,26 +403,23 @@ export default function AdminPage() {
         useStore.getState().setFullState({ registeredUsers: updated });
       }
 
-      // Update local state list so it updates instantly in the UI table
-      setUsersList((prev) => 
-        prev.map((u) => 
-          u.id === selectedUser.id 
-            ? { ...u, state: updatedState, updated_at: new Date().toISOString() } 
-            : u
-        )
-      );
-
-      // Update currently active inspected user
       setSelectedUser({
         ...selectedUser,
-        state: updatedState,
-        updated_at: new Date().toISOString()
+        state: updatedState
       });
-
-      alert("Node telemetry updated successfully!");
+      setUsersList((prev) => prev.map((u) => {
+        if (u.id === selectedUser.id) {
+          return {
+            ...u,
+            state: updatedState
+          };
+        }
+        return u;
+      }));
+      alert("User statistics updated successfully!");
     } catch (err: any) {
       console.error("Failed to update user stats:", err);
-      alert("Error updating node telemetry: " + err.message);
+      alert("Failed to update user stats: " + err.message);
     } finally {
       setIsSavingEdit(false);
     }

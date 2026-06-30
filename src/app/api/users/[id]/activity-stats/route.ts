@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { User } from '@/lib/models/User';
 import { DailyActivity } from '@/lib/models/DailyActivity';
 import { pointsConfig } from '@/lib/points';
+import { isAdminEmail } from '@/lib/admin';
 
 export async function GET(
   request: Request,
@@ -10,6 +12,14 @@ export async function GET(
   const { id: userId } = await params;
 
   try {
+    const { userId: authedUserId } = await auth();
+    const clerkUser = await currentUser();
+    const email = clerkUser?.primaryEmailAddress?.emailAddress || '';
+    const isAdmin = authedUserId && isAdminEmail(email);
+
+    if (!authedUserId || (authedUserId !== userId && !isAdmin)) {
+      return NextResponse.json({ error: 'Unauthorized user access' }, { status: 401 });
+    }
     const user = await User.findById(userId);
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
