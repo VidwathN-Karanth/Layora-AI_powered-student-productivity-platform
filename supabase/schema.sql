@@ -14,30 +14,18 @@ create table if not exists public.user_states (
 alter table public.user_states enable row level security;
 
 -- 3. Create RLS Policies
--- Note: Authentication is managed securely on the client via Clerk identity tokens.
--- To allow the client application to query/sync their specific row, we establish policies 
--- where read/write operations are permitted.
+-- SECURITY WARNING: All data modification and retrieval operations MUST go through the Next.js backend API routes.
+-- The backend uses the Service Role key (bypassing RLS) and verifies authentication/authorization via Clerk.
+-- Therefore, we disable public/anonymous read/write permissions directly from the frontend to ensure security.
+-- If client-side realtime subscription is required, a select policy can be kept, but write operations are prohibited.
 
--- Allow select query on user state row
-create policy "Enable read access for all users by matching user ID"
-  on public.user_states for select
-  using (true);
+-- If you are using Clerk JWT template integration to authenticate directly with Supabase:
+-- create policy "Enable read access for own user state row"
+--   on public.user_states for select
+--   using (auth.uid() = id); -- or using ((auth.jwt() ->> 'sub') = id)
 
--- Allow insert query on user state row
-create policy "Enable insert access for all users"
-  on public.user_states for insert
-  with check (true);
-
--- Allow update query on user state row
-create policy "Enable update access for all users"
-  on public.user_states for update
-  using (true)
-  with check (true);
-
--- Allow delete query on user state row
-create policy "Enable delete access for all users by user ID"
-  on public.user_states for delete
-  using (true);
+-- Disallow public client-side writes entirely:
+-- No public INSERT, UPDATE, or DELETE policies exist here anymore.
 
 -- 4. Create the users table for external sync and account linking
 create table if not exists public.users (
@@ -73,8 +61,8 @@ alter table public.users enable row level security;
 alter table public.daily_activities enable row level security;
 
 -- 7. Create RLS Policies for new tables
-create policy "Allow read access to users for all" on public.users for select using (true);
-create policy "Allow read access to daily_activities for all" on public.daily_activities for select using (true);
+-- Locked down: Public/anonymous direct database access is disabled.
+-- All queries are handled securely via the Next.js API routes on the backend.
 
 -- 8. Create Indexes for performance optimization
 create index if not exists idx_daily_activities_date on public.daily_activities(date);
