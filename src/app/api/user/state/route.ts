@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { isSupabaseConfigured } from '@/lib/supabaseClient';
 
 export async function GET() {
   try {
@@ -10,11 +11,11 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!isSupabaseConfigured || !supabase) {
+    if (!isSupabaseConfigured) {
       return NextResponse.json({ state: null, isLocalMode: true });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('user_states')
       .select('state')
       .eq('id', userId)
@@ -43,13 +44,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!isSupabaseConfigured || !supabase) {
+    if (!isSupabaseConfigured) {
       return NextResponse.json({ error: 'Supabase is not configured' }, { status: 503 });
     }
 
     const { state } = await request.json();
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('user_states')
       .upsert({
         id: userId,
@@ -65,3 +66,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
