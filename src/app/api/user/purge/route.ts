@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { isSupabaseConfigured } from '@/lib/supabaseClient';
 
 export async function DELETE() {
   try {
@@ -11,23 +12,23 @@ export async function DELETE() {
     }
 
     // Delete Supabase user data
-    if (isSupabaseConfigured && supabase) {
+    if (isSupabaseConfigured) {
       // 1. Delete from user_states
-      const { error: stateError } = await supabase
+      const { error: stateError } = await supabaseAdmin
         .from('user_states')
         .delete()
         .eq('id', userId);
       if (stateError) throw stateError;
 
       // 2. Delete from daily_activities
-      const { error: activityError } = await supabase
+      const { error: activityError } = await supabaseAdmin
         .from('daily_activities')
         .delete()
         .eq('user_id', userId);
       if (activityError) throw activityError;
 
       // 3. Delete from users
-      const { error: userError } = await supabase
+      const { error: userError } = await supabaseAdmin
         .from('users')
         .delete()
         .eq('id', userId);
@@ -42,3 +43,4 @@ export async function DELETE() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
