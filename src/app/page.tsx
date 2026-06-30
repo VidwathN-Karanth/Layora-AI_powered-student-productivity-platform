@@ -22,7 +22,7 @@ export default function RootPage() {
 
   useEffect(() => {
     if (!isAuthLoaded || !isUserLoaded) return;
-    
+
     if (isSignedIn) {
       const email = user?.primaryEmailAddress?.emailAddress || '';
       if (isAdminEmail(email)) {
@@ -101,9 +101,9 @@ export default function RootPage() {
               </div>
             </button>
           </div>
-          
-          <button 
-            onClick={handleLogout} 
+
+          <button
+            onClick={handleLogout}
             className="flex items-center gap-2 border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white px-4 py-2 rounded-xl text-xs font-mono transition cursor-pointer mt-4"
           >
             <LogOut className="w-4 h-4" /> Logout
@@ -123,7 +123,7 @@ export default function RootPage() {
             <span className="text-on-surface font-mono font-bold text-2xl tracking-tighter">L</span>
           </div>
         </div>
-        
+
         <div className="text-center">
           <h1 className="text-2xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400 font-mono">
             LAYORA
