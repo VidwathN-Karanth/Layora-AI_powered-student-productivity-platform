@@ -16,32 +16,7 @@ export async function GET() {
       return NextResponse.json({ state: null, isLocalMode: true });
     }
 
-    // 1. Check if the user is an admin
-    const clerkUser = await currentUser();
-    const email = clerkUser?.primaryEmailAddress?.emailAddress || '';
-    if (email && isAdminEmail(email)) {
-      // Admin users should bypass onboarding
-      const adminDefaultState = {
-        user: {
-          name: clerkUser?.fullName || 'Admin User',
-          email: email,
-          streakCount: 0,
-          totalStudyHours: 0,
-          isOnboarded: true,
-          wakeTime: '06:00',
-          sleepTime: '22:00',
-          collegeStart: '09:00',
-          collegeEnd: '16:00',
-          freeBlocks: [
-            { id: 'free-1', start: '17:00', end: '19:00', label: 'Evening Study' },
-            { id: 'free-2', start: '20:00', end: '22:00', label: 'Night Review' }
-          ]
-        }
-      };
-      return NextResponse.json({ state: adminDefaultState });
-    }
-
-    // 2. Fetch the state from user_states table
+    // 1. Fetch the state from user_states table first
     const { data, error } = await supabaseAdmin
       .from('user_states')
       .select('state')
@@ -50,7 +25,32 @@ export async function GET() {
 
     if (error) {
       if (error.code === 'PGRST116') {
-        // 3. No user_states row found. Check if they exist in the users table.
+        // 2. No user_states row found. Check if the user is an admin
+        const clerkUser = await currentUser();
+        const email = clerkUser?.primaryEmailAddress?.emailAddress || '';
+        if (email && isAdminEmail(email)) {
+          // Admin users should bypass onboarding
+          const adminDefaultState = {
+            user: {
+              name: clerkUser?.fullName || 'Admin User',
+              email: email,
+              streakCount: 0,
+              totalStudyHours: 0,
+              isOnboarded: true,
+              wakeTime: '06:00',
+              sleepTime: '22:00',
+              collegeStart: '09:00',
+              collegeEnd: '16:00',
+              freeBlocks: [
+                { id: 'free-1', start: '17:00', end: '19:00', label: 'Evening Study' },
+                { id: 'free-2', start: '20:00', end: '22:00', label: 'Night Review' }
+              ]
+            }
+          };
+          return NextResponse.json({ state: adminDefaultState });
+        }
+
+        // 3. Check if they exist in the users table
         const { data: dbUser, error: dbUserError } = await supabaseAdmin
           .from('users')
           .select('id, name, email')
@@ -146,4 +146,4 @@ export async function POST(request: Request) {
   }
 }
 
-
+export const dynamic = 'force-dynamic';
