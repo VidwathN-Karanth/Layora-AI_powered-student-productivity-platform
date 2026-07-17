@@ -135,7 +135,7 @@ interface AppState {
   timetable: TimetableBlock[];
   setTimetable: (blocks: TimetableBlock[]) => void;
   updateTimetableBlock: (id: string, updatedFields: Partial<TimetableBlock>) => void;
-  generateSchedule: () => Promise<void>;
+  generateSchedule: (useAI?: boolean) => Promise<void>;
 
   // Settings
   themeAccent: 'purple' | 'blue' | 'pink' | 'emerald';
@@ -883,7 +883,7 @@ export const useStore = create<AppState>()(
       updateTimetableBlock: (id, updatedFields) => set((state) => ({
         timetable: state.timetable.map((b) => b.id === id ? { ...b, ...updatedFields } : b)
       })),
-      generateSchedule: async () => {
+      generateSchedule: async (useAI = false) => {
         try {
           const { user, subjects, activities, courses, timetable, apiKeys, tasks } = get();
           if (!user) return;
@@ -903,14 +903,19 @@ export const useStore = create<AppState>()(
             (b) => b.id && (b.id.startsWith('custom-block-') || b.id.startsWith('ai-block-'))
           );
 
-          // Call remote AI schedule or local smart scheduler fallback
-          const { schedule: baseSchedule, insights } = await generateAISchedule(apiKeys, routine, subjects, activities, courses, tasks);
+          // Call remote AI schedule or local smart scheduler
+          let result;
+          if (useAI) {
+            result = await generateAISchedule(apiKeys, routine, subjects, activities, courses, tasks);
+          } else {
+            result = generateLocalWeeklySchedule(routine, subjects, activities, courses, tasks);
+          }
           
           // Merge base schedule with custom/AI blocks and resolve overlaps
-          const combined = [...customBlocks, ...baseSchedule];
+          const combined = [...customBlocks, ...result.schedule];
           set({ 
             timetable: resolveScheduleOverlaps(combined),
-            planningGuideInsights: insights || []
+            planningGuideInsights: result.insights || []
           });
         } catch (error) {
           console.error("Failed to generate weekly schedule:", error);

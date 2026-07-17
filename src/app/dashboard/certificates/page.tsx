@@ -269,6 +269,7 @@ export default function CertificatesPage() {
   };
 
   const getPlatformColor = (pf: string) => {
+    if (!pf) return 'border-primary/30 text-primary bg-primary/5';
     const norm = pf.toLowerCase();
     if (norm.includes('hackerrank')) return 'border-emerald-500/30 text-emerald-400 bg-emerald-500/5';
     if (norm.includes('w3schools')) return 'border-green-500/30 text-green-400 bg-green-500/5';
@@ -499,7 +500,7 @@ export default function CertificatesPage() {
                     <div className="flex items-center justify-between text-[9px] text-outline font-mono pt-1.5 border-t border-outline-variant/20">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3 h-3 text-outline-variant" />
-                        {new Date(cert.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                        {cert.created_at ? new Date(cert.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}
                       </span>
                       <a 
                         href={cert.file_url} 

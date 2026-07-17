@@ -48,7 +48,7 @@ export default function PlannerPage() {
 
   const handleGenerateAI = async () => {
     setLoadingSchedule(true);
-    await store.generateSchedule();
+    await store.generateSchedule(true);
     setLoadingSchedule(false);
   };
 
