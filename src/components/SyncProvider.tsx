@@ -65,6 +65,22 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     }
   }, [themeAccent]);
 
+  // Sync timezone once cloud data is loaded
+  useEffect(() => {
+    if (isCloudLoaded && typeof window !== 'undefined') {
+      try {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const currentStore = useStore.getState();
+        if (currentStore.user && currentStore.user.timezone !== tz) {
+          console.log(`[Timezone Sync] Setting user timezone to: ${tz}`);
+          currentStore.updateRoutine({ timezone: tz });
+        }
+      } catch (e) {
+        console.warn('[Timezone Sync] Failed to sync timezone:', e);
+      }
+    }
+  }, [isCloudLoaded]);
+
   // Cloud-wins: Supabase is the authoritative source of truth for all data arrays.
   // We no longer merge local data into cloud data — that was causing stale local subjects/tasks
   // to contaminate fresh cloud data when opening on a new device.

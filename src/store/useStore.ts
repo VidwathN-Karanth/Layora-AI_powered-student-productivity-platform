@@ -53,6 +53,7 @@ export interface UserProfile {
   githubUsername?: string | null;
   codechefUsername?: string | null;
   linkedinUrl?: string | null;
+  timezone?: string;
 }
 
 export interface RegisteredUser {
@@ -79,6 +80,7 @@ export interface RegisteredUser {
   githubUsername?: string | null;
   codechefUsername?: string | null;
   linkedinUrl?: string | null;
+  timezone?: string;
 }
 
 interface AppState {
@@ -116,6 +118,7 @@ interface AppState {
   courses: Course[];
   addCourse: (course: Omit<Course, 'id'>) => void;
   updateCourseProgress: (id: string, progress: number) => void;
+  updateCourse: (id: string, updatedFields: Partial<Course>) => void;
   removeCourse: (id: string) => void;
 
   // Tasks & Ticking Timer
@@ -647,6 +650,9 @@ export const useStore = create<AppState>()(
       })),
       updateCourseProgress: (id, progress) => set((state) => ({
         courses: state.courses.map((c) => c.id === id ? { ...c, progress } : c)
+      })),
+      updateCourse: (id, updatedFields) => set((state) => ({
+        courses: state.courses.map((c) => c.id === id ? { ...c, ...updatedFields } : c)
       })),
       removeCourse: (id) => set((state) => ({
         courses: state.courses.filter((c) => c.id !== id)

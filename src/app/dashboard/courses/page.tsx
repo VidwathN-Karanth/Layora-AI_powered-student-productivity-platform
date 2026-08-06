@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { 
   BookMarked, PlusCircle, Trash, Award, 
-  BookOpen, Calendar, HelpCircle, GraduationCap, Clock, ExternalLink
+  BookOpen, Calendar, HelpCircle, GraduationCap, Clock, ExternalLink,
+  Mail, Bell
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getPlatformDisplay, formatCourseLink } from '@/lib/courseUtils';
@@ -18,6 +19,8 @@ export default function CoursesPage() {
   const [progress, setProgress] = useState(0);
   const [goal, setGoal] = useState(2);
   const [deadline, setDeadline] = useState('2026-06-30');
+  const [reminderEnabled, setReminderEnabled] = useState(false);
+  const [reminderTime, setReminderTime] = useState('09:00');
   const [formErrors, setFormErrors] = useState<Record<string, string | undefined>>({});
 
   const handleCreateCourse = (e: React.FormEvent) => {
@@ -39,13 +42,17 @@ export default function CoursesPage() {
       platform: formattedLink,
       progress,
       weeklyGoal: goal,
-      deadline
+      deadline,
+      reminderEnabled,
+      reminderTime: reminderEnabled ? reminderTime : undefined
     });
 
     setName('');
     setPlatform('');
     setProgress(0);
     setGoal(2);
+    setReminderEnabled(false);
+    setReminderTime('09:00');
     setFormErrors({});
     setShowAddCourse(false);
   };
@@ -122,6 +129,35 @@ export default function CoursesPage() {
                     onChange={(e) => handleProgressChange(course.id, parseInt(e.target.value))}
                     className="w-full accent-purple-500 bg-surface-container-high rounded-lg cursor-pointer h-1.5"
                   />
+                </div>
+
+                {/* Daily Email Reminder Settings */}
+                <div className="space-y-2 pt-3 border-t border-outline-variant/30">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-mono text-outline flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-primary" /> Daily Email Reminder
+                    </span>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={course.reminderEnabled || false}
+                        onChange={(e) => store.updateCourse(course.id, { reminderEnabled: e.target.checked })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-8 h-4.5 bg-surface-container-high rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-outline after:border-outline-variant after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-purple-600 peer-checked:to-blue-500 peer-checked:after:bg-on-primary"></div>
+                    </label>
+                  </div>
+                  {course.reminderEnabled && (
+                    <div className="flex items-center justify-between gap-2 bg-surface-container-low/50 p-2 rounded-xl border border-outline-variant/20">
+                      <span className="text-[9px] font-mono text-outline">Reminder Time:</span>
+                      <input
+                        type="time"
+                        value={course.reminderTime || '09:00'}
+                        onChange={(e) => store.updateCourse(course.id, { reminderTime: e.target.value })}
+                        className="bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1 text-[10px] text-on-surface font-mono focus:outline-none focus:border-primary w-24 text-center cursor-pointer"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -220,6 +256,35 @@ export default function CoursesPage() {
                     onChange={(e) => setDeadline(e.target.value)}
                     className="w-full bg-surface-container border border-outline-variant rounded-lg px-2 py-1 text-xs text-on-surface"
                   />
+                </div>
+
+                {/* Daily Email Reminder Fields */}
+                <div className="bg-surface-container-low/50 p-3 rounded-xl border border-outline-variant/30 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-mono text-outline flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-primary" /> Daily Email Reminder
+                    </span>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={reminderEnabled}
+                        onChange={(e) => setReminderEnabled(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-8 h-4.5 bg-surface-container-high rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-outline after:border-outline-variant after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-purple-600 peer-checked:to-blue-500 peer-checked:after:bg-on-primary"></div>
+                    </label>
+                  </div>
+                  {reminderEnabled && (
+                    <div className="flex items-center justify-between gap-2 pt-1">
+                      <span className="text-[9px] font-mono text-outline">Preferred Time:</span>
+                      <input
+                        type="time"
+                        value={reminderTime}
+                        onChange={(e) => setReminderTime(e.target.value)}
+                        className="bg-surface-container border border-outline-variant rounded-lg px-2 py-0.5 text-[10px] text-on-surface font-mono focus:outline-none focus:border-primary w-24 text-center cursor-pointer"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-2 pt-2">

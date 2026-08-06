@@ -44,6 +44,9 @@ export interface Course {
   progress: number;
   weeklyGoal: number; // in hours
   deadline: string;
+  reminderEnabled?: boolean;
+  reminderTime?: string; // "HH:MM" format
+  lastReminderSentDate?: string; // "YYYY-MM-DD" format
 }
 
 export interface Routine {
