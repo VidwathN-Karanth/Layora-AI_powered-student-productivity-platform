@@ -167,7 +167,7 @@ export async function sendCourseReminderMail({ to, subject, courseName, progress
     - The Layora Team
   `;
 
-  if (host && user && pass) {
+  if (host && user && pass && pass.trim() !== 'paste_your_app_password_here' && !pass.includes('paste_your')) {
     try {
       const transporter = nodemailer.createTransport({
         host,
