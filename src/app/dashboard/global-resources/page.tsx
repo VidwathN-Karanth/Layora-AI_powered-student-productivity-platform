@@ -31,6 +31,7 @@ export default function GlobalResourcesPage() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedYearFilter, setSelectedYearFilter] = useState<'All' | '1st Year' | '2nd Year' | '3rd Year' | '4th Year' | 'Others'>('All');
 
   // Upload Form Panel States
   const [showUploadForm, setShowUploadForm] = useState(false);
@@ -39,6 +40,7 @@ export default function GlobalResourcesPage() {
   const [linkUrl, setLinkUrl] = useState('');
   const [fileData, setFileData] = useState<File | null>(null);
   const [fileType, setFileType] = useState('pdf');
+  const [documentYear, setDocumentYear] = useState('Others');
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadErrors, setUploadErrors] = useState<Record<string, string | undefined>>({});
@@ -179,7 +181,7 @@ export default function GlobalResourcesPage() {
           const res = await fetch('/api/resources/global', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: fileName, url: linkUrl, type: finalType })
+            body: JSON.stringify({ name: fileName, url: linkUrl, type: finalType, year: documentYear })
           });
           if (!res.ok) {
             const errData = await res.json().catch(() => ({}));
@@ -194,6 +196,7 @@ export default function GlobalResourcesPage() {
             name: fileName,
             url: linkUrl,
             type: finalType,
+            year: documentYear,
             uploadedBy: currentUserEmail || 'local_user',
             uploaderName: clerkUser?.fullName || 'Local Student',
             createdAt: new Date().toISOString()
@@ -256,7 +259,7 @@ export default function GlobalResourcesPage() {
       const saveRes = await fetch('/api/resources/global', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: fileName, url: driveUrl, type: fileType })
+        body: JSON.stringify({ name: fileName, url: driveUrl, type: fileType, year: documentYear })
       });
 
       if (!saveRes.ok) {
@@ -283,6 +286,7 @@ export default function GlobalResourcesPage() {
     setLinkUrl('');
     setFileData(null);
     setFileType('pdf');
+    setDocumentYear('Others');
     setUploadErrors({});
     setShowUploadForm(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -317,7 +321,12 @@ export default function GlobalResourcesPage() {
     const name = (res.name || '').toLowerCase();
     const uploader = (res.uploaderName || '').toLowerCase();
     const query = searchQuery.toLowerCase();
-    return name.includes(query) || uploader.includes(query);
+    
+    const matchesSearch = name.includes(query) || uploader.includes(query);
+    const resYear = (res as any).year || 'Others';
+    const matchesYear = selectedYearFilter === 'All' || resYear === selectedYearFilter;
+    
+    return matchesSearch && matchesYear;
   });
 
   const formatUploadedDate = (isoString: string) => {
@@ -488,6 +497,22 @@ export default function GlobalResourcesPage() {
               )}
             </div>
 
+            {/* Target Year Level Selection */}
+            <div>
+              <label className="block text-[10px] font-mono text-outline mb-1">Target Academic Year</label>
+              <select
+                value={documentYear}
+                onChange={(e) => setDocumentYear(e.target.value)}
+                className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary font-mono cursor-pointer"
+              >
+                <option value="1st Year">1st Year</option>
+                <option value="2nd Year">2nd Year</option>
+                <option value="3rd Year">3rd Year</option>
+                <option value="4th Year">4th Year</option>
+                <option value="Others">Others</option>
+              </select>
+            </div>
+
             <div className="flex gap-2">
               <button
                 type="submit"
@@ -515,16 +540,35 @@ export default function GlobalResourcesPage() {
         </div>
       )}
 
-      {/* --- SEARCH FILTER BAR --- */}
-      <div className="relative w-full max-w-sm">
-        <Search className="absolute left-3 top-2.5 w-4 h-4 text-white/30" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search shared files or uploaders..."
-          className="w-full bg-black/40 border border-outline-variant rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-primary font-mono"
-        />
+      {/* --- SEARCH & FILTER SECTION --- */}
+      <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+        <div className="relative w-full max-w-sm">
+          <Search className="absolute left-3 top-2.5 w-4 h-4 text-white/30" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search shared files or uploaders..."
+            className="w-full bg-black/40 border border-outline-variant rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-primary font-mono"
+          />
+        </div>
+        
+        {/* Year Filter Button group */}
+        <div className="flex flex-wrap items-center gap-1.5 p-1 bg-surface-container rounded-xl border border-outline-variant/30 self-start md:self-auto">
+          {(['All', '1st Year', '2nd Year', '3rd Year', '4th Year', 'Others'] as const).map((y) => (
+            <button
+              key={y}
+              onClick={() => setSelectedYearFilter(y)}
+              className={`px-2.5 py-1 rounded-lg text-[9px] font-mono font-bold uppercase transition cursor-pointer ${
+                selectedYearFilter === y
+                  ? 'bg-primary text-on-surface'
+                  : 'text-outline hover:text-white'
+              }`}
+            >
+              {y === 'All' ? 'All' : y.replace('Year', 'Yr')}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* --- SHARED DOCUMENTS LIBRARY PANEL (RECTANGULAR CARDS) --- */}
@@ -579,9 +623,12 @@ export default function GlobalResourcesPage() {
                     )}
                   </div>
                   
-                  {/* File Type Badge Overlay */}
-                  <div className="absolute top-3 left-3">
+                  {/* File Type & Year Badge Overlay */}
+                  <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
                     {getFileTypeBadge(res.type)}
+                    <span className="px-1.5 py-0.5 rounded text-[8px] font-bold border tracking-wider bg-black/60 border-white/10 text-white/90 uppercase">
+                      {(res as any).year || 'Others'}
+                    </span>
                   </div>
 
                   {/* Actions Overlay */}
