@@ -157,7 +157,7 @@ html[data-theme="emerald"] {
 .light-mode [class*="bg-cyber-blue/15"],
 .light-mode .blur-\[120px\],
 .light-mode .blur-\[140px\] {
-  opacity: 0.06 !important;
+  opacity: 0.04 !important;
 }
 
 /* Cards layout rules */
@@ -165,38 +165,81 @@ html[data-theme="emerald"] {
 .light-mode .glass-panel-neon {
   background: #FFFFFF !important;
   border-color: #E2E8F0 !important;
-  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -1px rgba(15, 23, 42, 0.03) !important;
+  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.04), 0 2px 4px -1px rgba(15, 23, 42, 0.02) !important;
 }
 
 .light-mode .glass-card:hover {
   border-color: var(--cyber-primary) !important;
 }
 
-/* Force dark color on light elements */
-.light-mode .text-white\/30,
-.light-mode .text-white\/40,
-.light-mode .text-white\/50 {
-  color: #64748B !important;
+/* Wildcard selector to override ALL transparent white text classes to dark slate (crucial for Light Mode) */
+.light-mode [class*="text-white/10"],
+.light-mode [class*="text-white/20"],
+.light-mode [class*="text-white/30"],
+.light-mode [class*="text-white/40"],
+.light-mode [class*="text-white/50"] {
+  color: #64748B !important; /* Muted Slate Grey */
 }
 
-.light-mode .text-white\/60,
-.light-mode .text-white\/70,
-.light-mode .text-white\/80 {
-  color: #334155 !important;
+.light-mode [class*="text-white/60"],
+.light-mode [class*="text-white/70"],
+.light-mode [class*="text-white/80"],
+.light-mode [class*="text-white/90"] {
+  color: #334155 !important; /* Dark Slate Grey */
 }
 
-.light-mode .border-white\/5,
-.light-mode .border-white\/10,
-.light-mode .border-white\/15,
-.light-mode .border-white\/20 {
+/* Override static Tailwind v4 utilities */
+.light-mode .text-on-surface,
+.light-mode .text-on-surface-variant {
+  color: #0F172A !important;
+}
+
+.light-mode .text-outline {
+  color: #475569 !important;
+}
+
+.light-mode .text-outline-variant {
+  color: #94A3B8 !important;
+}
+
+.light-mode .text-cyber-blue,
+.light-mode .text-cyber-purple {
+  color: #4F46E5 !important;
+}
+
+.light-mode .bg-surface-container {
+  background-color: #F1F5F9 !important;
+}
+
+.light-mode .bg-surface-container-high {
+  background-color: #E2E8F0 !important;
+}
+
+.light-mode .bg-surface-container-low {
+  background-color: #F8FAFC !important;
+}
+
+.light-mode .border-outline-variant {
   border-color: #E2E8F0 !important;
 }
 
-.light-mode .bg-white\/2,
-.light-mode .bg-white\/3,
-.light-mode .bg-white\/5,
-.light-mode .bg-white\/10 {
-  background-color: #F1F5F9 !important;
+/* Professional Light mode alert banner styling */
+.light-mode [class*="bg-amber-950/"] {
+  background-color: #FEF3C7 !important;
+  border-color: #F59E0B !important;
+  color: #92400E !important;
+}
+
+.light-mode [class*="bg-red-950/"] {
+  background-color: #FEE2E2 !important;
+  border-color: #F87171 !important;
+  color: #991B1B !important;
+}
+
+.light-mode [class*="bg-emerald-950/"] {
+  background-color: #D1FAE5 !important;
+  border-color: #34D399 !important;
+  color: #065F46 !important;
 }
 
 /* Global input fields readability fixes */
