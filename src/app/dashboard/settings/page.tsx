@@ -6,7 +6,7 @@ import { useStore } from '@/store/useStore';
 import { 
   Settings, Key, Eye, EyeOff, Check, Sparkles, 
   User, Bell, Calendar, ShieldCheck, RefreshCw,
-  Loader2
+  Loader2, Info
 } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -30,6 +30,8 @@ export default function SettingsPage() {
 
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [profileErrors, setProfileErrors] = useState<Record<string, string | undefined>>({});
+  const [showCalendarTooltip, setShowCalendarTooltip] = useState(false);
+  const [showAiTooltip, setShowAiTooltip] = useState(false);
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -459,9 +461,27 @@ export default function SettingsPage() {
 
           {/* --- PANEL 4: CALENDAR INTEGRATIONS --- */}
           <div className="glass-card rounded-2xl p-5 space-y-4">
-            <div className="flex items-center gap-2.5 border-b border-outline-variant pb-2">
-              <Calendar className="w-4 h-4 text-primary" />
-              <h3 className="text-xs font-mono font-bold tracking-wider text-primary">Calendar OAuth Integration</h3>
+            <div className="flex items-center justify-between border-b border-outline-variant pb-2 relative">
+              <div className="flex items-center gap-2.5">
+                <Calendar className="w-4 h-4 text-primary" />
+                <h3 className="text-xs font-mono font-bold tracking-wider text-primary">Calendar OAuth Integration</h3>
+              </div>
+              <div className="relative flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={() => setShowCalendarTooltip(!showCalendarTooltip)}
+                  onMouseEnter={() => setShowCalendarTooltip(true)}
+                  onMouseLeave={() => setShowCalendarTooltip(false)}
+                  className="text-outline hover:text-primary transition p-0.5 focus:outline-none"
+                >
+                  <Info className="w-3.5 h-3.5" />
+                </button>
+                {showCalendarTooltip && (
+                  <div className="absolute right-0 bottom-full mb-2 bg-[#0B0F19] border border-primary/30 text-[9px] text-primary font-mono px-2 py-1 rounded shadow-md shadow-primary/10 whitespace-nowrap z-30">
+                    This feature will come soon
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -493,9 +513,27 @@ export default function SettingsPage() {
 
           {/* --- PANEL 5: AI CHAT ASSISTANT --- */}
           <div className={`glass-card rounded-2xl p-5 space-y-4 transition-all duration-300 ${!store.globalAiChatEnabled ? 'opacity-50 grayscale select-none' : ''}`}>
-            <div className="flex items-center gap-2.5 border-b border-outline-variant pb-2">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <h3 className="text-xs font-mono font-bold tracking-wider text-primary">AI Chat Assistant</h3>
+            <div className="flex items-center justify-between border-b border-outline-variant pb-2 relative">
+              <div className="flex items-center gap-2.5">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <h3 className="text-xs font-mono font-bold tracking-wider text-primary">AI Chat Assistant</h3>
+              </div>
+              <div className="relative flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={() => setShowAiTooltip(!showAiTooltip)}
+                  onMouseEnter={() => setShowAiTooltip(true)}
+                  onMouseLeave={() => setShowAiTooltip(false)}
+                  className="text-outline hover:text-primary transition p-0.5 focus:outline-none"
+                >
+                  <Info className="w-3.5 h-3.5" />
+                </button>
+                {showAiTooltip && (
+                  <div className="absolute right-0 bottom-full mb-2 bg-[#0B0F19] border border-primary/30 text-[9px] text-primary font-mono px-2 py-1 rounded shadow-md shadow-primary/10 whitespace-nowrap z-30">
+                    This feature will come soon
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="space-y-4">
