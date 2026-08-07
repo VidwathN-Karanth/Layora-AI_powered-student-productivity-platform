@@ -190,6 +190,11 @@ export default function RootPage() {
           </div>
         </header>
 
+        {/* Short App Description Sentence for Google Verification (Mandatory Simple Text) */}
+        <div className="w-full max-w-3xl z-20 bg-[#0d111c]/65 border border-white/10 rounded-2xl p-4 text-[11px] text-white/90 leading-relaxed text-center mb-6 font-semibold backdrop-blur-md">
+          👉 <strong>About Layora:</strong> Layora is an AI-powered student productivity platform designed to help university students optimize study schedules, manage task deadlines, organize resource vaults, and synchronize planner events directly to Google Calendar.
+        </div>
+
         {/* ================= HERO SECTION ================= */}
         <section className="w-full max-w-5xl z-10 flex flex-col items-center text-center gap-8 py-20 px-6 min-h-[90vh] justify-center">
           <ScrollReveal direction="up" delay={0.1}>
