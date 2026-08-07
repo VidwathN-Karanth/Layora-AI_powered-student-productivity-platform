@@ -155,6 +155,10 @@ interface AppState {
   setGlobalAiChatEnabled: (val: boolean) => void;
   userAiChatEnabled: boolean;
   setUserAiChatEnabled: (val: boolean) => void;
+  globalResources: { id: string; name: string; url: string; type: string; uploadedBy: string; uploaderName: string; createdAt: string }[];
+  setGlobalResources: (resources: any[]) => void;
+  addGlobalResource: (res: any) => void;
+  removeGlobalResource: (id: string) => void;
 
   // Proactive recommendations
   proactiveRecommendations: {
@@ -960,6 +964,10 @@ export const useStore = create<AppState>()(
       setGlobalAiChatEnabled: (val) => set({ globalAiChatEnabled: val }),
       userAiChatEnabled: true,
       setUserAiChatEnabled: (val) => set({ userAiChatEnabled: val }),
+      globalResources: [],
+      setGlobalResources: (resources) => set({ globalResources: resources }),
+      addGlobalResource: (res) => set((state) => ({ globalResources: [...state.globalResources, res] })),
+      removeGlobalResource: (id) => set((state) => ({ globalResources: state.globalResources.filter(r => r.id !== id) })),
 
       // Proactive recommendations
       proactiveRecommendations: null,

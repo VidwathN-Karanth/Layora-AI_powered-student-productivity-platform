@@ -17,7 +17,8 @@ export async function GET() {
     const { data, error } = await supabaseAdmin
       .from('user_states')
       .select('*')
-      .neq('id', 'global_settings');
+      .neq('id', 'global_settings')
+      .neq('id', 'global_resources');
 
     if (error) throw error;
 
