@@ -651,9 +651,20 @@ export const useStore = create<AppState>()(
       updateCourseProgress: (id, progress) => set((state) => ({
         courses: state.courses.map((c) => c.id === id ? { ...c, progress } : c)
       })),
-      updateCourse: (id, updatedFields) => set((state) => ({
-        courses: state.courses.map((c) => c.id === id ? { ...c, ...updatedFields } : c)
-      })),
+      updateCourse: (id, updatedFields) => set((state) => {
+        const hasTimeOrEnabledChange = 'reminderTime' in updatedFields || 'reminderEnabled' in updatedFields;
+        return {
+          courses: state.courses.map((c) =>
+            c.id === id
+              ? {
+                  ...c,
+                  ...updatedFields,
+                  ...(hasTimeOrEnabledChange ? { lastReminderSentDate: null } : {})
+                }
+              : c
+          )
+        };
+      }),
       removeCourse: (id) => set((state) => ({
         courses: state.courses.filter((c) => c.id !== id)
       })),
