@@ -65,9 +65,14 @@ export async function POST(request: Request) {
 
       if (scope === 'week') return true;
 
-      // If scope is 'day', check the recurrence rule matching the target day
-      if (scope === 'day' && evt.recurrence && Array.isArray(evt.recurrence)) {
-        return evt.recurrence.some((rule: string) => rule.includes(targetDayStr));
+      // If scope is 'day', check if it is tagged with [Day: X] or has a matching recurrence rule
+      if (scope === 'day') {
+        const hasDayFlag = evt.description && evt.description.includes(`[Day: ${day}]`);
+        if (hasDayFlag) return true;
+
+        if (evt.recurrence && Array.isArray(evt.recurrence)) {
+          return evt.recurrence.some((rule: string) => rule.includes(targetDayStr));
+        }
       }
 
       return false;

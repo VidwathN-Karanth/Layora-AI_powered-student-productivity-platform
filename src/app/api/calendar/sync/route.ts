@@ -36,17 +36,17 @@ export async function POST(request: Request) {
     // Days converter (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
     const daysMap = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
 
-    function getNextDateForDay(dayOfWeek: number, timeStr: string): Date {
+    function getDateForDayOfCurrentWeek(dayOfWeek: number, timeStr: string): Date {
       const now = new Date();
       const resultDate = new Date();
       const [hours, minutes] = timeStr.split(':').map(Number);
       resultDate.setHours(hours, minutes, 0, 0);
       
       const currentDay = now.getDay();
-      let distance = dayOfWeek - currentDay;
-      if (distance < 0 || (distance === 0 && now.getTime() > resultDate.getTime())) {
-        distance += 7;
-      }
+      const currentDayMondayStart = currentDay === 0 ? 7 : currentDay;
+      const targetDayMondayStart = dayOfWeek === 0 ? 7 : dayOfWeek;
+      
+      const distance = targetDayMondayStart - currentDayMondayStart;
       resultDate.setDate(now.getDate() + distance);
       return resultDate;
     }
@@ -54,13 +54,12 @@ export async function POST(request: Request) {
     // 3. Sync each block to Google Calendar primary calendar using plain fetch requests
     const syncResults = [];
     for (const block of timetable) {
-      const startDateTime = getNextDateForDay(block.day, block.start);
-      const endDateTime = getNextDateForDay(block.day, block.end);
-      const byDay = daysMap[block.day];
+      const startDateTime = getDateForDayOfCurrentWeek(block.day, block.start);
+      const endDateTime = getDateForDayOfCurrentWeek(block.day, block.end);
 
       const eventData = {
         summary: block.title,
-        description: `${block.details || ''} (Synced from Layora Student Planner)`,
+        description: `${block.details || ''} [Day: ${block.day}] (Synced from Layora Student Planner)`,
         start: {
           dateTime: startDateTime.toISOString(),
           timeZone: 'UTC'
@@ -68,10 +67,7 @@ export async function POST(request: Request) {
         end: {
           dateTime: endDateTime.toISOString(),
           timeZone: 'UTC'
-        },
-        recurrence: [
-          `RRULE:FREQ=WEEKLY;BYDAY=${byDay}`
-        ]
+        }
       };
 
       // Call Google Calendar API Events Insert endpoint
