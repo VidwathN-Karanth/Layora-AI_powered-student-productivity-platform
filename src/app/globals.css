@@ -58,6 +58,18 @@
   --radius-lg: 1rem;
   --radius-xl: 1.5rem;
   --radius-full: 9999px;
+
+  /* Font size custom overrides (increase by 1 for inferior, 2 for main texts) */
+  --text-xs: 0.8125rem; /* was 12px (0.75rem), now 13px (+1) */
+  --text-sm: 1rem; /* was 14px (0.875rem), now 16px (+2) */
+  --text-base: 1.125rem; /* was 16px (1rem), now 18px (+2) */
+  --text-lg: 1.25rem; /* was 18px (1.125rem), now 20px (+2) */
+  --text-xl: 1.375rem; /* was 20px (1.25rem), now 22px (+2) */
+  --text-2xl: 1.625rem; /* was 24px (1.5rem), now 26px (+2) */
+  --text-3xl: 2rem; /* was 30px (1.875rem), now 32px (+2) */
+  --text-4xl: 2.375rem; /* was 36px (2.25rem), now 38px (+2) */
+  --text-5xl: 3.125rem; /* was 48px (3rem), now 50px (+2) */
+  --text-6xl: 3.875rem; /* was 60px (3.75rem), now 62px (+2) */
 }
 
 :root {
@@ -514,5 +526,20 @@ h1, h2, h3, h4, h5, h6 {
 .text-outline-variant {
   color: #ffffff;
 }
+
+/* Arbitrary font-size utility overrides */
+.text-\[8px\] { font-size: 9px !important; }
+.text-\[9px\] { font-size: 10px !important; }
+.text-\[10px\] { font-size: 11px !important; }
+.text-\[11px\] { font-size: 12px !important; }
+.text-\[12px\] { font-size: 13px !important; }
+.text-\[13px\] { font-size: 15px !important; }
+.text-\[14px\] { font-size: 16px !important; }
+.text-\[15px\] { font-size: 17px !important; }
+.text-\[16px\] { font-size: 18px !important; }
+.text-\[18px\] { font-size: 20px !important; }
+.text-\[20px\] { font-size: 22px !important; }
+.text-\[24px\] { font-size: 26px !important; }
+
 
 
