@@ -50,24 +50,39 @@ export async function GET(request: Request) {
       }
 
       const timezone = user.timezone || 'UTC';
-      let userLocalDate: Date;
+      let currentHour: number;
+      let todayStr: string;
 
       try {
-        const localTimeStr = new Date().toLocaleString('en-US', { timeZone: timezone });
-        userLocalDate = new Date(localTimeStr);
+        const formatter = new Intl.DateTimeFormat('en-US', {
+          timeZone: timezone,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          hour12: false
+        });
+        const parts = formatter.formatToParts(new Date());
+        const partMap: Record<string, string> = {};
+        parts.forEach(p => { partMap[p.type] = p.value; });
+        currentHour = parseInt(partMap.hour, 10) % 24;
+        todayStr = `${partMap.year}-${partMap.month}-${partMap.day}`;
       } catch (err) {
-        console.warn(`[Cron Route - Course Reminders] Invalid timezone "${timezone}" for user ${userEmail}. Defaulting to UTC.`);
-        const localTimeStr = new Date().toLocaleString('en-US', { timeZone: 'UTC' });
-        userLocalDate = new Date(localTimeStr);
+        console.warn(`[Cron Route - Course Reminders] Invalid timezone "${timezone}" for user ${userEmail}. Defaulting to UTC.`, err);
+        const formatter = new Intl.DateTimeFormat('en-US', {
+          timeZone: 'UTC',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          hour12: false
+        });
+        const parts = formatter.formatToParts(new Date());
+        const partMap: Record<string, string> = {};
+        parts.forEach(p => { partMap[p.type] = p.value; });
+        currentHour = parseInt(partMap.hour, 10) % 24;
+        todayStr = `${partMap.year}-${partMap.month}-${partMap.day}`;
       }
-
-      const currentHour = userLocalDate.getHours();
-      
-      // Calculate YYYY-MM-DD in user's local timezone
-      const year = userLocalDate.getFullYear();
-      const month = String(userLocalDate.getMonth() + 1).padStart(2, '0');
-      const date = String(userLocalDate.getDate()).padStart(2, '0');
-      const todayStr = `${year}-${month}-${date}`;
 
       let stateUpdated = false;
       const updatedCourses = [];
