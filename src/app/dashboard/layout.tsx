@@ -401,11 +401,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <motion.aside
         animate={{ width: sidebarOpen ? 260 : 76 }}
         transition={{ duration: 0.3, ease: 'easeInOut' }}
-        className="hidden md:flex flex-col justify-between p-4 border-r border-white/10 bg-black/20 backdrop-blur-md shrink-0 h-screen sticky top-0 z-30"
+        className="hidden md:flex flex-col justify-between p-4 border-r border-white/10 bg-black/20 backdrop-blur-md shrink-0 h-screen sticky top-0 z-30 overflow-hidden"
       >
-        <div className="space-y-8">
+        {/* Top Section: Logo & Navigation Container */}
+        <div className="flex flex-col flex-1 min-h-0 space-y-6">
           {/* Logo panel */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between shrink-0">
             <AnimatePresence mode="wait">
               {sidebarOpen ? (
                 <motion.span 
@@ -447,8 +448,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="space-y-1">
+          {/* Navigation Links (Scrollable independently if screen height is small) */}
+          <nav className="space-y-1 flex-1 overflow-y-auto pr-1 scrollbar-none">
             {menuItems.map((item) => {
               const active = pathname.replace(/\/$/, '') === item.path.replace(/\/$/, '');
               const Icon = item.icon;
@@ -470,8 +471,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </nav>
         </div>
 
-        {/* User Card & Logout */}
-        <div className="space-y-4">
+        {/* Bottom Section: User Card & Logout (Always static/pinned at the bottom) */}
+        <div className="space-y-4 pt-4 border-t border-white/5 shrink-0">
           <div className="flex items-center gap-2.5 bg-white/5 p-2.5 rounded-xl border border-white/10 overflow-hidden">
             <UserButton appearance={{ elements: { userButtonAvatarBox: "w-8 h-8 rounded-lg shrink-0" } }} />
             {sidebarOpen && (
