@@ -8,9 +8,11 @@ export default function PrivacyPolicyPage() {
 
   return (
     <main className="min-h-screen bg-[#070709] text-white flex flex-col items-center justify-start relative overflow-y-auto p-6 md:p-12 cyber-grid">
-      {/* Glow Orbs */}
-      <div className="absolute w-[500px] h-[500px] bg-cyber-purple/15 -top-[10%] -right-[10%] rounded-full blur-[120px] pointer-events-none"></div>
-      <div className="absolute w-[500px] h-[500px] bg-cyber-blue/15 -bottom-[10%] -left-[10%] rounded-full blur-[120px] pointer-events-none"></div>
+      {/* Background Glow Container to prevent overflow scrolling */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute w-[500px] h-[500px] bg-cyber-purple/15 -top-[10%] -right-[10%] rounded-full blur-[120px]"></div>
+        <div className="absolute w-[500px] h-[500px] bg-cyber-blue/15 -bottom-[10%] -left-[10%] rounded-full blur-[120px]"></div>
+      </div>
 
       <div className="w-full max-w-3xl z-10 space-y-8 mt-6">
         {/* Back Button */}
