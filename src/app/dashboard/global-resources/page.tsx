@@ -49,7 +49,7 @@ export default function GlobalResourcesPage() {
 
   // Helper to extract Google Drive file ID for thumbnail preview
   const getDocumentPreview = (url: string) => {
-    const driveIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    const driveIdMatch = url.match(/\/(?:file|presentation|document|spreadsheets)\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
     if (driveIdMatch && driveIdMatch[1]) {
       return `https://drive.google.com/thumbnail?id=${driveIdMatch[1]}&sz=w400`;
     }
