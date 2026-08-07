@@ -69,6 +69,17 @@ export default function CoursesPage() {
     return `${displayHour}:${mStr} ${ampm}`;
   };
 
+  const isTimeInPast = (timeStr: string): boolean => {
+    if (!timeStr) return true;
+    const now = new Date();
+    const currentMins = now.getHours() * 60 + now.getMinutes();
+
+    const [hStr, mStr] = timeStr.split(':');
+    const timeMins = parseInt(hStr, 10) * 60 + parseInt(mStr, 10);
+
+    return timeMins <= currentMins;
+  };
+
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [reminderTime, setReminderTime] = useState(() => {
     const now = new Date();
@@ -98,8 +109,14 @@ export default function CoursesPage() {
     setEditName(course.name);
     setEditPlatform(course.platform || '');
     setEditReminderEnabled(course.reminderEnabled || false);
-    // Ensure we force round the initial time from DB to standard 15m intervals
-    setEditReminderTime(course.reminderTime ? roundToNearest15Minutes(course.reminderTime) : getNext15MinBoundary());
+    
+    // If the saved time has already passed today, default to the next future 15m mark
+    const useDefaultFuture = !course.reminderTime || isTimeInPast(course.reminderTime);
+    const initialTime = useDefaultFuture
+      ? getNext15MinBoundary()
+      : roundToNearest15Minutes(course.reminderTime);
+
+    setEditReminderTime(initialTime);
     setEditFormErrors({});
     setDeleteConfirmation('');
     setShowEditCourse(true);
