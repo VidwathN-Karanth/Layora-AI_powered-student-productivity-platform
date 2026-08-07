@@ -123,8 +123,14 @@ export class DailyActivity {
    * Computes rank list for a range (today, week, all).
    */
   static async getLeaderboard(range: 'today' | 'week' | 'all'): Promise<LeaderboardUser[]> {
-    // 1. Fetch all users so we include 0-point users on the scoreboard
-    const users = await User.findAll();
+    // 1. Fetch all users and filter out those who haven't entered LeetCode, GitHub, or CodeChef usernames
+    const allUsers = await User.findAll();
+    const users = allUsers.filter(u => {
+      const hasLeetcode = u.leetcodeUsername && u.leetcodeUsername.trim() !== '';
+      const hasGithub = u.githubUsername && u.githubUsername.trim() !== '';
+      const hasCodechef = u.codechefUsername && u.codechefUsername.trim() !== '';
+      return !!(hasLeetcode || hasGithub || hasCodechef);
+    });
 
     // 2. Fetch daily activities for the chosen range
     let query = supabaseAdmin.from('daily_activities').select('*');
