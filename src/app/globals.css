@@ -1,47 +1,47 @@
 @import "tailwindcss";
 
 @theme {
-  --color-surface: #0f172a;
-  --color-surface-dim: #0B0F19;
-  --color-surface-bright: #1A233A;
-  --color-surface-container-lowest: #020617;
-  --color-surface-container-low: #0f172a;
-  --color-surface-container: #1e293b;
-  --color-surface-container-high: #334155;
-  --color-surface-container-highest: #475569;
-  --color-on-surface: #f8fafc;
-  --color-on-surface-variant: #cbd5e1;
-  --color-inverse-surface: #f8fafc;
-  --color-inverse-on-surface: #020617;
-  --color-outline: #475569;
-  --color-outline-variant: #334155;
-  --color-surface-tint: #3b82f6;
+  --color-surface: #131313;
+  --color-surface-dim: #131313;
+  --color-surface-bright: #393939;
+  --color-surface-container-lowest: #0e0e0e;
+  --color-surface-container-low: #1b1b1b;
+  --color-surface-container: #1f1f1f;
+  --color-surface-container-high: #2a2a2a;
+  --color-surface-container-highest: #353535;
+  --color-on-surface: #e2e2e2;
+  --color-on-surface-variant: #b9cacb;
+  --color-inverse-surface: #e2e2e2;
+  --color-inverse-on-surface: #131313;
+  --color-outline: #849495;
+  --color-outline-variant: #3b494b;
+  --color-surface-tint: #00dbe9;
   --color-primary: var(--cyber-primary);
-  --color-on-primary: #000000;
-  --color-primary-container: #008b94;
-  --color-on-primary-container: #e0ffff;
-  --color-inverse-primary: #006b72;
+  --color-on-primary: #00363a;
+  --color-primary-container: #00f0ff;
+  --color-on-primary-container: #006970;
+  --color-inverse-primary: #006970;
   --color-secondary: var(--cyber-secondary);
-  --color-on-secondary: #ffffff;
-  --color-secondary-container: #6d179e;
-  --color-on-secondary-container: #f4d9ff;
-  --color-tertiary: #f59e0b;
-  --color-on-tertiary: #000000;
-  --color-tertiary-container: #b45309;
-  --color-on-tertiary-container: #fef3c7;
-  --color-error: #ef4444;
-  --color-on-error: #ffffff;
-  --color-error-container: #991b1b;
-  --color-on-error-container: #fee2e2;
+  --color-on-secondary: #520072;
+  --color-secondary-container: #b600f8;
+  --color-on-secondary-container: #fff6fc;
+  --color-tertiary: #faf3ff;
+  --color-on-tertiary: #3c0090;
+  --color-tertiary-container: #e1d2ff;
+  --color-on-tertiary-container: #7213ff;
+  --color-error: #ffb4ab;
+  --color-on-error: #690005;
+  --color-error-container: #93000a;
+  --color-on-error-container: #ffdad6;
   
-  --color-background: #0B0F19;
-  --color-on-background: #f8fafc;
+  --color-background: #131313;
+  --color-on-background: #e2e2e2;
   
   /* Fallback aliases */
   --color-white: #ffffff;
   --color-black: #000000;
   
-  --color-cyber-dark: #0B0F19;
+  --color-cyber-dark: #131313;
   --color-cyber-light: #E0E7FF;
   --color-cyber-blue: var(--cyber-primary);
   --color-cyber-purple: var(--cyber-secondary);
@@ -73,8 +73,8 @@
 }
 
 :root {
-  --background: #0B0F19;
-  --foreground: #f8fafc;
+  --background: #131313;
+  --foreground: #e2e2e2;
   
   /* Cyber theme custom variables */
   --cyber-primary: #B026FF;
@@ -115,39 +115,44 @@ html[data-theme="emerald"] {
 
 /* --- LIGHT MODE CUSTOM VARIABLE OVERRIDES --- */
 .light-mode {
-  --background: #FAF9F6;
-  --foreground: #0F172A;
+  --background: #f8f9ff;
+  --foreground: #191c20;
   
-  --cyber-primary: #4F46E5;
-  --cyber-secondary: #0EA5E9;
-  --cyber-glow-primary: rgba(79, 70, 229, 0.08);
-  --cyber-glow-secondary: rgba(14, 165, 233, 0.08);
+  --cyber-primary: #2B6CB0;
+  --cyber-secondary: #4F46E5;
+  --cyber-glow-primary: rgba(43, 108, 176, 0.08);
+  --cyber-glow-secondary: rgba(79, 70, 229, 0.08);
 
-  --color-background: #FAF9F6;
-  --color-on-background: #0F172A;
+  --color-background: #f8f9ff;
+  --color-on-background: #191c20;
   
-  --color-surface: #FFFFFF;
-  --color-surface-dim: #F1F5F9;
-  --color-surface-bright: #E2E8F0;
+  --color-surface: #ffffff;
+  --color-surface-dim: #d9dae0;
+  --color-surface-bright: #ffffff;
   
-  --color-surface-container-lowest: #FAF9F6;
-  --color-surface-container-low: #F8FAFC;
-  --color-surface-container: #F1F5F9;
-  --color-surface-container-high: #E2E8F0;
-  --color-surface-container-highest: #CBD5E1;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f2f3fa;
+  --color-surface-container: #ededf4;
+  --color-surface-container-high: #e7e8ee;
+  --color-surface-container-highest: #e1e2e8;
   
-  --color-on-surface: #0F172A;
-  --color-on-surface-variant: #475569;
+  --color-on-surface: #191c20;
+  --color-on-surface-variant: #414750;
   
-  --color-outline: #475569;          /* High contrast dark slate for labels */
-  --color-outline-variant: #CBD5E1;  /* Slate border outline */
-  --color-cyber-dark: #FAF9F6;       /* Forces overall screen background to creme */
+  --color-outline: #727782;          /* Slate Gray outline */
+  --color-outline-variant: #c1c7d2;  /* Soft Slate Gray border outline */
+  --color-cyber-dark: #f8f9ff;       /* Forces overall screen background to neutral */
+  
+  --color-tertiary: #784600;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #9a5b00;
+  --color-on-tertiary-container: #ffe7d2;
 }
 
 /* Light mode specific elements custom styling */
 .light-mode .cyber-grid {
-  background-image: linear-gradient(rgba(15, 23, 42, 0.03) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(15, 23, 42, 0.03) 1px, transparent 1px);
+  background-image: linear-gradient(rgba(25, 28, 32, 0.03) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(25, 28, 32, 0.03) 1px, transparent 1px);
 }
 
 /* Hide or dim background neon glow orbs in light mode */
@@ -164,8 +169,8 @@ html[data-theme="emerald"] {
 .light-mode .glass-card,
 .light-mode .glass-panel-neon {
   background: #FFFFFF !important;
-  border-color: #E2E8F0 !important;
-  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.04), 0 2px 4px -1px rgba(15, 23, 42, 0.02) !important;
+  border-color: #ededf4 !important;
+  box-shadow: 0 4px 6px -1px rgba(25, 28, 32, 0.04), 0 2px 4px -1px rgba(25, 28, 32, 0.02) !important;
 }
 
 .light-mode .glass-card:hover {
@@ -178,49 +183,52 @@ html[data-theme="emerald"] {
 .light-mode [class*="text-white/30"],
 .light-mode [class*="text-white/40"],
 .light-mode [class*="text-white/50"] {
-  color: #64748B !important; /* Muted Slate Grey */
+  color: #727782 !important; /* Muted Slate Grey */
 }
 
 .light-mode [class*="text-white/60"],
 .light-mode [class*="text-white/70"],
 .light-mode [class*="text-white/80"],
 .light-mode [class*="text-white/90"] {
-  color: #334155 !important; /* Dark Slate Grey */
+  color: #414750 !important; /* Dark Slate Grey */
 }
 
 /* Override static Tailwind v4 utilities */
 .light-mode .text-on-surface,
 .light-mode .text-on-surface-variant {
-  color: #0F172A !important;
+  color: #191c20 !important;
 }
 
 .light-mode .text-outline {
-  color: #475569 !important;
+  color: #727782 !important;
 }
 
 .light-mode .text-outline-variant {
-  color: #94A3B8 !important;
+  color: #c1c7d2 !important;
 }
 
-.light-mode .text-cyber-blue,
+.light-mode .text-cyber-blue {
+  color: #2b6cb0 !important;
+}
+
 .light-mode .text-cyber-purple {
-  color: #4F46E5 !important;
+  color: #4f46e5 !important;
 }
 
 .light-mode .bg-surface-container {
-  background-color: #F1F5F9 !important;
+  background-color: #ededf4 !important;
 }
 
 .light-mode .bg-surface-container-high {
-  background-color: #E2E8F0 !important;
+  background-color: #e7e8ee !important;
 }
 
 .light-mode .bg-surface-container-low {
-  background-color: #F8FAFC !important;
+  background-color: #f2f3fa !important;
 }
 
 .light-mode .border-outline-variant {
-  border-color: #E2E8F0 !important;
+  border-color: #ededf4 !important;
 }
 
 /* Professional Light mode alert banner styling */
@@ -247,95 +255,95 @@ html[data-theme="emerald"] {
 .light-mode textarea,
 .light-mode select {
   background-color: #FFFFFF !important;
-  border-color: #CBD5E1 !important;
-  color: #0F172A !important;
+  border-color: #c1c7d2 !important;
+  color: #191c20 !important;
 }
 
 .light-mode input::placeholder,
 .light-mode textarea::placeholder {
-  color: #94A3B8 !important;
+  color: #727782 !important;
 }
 
 .light-mode input:focus,
 .light-mode textarea:focus,
 .light-mode select:focus {
   border-color: var(--cyber-primary) !important;
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1) !important;
+  box-shadow: 0 0 0 2px rgba(43, 108, 176, 0.1) !important;
 }
 
 /* Sidebar theming */
 .light-mode aside {
-  background-color: #F8FAFC !important;
-  border-color: #E2E8F0 !important;
+  background-color: #f8f9ff !important;
+  border-color: #ededf4 !important;
 }
 
 .light-mode aside span,
 .light-mode aside div {
-  color: #334155 !important;
+  color: #414750 !important;
 }
 
 .light-mode aside button {
-  color: #475569 !important;
+  color: #727782 !important;
 }
 
 .light-mode aside button:hover {
-  background-color: #F1F5F9 !important;
-  color: #0F172A !important;
+  background-color: #ededf4 !important;
+  color: #191c20 !important;
 }
 
 /* Active navigation items in sidebar */
 .light-mode aside button[class*="bg-gradient-to-r"],
 .light-mode aside button[class*="bg-white/10"] {
-  background: rgba(79, 70, 229, 0.08) !important;
-  color: #4F46E5 !important;
-  border-color: rgba(79, 70, 229, 0.15) !important;
+  background: rgba(43, 108, 176, 0.08) !important;
+  color: #2b6cb0 !important;
+  border-color: rgba(43, 108, 176, 0.15) !important;
   font-weight: 700 !important;
 }
 
 .light-mode aside button[class*="bg-gradient-to-r"] svg,
 .light-mode aside button[class*="bg-white/10"] svg {
-  color: #4F46E5 !important;
+  color: #2b6cb0 !important;
 }
 
 /* User identity card and logouts in sidebar */
 .light-mode aside div[class*="bg-white/5"] {
-  background-color: #F1F5F9 !important;
-  border-color: #E2E8F0 !important;
+  background-color: #ededf4 !important;
+  border-color: #e7e8ee !important;
 }
 
 .light-mode aside div[class*="bg-white/5"] * {
-  color: #0F172A !important;
+  color: #191c20 !important;
 }
 
 .light-mode aside div[class*="bg-white/5"] div[class*="text-white/40"] {
-  color: #64748B !important;
+  color: #727782 !important;
 }
 
 /* Header bar */
 .light-mode header {
   background-color: #FFFFFF !important;
-  border-color: #E2E8F0 !important;
+  border-color: #ededf4 !important;
 }
 
 .light-mode header span {
-  color: #475569 !important;
+  color: #727782 !important;
 }
 
 .light-mode header span[class*="text-cyber-blue"] {
-  color: #4F46E5 !important;
+  color: #2b6cb0 !important;
 }
 
 /* Digital clock */
 .light-mode span[class*="from-cyan-400"] {
-  background-image: linear-gradient(to right, #4F46E5, #0EA5E9) !important;
+  background-image: linear-gradient(to right, #2b6cb0, #4f46e5) !important;
   color: transparent !important;
   background-clip: text !important;
   -webkit-background-clip: text !important;
 }
 
 .light-mode header div[class*="bg-white/5"] {
-  background-color: #F1F5F9 !important;
-  border-color: #E2E8F0 !important;
+  background-color: #ededf4 !important;
+  border-color: #e7e8ee !important;
 }
 
 /* Clean-up all layout elements to Slate-700/Slate-900, preserving purple, red, green, and amber highlights */
@@ -347,7 +355,7 @@ html[data-theme="emerald"] {
 .light-mode label,
 .light-mode span:not(.text-primary):not([class*="text-cyber-"]):not([class*="text-purple"]):not([class*="text-red-"]):not([class*="text-rose-"]):not([class*="text-emerald-"]):not([class*="text-amber-"]):not(.text-on-surface):not(.text-white),
 .light-mode div:not(.bg-primary):not(.bg-primary *):not([class*="text-red-"]):not([class*="text-rose-"]):not(.btn-neon):not(.bg-primary-fixed):not([class*="text-cyber-"]):not([class*="text-purple"]):not(.glass-card):not(.glass-panel-neon) {
-  color: #334155 !important; /* Muted Slate Grey */
+  color: #414750 !important; /* Muted slate gray */
 }
 
 /* Headings and body texts that need deep high-contrast */
@@ -359,16 +367,16 @@ html[data-theme="emerald"] {
 .light-mode h6,
 .light-mode strong,
 .light-mode b {
-  color: #0F172A !important; /* High contrast black/slate-900 */
+  color: #191c20 !important;
 }
 
 /* Fix overall text colors */
 .light-mode .text-white {
-  color: #0F172A !important;
+  color: #191c20 !important;
 }
 
 .light-mode .hover\:text-white:hover {
-  color: #0F172A !important;
+  color: #191c20 !important;
 }
 
 /* Buttons and primary badge text color guards */
@@ -382,8 +390,8 @@ html[data-theme="emerald"] {
 }
 
 .light-mode .bg-primary-fixed {
-  background-color: rgba(79, 70, 229, 0.1) !important;
-  color: #4F46E5 !important;
+  background-color: rgba(43, 108, 176, 0.1) !important;
+  color: #2b6cb0 !important;
 }
 
 body {
