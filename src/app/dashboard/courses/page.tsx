@@ -59,6 +59,16 @@ export default function CoursesPage() {
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   };
 
+  const formatTimeToAMPM = (timeStr: string) => {
+    if (!timeStr) return '09:00 AM';
+    const [hStr, mStr] = timeStr.split(':');
+    const h = parseInt(hStr, 10);
+    let displayHour = h % 12;
+    if (displayHour === 0) displayHour = 12;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    return `${displayHour}:${mStr} ${ampm}`;
+  };
+
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [reminderTime, setReminderTime] = useState(() => {
     const now = new Date();
@@ -310,12 +320,9 @@ export default function CoursesPage() {
                   {course.reminderEnabled && (
                     <div className="flex items-center justify-between gap-2 bg-surface-container-low/50 p-2 rounded-xl border border-outline-variant/20">
                       <span className="text-[9px] font-mono text-outline">Reminder Time:</span>
-                      <input
-                        type="time"
-                        value={course.reminderTime || '09:00'}
-                        onChange={(e) => store.updateCourse(course.id, { reminderTime: e.target.value })}
-                        className="bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1 text-[10px] text-on-surface font-mono focus:outline-none focus:border-primary w-24 text-center cursor-pointer"
-                      />
+                      <span className="text-[10px] text-primary font-mono font-bold px-2.5 py-1 bg-surface-container border border-outline-variant/30 rounded-lg select-none">
+                        {formatTimeToAMPM(course.reminderTime || '09:00')}
+                      </span>
                     </div>
                   )}
                 </div>
