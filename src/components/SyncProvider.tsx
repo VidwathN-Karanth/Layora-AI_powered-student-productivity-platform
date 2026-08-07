@@ -27,6 +27,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const lastLocalWriteTimestampRef = useRef<number>(0);
 
   const themeAccent = useStore((state) => state.themeAccent);
+  const themeMode = useStore((state) => state.themeMode);
   const hasHydrated = useStore((state) => state.hasHydrated);
   const isCloudLoaded = useStore((state) => state.isCloudLoaded);
 
@@ -62,8 +63,16 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     if (typeof document !== 'undefined') {
       const root = document.documentElement;
       root.setAttribute('data-theme', themeAccent || 'purple');
+      root.setAttribute('data-theme-mode', themeMode || 'dark');
+      if (themeMode === 'light') {
+        root.classList.add('light-mode');
+        root.classList.remove('dark-mode');
+      } else {
+        root.classList.add('dark-mode');
+        root.classList.remove('light-mode');
+      }
     }
-  }, [themeAccent]);
+  }, [themeAccent, themeMode]);
 
   // Sync timezone once cloud data is loaded
   useEffect(() => {
@@ -139,6 +148,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         tasks: localState.tasks,
         timetable: localState.timetable,
         themeAccent: localState.themeAccent || 'purple',
+        themeMode: localState.themeMode || 'dark',
         apiKeys: localState.apiKeys,
         selectedModel: localState.selectedModel || 'groq',
         calendarSynced: localState.calendarSynced || false,
@@ -188,6 +198,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         } : localState.user,
         // Settings: prefer cloud, fall back to device-local localStorage value
         themeAccent: cloudState.themeAccent || localState.themeAccent || 'purple',
+        themeMode: cloudState.themeMode || localState.themeMode || 'dark',
         selectedModel: cloudState.selectedModel || localState.selectedModel || 'groq',
         is24HourFormat: cloudState.is24HourFormat ?? localState.is24HourFormat ?? false,
         calendarSynced: cloudState.calendarSynced ?? localState.calendarSynced ?? false,
@@ -388,7 +399,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
       const {
         user: storeUser, subjects, resources, activities, websites, courses, tasks,
-        timetable, themeAccent, apiKeys, selectedModel,
+        timetable, themeAccent, themeMode, apiKeys, selectedModel,
         calendarSynced, is24HourFormat, chatHistory, proactiveRecommendations,
         userAiChatEnabled
       } = state;
@@ -399,7 +410,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       const stateToSave = {
         user: storeUser,
         subjects, resources, activities, websites, courses, tasks,
-        timetable, themeAccent, apiKeys, selectedModel,
+        timetable, themeAccent, themeMode, apiKeys, selectedModel,
         calendarSynced, is24HourFormat, chatHistory, proactiveRecommendations,
         userAiChatEnabled,
         clientTimestamp: writeTimestamp

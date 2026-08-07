@@ -143,6 +143,8 @@ interface AppState {
   // Settings
   themeAccent: 'purple' | 'blue' | 'pink' | 'emerald';
   setThemeAccent: (theme: 'purple' | 'blue' | 'pink' | 'emerald') => void;
+  themeMode: 'dark' | 'light';
+  setThemeMode: (mode: 'dark' | 'light') => void;
   apiKeys: AIKeys;
   setApiKeys: (keys: Partial<AIKeys>) => void;
   selectedModel: 'groq' | 'openai' | 'claude' | 'grok';
@@ -950,6 +952,8 @@ export const useStore = create<AppState>()(
       // Accent settings & API Keys
       themeAccent: 'purple',
       setThemeAccent: (theme) => set({ themeAccent: theme }),
+      themeMode: 'dark',
+      setThemeMode: (mode) => set({ themeMode: mode }),
       apiKeys: {},
       setApiKeys: (keys) => set((state) => ({
         apiKeys: { ...state.apiKeys, ...keys }
@@ -1026,6 +1030,7 @@ export const useStore = create<AppState>()(
           activeTimerStart: null,
           activeTimerElapsed: 0,
           themeAccent: 'purple',
+          themeMode: 'dark',
           apiKeys: {},
           selectedModel: 'groq',
           calendarSynced: false,
