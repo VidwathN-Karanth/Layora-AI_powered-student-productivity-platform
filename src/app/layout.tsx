@@ -24,6 +24,9 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Layora - AI Student Productivity Platform",
   description: "A premium next-generation student productivity suite powered by artificial intelligence.",
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+  }
 };
 
 export default function RootLayout({
