@@ -571,9 +571,9 @@ export default function CoursesPage() {
 
                 {/* Danger Zone: Delete Course */}
                 <div className="border-t border-outline-variant/30 pt-4 mt-6">
-                  <div className="flex flex-col gap-2">
-                    <span className="text-[10px] font-mono text-outline uppercase tracking-wider text-red-400 font-bold">Danger Zone</span>
-                    <p className="text-[9px] font-mono text-outline-variant leading-normal">
+                  <div className="bg-red-950/10 border border-red-500/20 rounded-xl p-3 flex flex-col gap-2">
+                    <span className="text-[10px] font-mono text-red-400 uppercase tracking-wider font-bold">Danger Zone</span>
+                    <p className="text-[9px] font-mono text-red-300/80 leading-normal">
                       To delete this course, type <strong className="text-red-400 font-bold">Delete</strong> below and click the delete button.
                     </p>
                     <div className="flex gap-2 mt-1">
@@ -582,13 +582,13 @@ export default function CoursesPage() {
                         value={deleteConfirmation}
                         onChange={(e) => setDeleteConfirmation(e.target.value)}
                         placeholder="Type 'Delete'"
-                        className="flex-1 bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-red-500 font-mono"
+                        className="flex-1 bg-red-950/20 border border-red-500/30 rounded-lg px-2.5 py-1.5 text-xs text-on-surface placeholder:text-red-300/30 focus:outline-none focus:border-red-500 font-mono"
                       />
                       <button
                         type="button"
                         disabled={deleteConfirmation !== 'Delete'}
                         onClick={handleDeleteCourse}
-                        className="bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 hover:border-red-500 text-red-300 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg px-3 py-1.5 text-xs font-mono font-bold transition flex items-center gap-1.5"
+                        className="bg-red-600 hover:bg-red-700 text-white disabled:bg-red-950/40 disabled:text-red-300/50 disabled:border-red-500/10 border border-red-500/30 hover:border-red-500 rounded-lg px-3 py-1.5 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer"
                       >
                         <Trash className="w-3.5 h-3.5" /> Delete
                       </button>
