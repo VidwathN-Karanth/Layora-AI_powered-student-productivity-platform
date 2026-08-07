@@ -338,6 +338,30 @@ html[data-theme="emerald"] {
   border-color: #E2E8F0 !important;
 }
 
+/* Clean-up all layout elements to Slate-700/Slate-900, preserving purple, red, green, and amber highlights */
+.light-mode p,
+.light-mode li,
+.light-mode td,
+.light-mode th,
+.light-mode code,
+.light-mode label,
+.light-mode span:not(.text-primary):not([class*="text-cyber-"]):not([class*="text-purple"]):not([class*="text-red-"]):not([class*="text-rose-"]):not([class*="text-emerald-"]):not([class*="text-amber-"]):not(.text-on-surface):not(.text-white),
+.light-mode div:not(.bg-primary):not(.bg-primary *):not([class*="text-red-"]):not([class*="text-rose-"]):not(.btn-neon):not(.bg-primary-fixed):not([class*="text-cyber-"]):not([class*="text-purple"]):not(.glass-card):not(.glass-panel-neon) {
+  color: #334155 !important; /* Muted Slate Grey */
+}
+
+/* Headings and body texts that need deep high-contrast */
+.light-mode h1,
+.light-mode h2,
+.light-mode h3,
+.light-mode h4,
+.light-mode h5,
+.light-mode h6,
+.light-mode strong,
+.light-mode b {
+  color: #0F172A !important; /* High contrast black/slate-900 */
+}
+
 /* Fix overall text colors */
 .light-mode .text-white {
   color: #0F172A !important;
@@ -351,7 +375,9 @@ html[data-theme="emerald"] {
 .light-mode button.btn-neon,
 .light-mode button.bg-primary,
 .light-mode .bg-primary *,
-.light-mode .text-on-surface {
+.light-mode .text-on-surface,
+.light-mode button[class*="bg-red-600"],
+.light-mode button[class*="bg-red-600"] * {
   color: #FFFFFF !important;
 }
 
