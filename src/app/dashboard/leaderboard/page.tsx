@@ -118,6 +118,13 @@ export default function LeaderboardPage() {
     fetchLeaderboard(leaderboardRange);
   }, [leaderboardRange]);
 
+  const filteredLeaderboard = leaderboard.filter((item) => {
+    const hasLeetcode = item.leetcodeUsername && item.leetcodeUsername.trim() !== '' && item.leetcodeUsername !== 'null' && item.leetcodeUsername !== 'undefined';
+    const hasGithub = item.githubUsername && item.githubUsername.trim() !== '' && item.githubUsername !== 'null' && item.githubUsername !== 'undefined';
+    const hasCodechef = item.codechefUsername && item.codechefUsername.trim() !== '' && item.codechefUsername !== 'null' && item.codechefUsername !== 'undefined';
+    return !!(hasLeetcode || hasGithub || hasCodechef);
+  });
+
   return (
     <div className="space-y-6">
       {/* Top Header */}
@@ -258,7 +265,7 @@ export default function LeaderboardPage() {
               <AlertTriangle className="w-5 h-5 text-rose-400" />
               <span>{leaderboardError}</span>
             </div>
-          ) : leaderboard.length === 0 ? (
+          ) : filteredLeaderboard.length === 0 ? (
             <div className="p-12 text-center text-outline text-xs font-mono">
               No activity entries registered.
             </div>
@@ -280,7 +287,7 @@ export default function LeaderboardPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/30">
-                  {leaderboard.map((item, index) => {
+                  {filteredLeaderboard.map((item, index) => {
                     const isSelf = item.userId === (clerkUser?.id || store.user?.email);
                     const isTopThree = index < 3;
                     const medalColors = [
