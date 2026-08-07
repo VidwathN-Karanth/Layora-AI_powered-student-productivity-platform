@@ -143,6 +143,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         selectedModel: localState.selectedModel || 'groq',
         calendarSynced: localState.calendarSynced || false,
         is24HourFormat: localState.is24HourFormat || false,
+        userAiChatEnabled: localState.userAiChatEnabled !== false,
         chatHistory: localState.chatHistory,
         proactiveRecommendations: localState.proactiveRecommendations
       };
@@ -190,6 +191,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         selectedModel: cloudState.selectedModel || localState.selectedModel || 'groq',
         is24HourFormat: cloudState.is24HourFormat ?? localState.is24HourFormat ?? false,
         calendarSynced: cloudState.calendarSynced ?? localState.calendarSynced ?? false,
+        userAiChatEnabled: cloudState.userAiChatEnabled ?? localState.userAiChatEnabled ?? true,
         apiKeys: { ...(localState.apiKeys || {}), ...(cloudState.apiKeys || {}) },
         // chatHistory is device-local — don't overwrite with cloud version
         chatHistory: localState.chatHistory,
@@ -215,6 +217,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     }
 
     let supabaseChannel: any = null;
+    let globalSettingsChannel: any = null;
 
     serverLog(`SyncProvider - ✓ All conditions met, loading data from Supabase. user.id=${user.id}, isSupabaseConfigured=${isSupabaseConfigured}`);
 
@@ -242,9 +245,15 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             serverLog('SyncProvider - running in local-only demo mode (Supabase not configured)');
           } else if (result.state) {
             serverLog(`SyncProvider - ✓ Loaded existing state from Server Proxy: isOnboarded=${result.state.user?.isOnboarded}, subjects=${result.state.subjects?.length || 0}`);
+            if (result.globalAiChatEnabled !== undefined) {
+              useStore.getState().setGlobalAiChatEnabled(result.globalAiChatEnabled);
+            }
             await processIncomingCloudState(result.state, 'supabase');
           } else {
             serverLog('SyncProvider - no existing cloud data (first login), creating new state');
+            if (result.globalAiChatEnabled !== undefined) {
+              useStore.getState().setGlobalAiChatEnabled(result.globalAiChatEnabled);
+            }
             await processIncomingCloudState({}, 'supabase');
           }
         } catch (err: any) {
@@ -277,6 +286,27 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           }
         )
         .subscribe();
+
+      // Subscribe to real-time updates for global settings
+      globalSettingsChannel = supabase
+        .channel('realtime:global_settings')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'user_states',
+            filter: 'id=eq.global_settings'
+          },
+          (payload) => {
+            serverLog('SyncProvider - real-time global settings update received');
+            const newState = (payload.new as any)?.state;
+            if (newState && newState.globalAiChatEnabled !== undefined) {
+              useStore.getState().setGlobalAiChatEnabled(newState.globalAiChatEnabled);
+            }
+          }
+        )
+        .subscribe();
     } else {
       serverLog('SyncProvider - Supabase is not configured, running in local-only demo mode');
       isHydrated.current = true;
@@ -285,6 +315,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       if (supabaseChannel && supabase) supabase.removeChannel(supabaseChannel);
+      if (globalSettingsChannel && supabase) supabase.removeChannel(globalSettingsChannel);
     };
   }, [isLoaded, user?.id, hasHydrated]);
 
@@ -358,7 +389,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       const {
         user: storeUser, subjects, resources, activities, websites, courses, tasks,
         timetable, themeAccent, apiKeys, selectedModel,
-        calendarSynced, is24HourFormat, chatHistory, proactiveRecommendations
+        calendarSynced, is24HourFormat, chatHistory, proactiveRecommendations,
+        userAiChatEnabled
       } = state;
 
       const writeTimestamp = Date.now();
@@ -369,6 +401,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         subjects, resources, activities, websites, courses, tasks,
         timetable, themeAccent, apiKeys, selectedModel,
         calendarSynced, is24HourFormat, chatHistory, proactiveRecommendations,
+        userAiChatEnabled,
         clientTimestamp: writeTimestamp
       };
 

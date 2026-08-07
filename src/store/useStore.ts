@@ -151,6 +151,10 @@ interface AppState {
   setCalendarSynced: (synced: boolean) => void;
   is24HourFormat: boolean;
   setIs24HourFormat: (val: boolean) => void;
+  globalAiChatEnabled: boolean;
+  setGlobalAiChatEnabled: (val: boolean) => void;
+  userAiChatEnabled: boolean;
+  setUserAiChatEnabled: (val: boolean) => void;
 
   // Proactive recommendations
   proactiveRecommendations: {
@@ -952,6 +956,10 @@ export const useStore = create<AppState>()(
       setCalendarSynced: (synced) => set({ calendarSynced: synced }),
       is24HourFormat: false,
       setIs24HourFormat: (val) => set({ is24HourFormat: val }),
+      globalAiChatEnabled: true,
+      setGlobalAiChatEnabled: (val) => set({ globalAiChatEnabled: val }),
+      userAiChatEnabled: true,
+      setUserAiChatEnabled: (val) => set({ userAiChatEnabled: val }),
 
       // Proactive recommendations
       proactiveRecommendations: null,
@@ -1014,6 +1022,7 @@ export const useStore = create<AppState>()(
           selectedModel: 'groq',
           calendarSynced: false,
           is24HourFormat: false,
+          userAiChatEnabled: true,
           proactiveRecommendations: null,
           chatHistory: [
             { id: 'msg-welcome', role: 'assistant', content: 'Welcome to your AI Academic Dashboard! I am your student co-pilot. I can help analyze your weekly load, suggest breaks, or resolve complex study questions. Let me know how I can assist you today.', timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }

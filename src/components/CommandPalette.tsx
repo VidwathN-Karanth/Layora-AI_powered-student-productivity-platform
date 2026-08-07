@@ -162,13 +162,20 @@ export default function CommandPalette() {
     }
   ];
 
-  // Filter items by search input
-  const filteredItems = items.filter(
-    (item) =>
-      item.title.toLowerCase().includes(search.toLowerCase()) ||
-      item.category.toLowerCase().includes(search.toLowerCase()) ||
-      item.subtitle.toLowerCase().includes(search.toLowerCase())
-  );
+  const isAiActive = store.globalAiChatEnabled !== false && store.userAiChatEnabled !== false;
+
+  // Filter items by search input and active features
+  const filteredItems = items
+    .filter((item) => {
+      if (item.id === 'action-chat-clear' && !isAiActive) return false;
+      return true;
+    })
+    .filter(
+      (item) =>
+        item.title.toLowerCase().includes(search.toLowerCase()) ||
+        item.category.toLowerCase().includes(search.toLowerCase()) ||
+        item.subtitle.toLowerCase().includes(search.toLowerCase())
+    );
 
   // Navigate using arrows
   const handleKeyDown = (e: React.KeyboardEvent) => {

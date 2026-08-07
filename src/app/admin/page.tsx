@@ -61,6 +61,8 @@ export default function AdminPage() {
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isSyncingSystem, setIsSyncingSystem] = useState(false);
   const [isDownloadingCsv, setIsDownloadingCsv] = useState(false);
+  const [globalAiChatEnabled, setGlobalAiChatEnabled] = useState(true);
+  const [togglingAiChat, setTogglingAiChat] = useState(false);
 
   // Leaderboard States & Handlers
   const [adminView, setAdminView] = useState<'nodes' | 'leaderboard'>('nodes');
@@ -260,7 +262,9 @@ export default function AdminPage() {
       setErrorMsg('');
       setLoadingData(true);
       try {
-        const registeredUsers = useStore.getState().registeredUsers || [];
+        const storeState = useStore.getState();
+        setGlobalAiChatEnabled(storeState.globalAiChatEnabled !== false);
+        const registeredUsers = storeState.registeredUsers || [];
         const fetched: TelemetryUser[] = registeredUsers.map((u: any) => ({
           id: u.email,
           updated_at: u.lastActiveDate ? new Date(u.lastActiveDate).toISOString() : new Date().toISOString(),
@@ -302,6 +306,19 @@ export default function AdminPage() {
       setLoadingData(true);
       setIsLocalMode(false);
       setErrorMsg('');
+
+      // Fetch global settings
+      try {
+        const settingsRes = await fetch('/api/admin/global-settings');
+        if (settingsRes.ok) {
+          const settingsData = await settingsRes.json();
+          setGlobalAiChatEnabled(settingsData.globalAiChatEnabled);
+          useStore.getState().setGlobalAiChatEnabled(settingsData.globalAiChatEnabled);
+        }
+      } catch (settingsErr) {
+        console.warn('Failed to load global settings:', settingsErr);
+      }
+
       const res = await fetch('/api/admin/users');
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
@@ -422,6 +439,30 @@ export default function AdminPage() {
       alert("Failed to update user stats: " + err.message);
     } finally {
       setIsSavingEdit(false);
+    }
+  };
+
+  const toggleGlobalAiChat = async () => {
+    setTogglingAiChat(true);
+    const newValue = !globalAiChatEnabled;
+    try {
+      if (isSupabaseConfigured) {
+        const res = await fetch('/api/admin/global-settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ globalAiChatEnabled: newValue })
+        });
+        if (!res.ok) {
+          throw new Error('Failed to update global settings');
+        }
+      }
+      useStore.getState().setGlobalAiChatEnabled(newValue);
+      setGlobalAiChatEnabled(newValue);
+    } catch (err: any) {
+      console.error(err);
+      alert('Error: ' + err.message);
+    } finally {
+      setTogglingAiChat(false);
     }
   };
 
@@ -610,6 +651,54 @@ export default function AdminPage() {
             </div>
             <div className="text-[10px] text-white/50 mt-1 border-t border-white/5 pt-2 flex items-center gap-1.5 truncate">
               <Sparkles className="w-3 h-3 text-cyber-purple animate-pulse shrink-0" /> ~{(totalAiTokens).toLocaleString()} tokens consumed
+            </div>
+          </div>
+        </section>
+
+        {/* System Policies Panel */}
+        <section className="glass-panel border border-white/10 p-5 space-y-4">
+          <div className="flex items-center gap-2.5 border-b border-white/10 pb-2">
+            <Settings className="w-4 h-4 text-cyber-blue" strokeWidth={1.5} />
+            <h2 className="text-xs font-mono font-bold tracking-wider text-cyber-blue uppercase">Global System Policies</h2>
+          </div>
+          
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/2 border border-white/5 rounded-xl p-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-cyber-purple animate-pulse" strokeWidth={1.5} />
+                <span className="text-sm font-bold font-mono text-white">AI Copilot Chat Assistant</span>
+              </div>
+              <p className="text-[10px] text-white/50 max-w-2xl leading-relaxed">
+                Globally enable or disable the AI chat assistant interface for all students. When disabled, the chatbot panel and triggers will be hidden from the workspace layout, and individual settings toggles will be disabled and greyscaled.
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-4 shrink-0">
+              <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded border ${
+                globalAiChatEnabled 
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.1)]' 
+                  : 'bg-red-500/10 text-red-400 border-red-500/20 shadow-[0_0_8px_rgba(239,68,68,0.1)]'
+              }`}>
+                {globalAiChatEnabled ? 'ACTIVE / ENABLED' : 'INACTIVE / DISABLED'}
+              </span>
+              
+              <button
+                onClick={toggleGlobalAiChat}
+                disabled={togglingAiChat}
+                className={`relative px-5 py-2.5 rounded-xl text-xs font-mono font-bold border transition cursor-pointer active:scale-95 flex items-center gap-2 ${
+                  globalAiChatEnabled
+                    ? 'bg-red-950/20 border-red-500/30 text-red-400 hover:bg-red-950/40 hover:border-red-400 shadow-[0_0_8px_rgba(239,68,68,0.05)]'
+                    : 'bg-emerald-950/20 border-emerald-500/30 text-emerald-400 hover:bg-emerald-950/40 hover:border-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.05)]'
+                }`}
+              >
+                {togglingAiChat ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : globalAiChatEnabled ? (
+                  'DISABLE AI CHAT'
+                ) : (
+                  'ENABLE AI CHAT'
+                )}
+              </button>
             </div>
           </div>
         </section>

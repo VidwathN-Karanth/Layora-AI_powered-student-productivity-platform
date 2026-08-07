@@ -491,6 +491,53 @@ export default function SettingsPage() {
             </div>
           </div>
 
+          {/* --- PANEL 5: AI CHAT ASSISTANT --- */}
+          <div className={`glass-card rounded-2xl p-5 space-y-4 transition-all duration-300 ${!store.globalAiChatEnabled ? 'opacity-50 grayscale select-none' : ''}`}>
+            <div className="flex items-center gap-2.5 border-b border-outline-variant pb-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <h3 className="text-xs font-mono font-bold tracking-wider text-primary">AI Chat Assistant</h3>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-[10px] text-outline font-mono leading-relaxed">
+                {!store.globalAiChatEnabled 
+                  ? "The system administrator has globally disabled the AI Chat Assistant. You cannot change this setting at this time." 
+                  : "Enable or disable your personal student co-pilot assistant. When enabled, you will get access to the AI Chat panel for schedule insights, study tips, and quick actions."}
+              </p>
+
+              <div className="bg-surface-container border border-outline-variant rounded-xl p-4 flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-mono font-bold text-on-surface block">Personal Co-pilot Chat</span>
+                  <span className="text-[9px] font-mono text-outline">
+                    {!store.globalAiChatEnabled 
+                      ? "Status: Globally Disabled" 
+                      : store.userAiChatEnabled 
+                        ? "Status: Enabled" 
+                        : "Status: Disabled"}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={!store.globalAiChatEnabled}
+                  onClick={() => {
+                    store.setUserAiChatEnabled(!store.userAiChatEnabled);
+                    setSaveSuccess(true);
+                    setTimeout(() => setSaveSuccess(false), 2000);
+                  }}
+                  className={`px-4 py-2 rounded-lg text-xs font-mono font-bold border transition cursor-pointer active:scale-95 ${
+                    !store.globalAiChatEnabled
+                      ? 'bg-white/5 border-white/5 text-white/20 pointer-events-none'
+                      : store.userAiChatEnabled
+                        ? 'bg-primary-fixed border-primary text-on-surface hover:bg-primary-fixed/80'
+                        : 'bg-white/2 border-outline-variant text-on-surface-variant hover:bg-surface-container'
+                  }`}
+                >
+                  {store.userAiChatEnabled ? 'ENABLED' : 'DISABLED'}
+                </button>
+              </div>
+            </div>
+          </div>
 
       </div>
     </div>

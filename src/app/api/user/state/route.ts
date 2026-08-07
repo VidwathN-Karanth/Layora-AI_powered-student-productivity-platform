@@ -16,6 +16,21 @@ export async function GET() {
       return NextResponse.json({ state: null, isLocalMode: true });
     }
 
+    // Fetch global settings state
+    let globalAiChatEnabled = true;
+    try {
+      const { data: globalData } = await supabaseAdmin
+        .from('user_states')
+        .select('state')
+        .eq('id', 'global_settings')
+        .single();
+      if (globalData?.state?.globalAiChatEnabled !== undefined) {
+        globalAiChatEnabled = globalData.state.globalAiChatEnabled;
+      }
+    } catch (e) {
+      console.warn('Failed to fetch global settings, defaulting to true:', e);
+    }
+
     // 1. Fetch the state from user_states table first
     const { data, error } = await supabaseAdmin
       .from('user_states')
@@ -47,7 +62,7 @@ export async function GET() {
               ]
             }
           };
-          return NextResponse.json({ state: adminDefaultState });
+          return NextResponse.json({ state: adminDefaultState, globalAiChatEnabled });
         }
 
         // 3. Check if they exist in the users table
@@ -77,16 +92,16 @@ export async function GET() {
               ]
             }
           };
-          return NextResponse.json({ state: existingDefaultState });
+          return NextResponse.json({ state: existingDefaultState, globalAiChatEnabled });
         }
 
         // Truly a new user
-        return NextResponse.json({ state: null });
+        return NextResponse.json({ state: null, globalAiChatEnabled });
       }
       throw error;
     }
 
-    return NextResponse.json({ state: data?.state || null });
+    return NextResponse.json({ state: data?.state || null, globalAiChatEnabled });
   } catch (error: any) {
     console.error('Server GET state failed:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
