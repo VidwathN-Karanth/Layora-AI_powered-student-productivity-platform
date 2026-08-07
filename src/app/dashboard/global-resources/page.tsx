@@ -397,7 +397,11 @@ export default function GlobalResourcesPage() {
               </button>
               <button
                 type="button"
-                onClick={() => { setUploadMethod('link'); setUploadErrors({}); }}
+                onClick={() => { 
+                  setUploadMethod('link'); 
+                  setUploadErrors({}); 
+                  alert("Tips: Ensure the file is shared with \"Anyone with link\" on your Google Drive before adding.");
+                }}
                 className={`flex-1 py-1.5 rounded-lg text-[10px] font-mono font-bold uppercase transition cursor-pointer ${
                   uploadMethod === 'link'
                     ? 'bg-primary text-on-surface'
