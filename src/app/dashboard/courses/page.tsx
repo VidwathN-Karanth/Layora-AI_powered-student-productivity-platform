@@ -93,66 +93,13 @@ export default function CoursesPage() {
   const [editFormErrors, setEditFormErrors] = useState<Record<string, string | undefined>>({});
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
 
-  // 15-minute interval suggestions based on current clock
-  const getNextIntervals = () => {
-    const now = new Date();
-    const intervals = [];
-    let minutes = now.getMinutes();
-    let hour = now.getHours();
-
-    // Round up to the next 15-minute boundary
-    let nextMin = Math.ceil((minutes + 1) / 15) * 15;
-    if (nextMin === 60) {
-      nextMin = 0;
-      hour = (hour + 1) % 24;
-    }
-
-    let curHour = hour;
-    let curMin = nextMin;
-    const labels = ["Next 15m", "Next 30m", "Next 45m", "Next Hour"];
-
-    for (let i = 0; i < 4; i++) {
-      const formattedTime = `${String(curHour).padStart(2, '0')}:${String(curMin).padStart(2, '0')}`;
-      let displayHour = curHour % 12;
-      if (displayHour === 0) displayHour = 12;
-      const ampm = curHour >= 12 ? 'PM' : 'AM';
-      const displayTime = `${displayHour}:${String(curMin).padStart(2, '0')} ${ampm}`;
-
-      intervals.push({
-        value: formattedTime,
-        label: `${labels[i]} (${displayTime})`
-      });
-
-      curMin += 15;
-      if (curMin === 60) {
-        curMin = 0;
-        curHour = (curHour + 1) % 24;
-      }
-    }
-    return intervals;
-  };
-
-  const generate15MinIntervals = () => {
-    const options = [];
-    for (let h = 0; h < 24; h++) {
-      for (let m = 0; m < 60; m += 15) {
-        const value = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-        let displayHour = h % 12;
-        if (displayHour === 0) displayHour = 12;
-        const ampm = h >= 12 ? 'PM' : 'AM';
-        const label = `${displayHour}:${String(m).padStart(2, '0')} ${ampm}`;
-        options.push({ value, label });
-      }
-    }
-    return options;
-  };
-
   const handleOpenEditModal = (course: any) => {
     setEditingCourseId(course.id);
     setEditName(course.name);
     setEditPlatform(course.platform || '');
     setEditReminderEnabled(course.reminderEnabled || false);
-    setEditReminderTime(course.reminderTime || getNext15MinBoundary());
+    // Ensure we force round the initial time from DB to standard 15m intervals
+    setEditReminderTime(course.reminderTime ? roundToNearest15Minutes(course.reminderTime) : getNext15MinBoundary());
     setEditFormErrors({});
     setDeleteConfirmation('');
     setShowEditCourse(true);
@@ -178,7 +125,7 @@ export default function CoursesPage() {
       name: editName,
       platform: formattedLink,
       reminderEnabled: editReminderEnabled,
-      reminderTime: editReminderEnabled ? editReminderTime : undefined
+      reminderTime: editReminderEnabled ? roundToNearest15Minutes(editReminderTime) : undefined
     });
 
     setShowEditCourse(false);
@@ -214,7 +161,7 @@ export default function CoursesPage() {
       weeklyGoal: goal,
       deadline,
       reminderEnabled,
-      reminderTime: reminderEnabled ? reminderTime : undefined
+      reminderTime: reminderEnabled ? roundToNearest15Minutes(reminderTime) : undefined
     });
 
     setName('');
@@ -222,7 +169,7 @@ export default function CoursesPage() {
     setProgress(0);
     setGoal(2);
     setReminderEnabled(false);
-    setReminderTime('09:00');
+    setReminderTime(getNext15MinBoundary());
     setFormErrors({});
     setShowAddCourse(false);
   };
