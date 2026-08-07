@@ -53,7 +53,28 @@ export default function PlannerPage() {
   };
 
   const handleGoogleSync = async () => {
-    alert("Google Calendar Sync is currently disabled for public use to avoid Google OAuth security warnings.");
+    try {
+      setSyncingCalendar(true);
+      setSyncSuccess(false);
+
+      const res = await fetch('/api/calendar/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ timetable: store.timetable })
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to sync schedule. Please verify your Google account permissions.');
+      }
+
+      setSyncSuccess(true);
+      setTimeout(() => setSyncSuccess(false), 6000);
+    } catch (e: any) {
+      alert(`Sync Error: ${e.message}`);
+    } finally {
+      setSyncingCalendar(false);
+    }
   };
 
   const handleAddCustomBlock = () => {
