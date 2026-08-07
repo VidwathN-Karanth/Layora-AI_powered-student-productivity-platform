@@ -24,6 +24,15 @@ export default function PlannerPage() {
   const [syncingCalendar, setSyncingCalendar] = useState(false);
   const [syncSuccess, setSyncSuccess] = useState(false);
   
+  // Delete Schedule confirmation states
+  const [showDeleteDayConfirm, setShowDeleteDayConfirm] = useState(false);
+  const [deleteDayInput, setDeleteDayInput] = useState('');
+  const [deletingDay, setDeletingDay] = useState(false);
+
+  const [showDeleteWeekConfirm, setShowDeleteWeekConfirm] = useState(false);
+  const [deleteWeekInput, setDeleteWeekInput] = useState('');
+  const [deletingWeek, setDeletingWeek] = useState(false);
+  
   // Custom manual block states
   const [showAddBlock, setShowAddBlock] = useState(false);
   const [newBlockTitle, setNewBlockTitle] = useState('');
@@ -46,10 +55,54 @@ export default function PlannerPage() {
     .filter((b) => b.day === activeDay)
     .sort((a, b) => a.start.localeCompare(b.start));
 
-  const handleGenerateAI = async () => {
-    setLoadingSchedule(true);
-    await store.generateSchedule(true);
-    setLoadingSchedule(false);
+  const handleDeleteDaySchedule = async () => {
+    try {
+      setDeletingDay(true);
+      const res = await fetch('/api/calendar/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scope: 'day', day: activeDay })
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to delete day schedule.');
+      }
+
+      const data = await res.json();
+      alert(`Wiped ${data.deletedCount} Layora events for this day from Google Calendar.`);
+      setShowDeleteDayConfirm(false);
+      setDeleteDayInput('');
+    } catch (e: any) {
+      alert(`Delete Day Error: ${e.message}`);
+    } finally {
+      setDeletingDay(false);
+    }
+  };
+
+  const handleDeleteWeekSchedule = async () => {
+    try {
+      setDeletingWeek(true);
+      const res = await fetch('/api/calendar/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scope: 'week' })
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to delete week schedule.');
+      }
+
+      const data = await res.json();
+      alert(`Wiped ${data.deletedCount} Layora events for the entire week from Google Calendar.`);
+      setShowDeleteWeekConfirm(false);
+      setDeleteWeekInput('');
+    } catch (e: any) {
+      alert(`Delete Week Error: ${e.message}`);
+    } finally {
+      setDeletingWeek(false);
+    }
   };
 
   const handleGoogleSync = async () => {
@@ -172,18 +225,13 @@ export default function PlannerPage() {
             )}
           </button>
 
-          {/* AI Generator Button */}
+          {/* Delete Week Sync Button */}
           <button
-            onClick={handleGenerateAI}
-            disabled={loadingSchedule}
-            className="btn-neon px-4 py-2.5 text-xs flex items-center gap-2 active:scale-95 transition cursor-pointer"
+            onClick={() => setShowDeleteWeekConfirm(true)}
+            className="border border-red-500/20 bg-red-950/10 hover:bg-red-950/20 text-red-400 px-4 py-2.5 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition active:scale-95 cursor-pointer"
           >
-            {loadingSchedule ? (
-              <RefreshCw className="w-4 h-4 animate-spin text-black" strokeWidth={1.5} />
-            ) : (
-              <Sparkles className="w-4 h-4 text-black" strokeWidth={1.5} />
-            )}
-            Generate AI Schedule
+            <Trash className="w-4 h-4 shrink-0" strokeWidth={1.5} />
+            Wipe Week from Google Calendar
           </button>
         </div>
       </div>
@@ -227,12 +275,20 @@ export default function PlannerPage() {
         <div className="lg:col-span-2 space-y-3">
           <div className="flex justify-between items-center bg-white/2 p-3 rounded-xl border border-outline-variant">
             <span className="text-[10px] font-mono text-outline">Sequence Timeline ({activeDayBlocks.length} Blocks)</span>
-            <button 
-              onClick={() => setShowAddBlock(true)} 
-              className="text-primary hover:text-primary text-xs font-mono flex items-center gap-1.5 cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" strokeWidth={1.5} /> Add Custom Block
-            </button>
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => setShowAddBlock(true)} 
+                className="text-primary hover:text-primary text-xs font-mono flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" strokeWidth={1.5} /> Add Custom Block
+              </button>
+              <button 
+                onClick={() => setShowDeleteDayConfirm(true)} 
+                className="text-red-400 hover:text-red-300 text-xs font-mono flex items-center gap-1.5 cursor-pointer border-l border-white/10 pl-4"
+              >
+                <Trash className="w-3.5 h-3.5" strokeWidth={1.5} /> Clear Day from Google Calendar
+              </button>
+            </div>
           </div>
 
           <div className="space-y-3 min-h-[300px]">
@@ -241,7 +297,7 @@ export default function PlannerPage() {
                 <AlertCircle className="w-10 h-10 text-on-surface/20 mb-3" strokeWidth={1.5} />
                 <h3 className="text-sm font-geist font-bold text-on-surface/70">Planner is empty</h3>
                 <p className="text-xs text-outline max-w-sm mt-1">
-                  Click the **Generate AI Schedule** button above to compile subjects and routines automatically using the local optimization engine.
+                  Click the **Add Custom Block** link to build your weekly schedule and push it to Google Calendar.
                 </p>
               </div>
             ) : activeDayBlocks.length === 0 ? (
@@ -314,15 +370,15 @@ export default function PlannerPage() {
                 <>
                   <li className="flex items-start gap-2">
                     <span className="text-primary font-mono font-bold">01.</span>
-                    <span>The **AI Planner** parses subject credits and difficulty, scheduling more blocks for hard tasks.</span>
+                    <span>Formulate study routines, college lectures, and gym breaks on your timeline.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-primary font-mono font-bold">02.</span>
-                    <span>It allocates mandatory college hours, gyms, chess practice, and schedules power rest breaks automatically.</span>
+                    <span>Sync to Google Calendar exports study slots so you receive mobile calendar push notifications.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-primary font-mono font-bold">03.</span>
-                    <span>Sync to Google Calendar exports study slots so you receive mobile calendar push notifications.</span>
+                    <span>Wipe day schedules or the entire week sync directly if you need to reorganize your calendar.</span>
                   </li>
                 </>
               )}
@@ -403,6 +459,114 @@ export default function PlannerPage() {
                     className="flex-1 btn-neon py-2 text-xs cursor-pointer"
                   >
                     Insert
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Day Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteDayConfirm && (
+          <>
+            <div onClick={() => { setShowDeleteDayConfirm(false); setDeleteDayInput(''); }} className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"></div>
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm glass-panel-neon p-6 rounded-2xl z-50 border border-red-500/50 shadow-2xl"
+            >
+              <h3 className="text-sm font-geist font-bold text-red-400 border-b border-red-500/20 pb-2 mb-4 uppercase tracking-wide flex items-center gap-2">
+                <Trash className="w-4 h-4" /> Wipe Day Schedule
+              </h3>
+              
+              <div className="space-y-4">
+                <p className="text-xs text-outline leading-relaxed font-mono">
+                  This will remove all Layora-synced calendar events for <strong>{daysOfWeek.find(d => d.num === activeDay)?.label || ''}</strong> from your primary Google Calendar.
+                </p>
+                <div className="bg-red-950/15 border border-red-500/10 p-3 rounded-xl text-[10px] text-red-300 font-mono">
+                  Type <strong>DELETE</strong> below to confirm.
+                </div>
+                
+                <div>
+                  <input
+                    type="text"
+                    value={deleteDayInput}
+                    onChange={(e) => setDeleteDayInput(e.target.value)}
+                    placeholder="DELETE"
+                    className="w-full input-hud text-center tracking-wider border-red-500/20 focus:border-red-500 uppercase"
+                  />
+                </div>
+
+                <div className="flex gap-2.5 pt-2">
+                  <button 
+                    onClick={() => { setShowDeleteDayConfirm(false); setDeleteDayInput(''); }} 
+                    className="flex-1 bg-surface-container border border-outline-variant rounded-lg py-2 text-xs font-mono cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleDeleteDaySchedule} 
+                    disabled={deleteDayInput !== 'DELETE' || deletingDay}
+                    className="flex-1 bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:hover:bg-red-600 text-white rounded-lg py-2 text-xs font-mono font-bold cursor-pointer transition active:scale-95 animate-none"
+                  >
+                    {deletingDay ? 'Deleting...' : 'Wipe Day'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Week Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteWeekConfirm && (
+          <>
+            <div onClick={() => { setShowDeleteWeekConfirm(false); setDeleteWeekInput(''); }} className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"></div>
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm glass-panel-neon p-6 rounded-2xl z-50 border border-red-500/50 shadow-2xl"
+            >
+              <h3 className="text-sm font-geist font-bold text-red-400 border-b border-red-500/20 pb-2 mb-4 uppercase tracking-wide flex items-center gap-2">
+                <Trash className="w-4 h-4" /> Wipe Week Sync
+              </h3>
+              
+              <div className="space-y-4">
+                <p className="text-xs text-outline leading-relaxed font-mono">
+                  This will remove all Layora-synced calendar events for the <strong>entire week</strong> from your primary Google Calendar.
+                </p>
+                <div className="bg-red-950/15 border border-red-500/10 p-3 rounded-xl text-[10px] text-red-300 font-mono">
+                  Type <strong>DELETE WEEK PLANNER</strong> below to confirm.
+                </div>
+                
+                <div>
+                  <input
+                    type="text"
+                    value={deleteWeekInput}
+                    onChange={(e) => setDeleteWeekInput(e.target.value)}
+                    placeholder="DELETE WEEK PLANNER"
+                    className="w-full input-hud text-center tracking-wider border-red-500/20 focus:border-red-500 uppercase"
+                  />
+                </div>
+
+                <div className="flex gap-2.5 pt-2">
+                  <button 
+                    onClick={() => { setShowDeleteWeekConfirm(false); setDeleteWeekInput(''); }} 
+                    className="flex-1 bg-surface-container border border-outline-variant rounded-lg py-2 text-xs font-mono cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleDeleteWeekSchedule} 
+                    disabled={deleteWeekInput !== 'DELETE WEEK PLANNER' || deletingWeek}
+                    className="flex-1 bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:hover:bg-red-600 text-white rounded-lg py-2 text-xs font-mono font-bold cursor-pointer transition active:scale-95 animate-none"
+                  >
+                    {deletingWeek ? 'Deleting...' : 'Wipe Week'}
                   </button>
                 </div>
               </div>
