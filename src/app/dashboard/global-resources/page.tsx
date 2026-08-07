@@ -499,18 +499,23 @@ export default function GlobalResourcesPage() {
 
             {/* Target Year Level Selection */}
             <div>
-              <label className="block text-[10px] font-mono text-outline mb-1">Target Academic Year</label>
-              <select
-                value={documentYear}
-                onChange={(e) => setDocumentYear(e.target.value)}
-                className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary font-mono cursor-pointer"
-              >
-                <option value="1st Year">1st Year</option>
-                <option value="2nd Year">2nd Year</option>
-                <option value="3rd Year">3rd Year</option>
-                <option value="4th Year">4th Year</option>
-                <option value="Others">Others</option>
-              </select>
+              <label className="block text-[10px] font-mono text-outline mb-2">Target Academic Year</label>
+              <div className="flex flex-wrap items-center gap-1.5 p-1 bg-surface-container rounded-xl border border-outline-variant/30 w-max">
+                {(['1st Year', '2nd Year', '3rd Year', '4th Year', 'Others'] as const).map((y) => (
+                  <button
+                    key={y}
+                    type="button"
+                    onClick={() => setDocumentYear(y)}
+                    className={`px-3 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase transition cursor-pointer ${
+                      documentYear === y
+                        ? 'bg-primary text-on-surface'
+                        : 'text-outline hover:text-white'
+                    }`}
+                  >
+                    {y.replace('Year', 'Yr')}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="flex gap-2">
