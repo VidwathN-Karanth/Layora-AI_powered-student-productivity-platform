@@ -241,7 +241,7 @@ export default function RootPage() {
             <div className="relative mt-12 w-full max-w-4xl border border-white/10 rounded-2xl overflow-hidden bg-black/60 shadow-[0_0_50px_rgba(0,0,0,0.8)] p-1 backdrop-blur-md group">
               <div className="absolute inset-0 bg-gradient-to-r from-cyber-purple/10 to-cyber-blue/10 opacity-30 z-0"></div>
               <img 
-                src="/images/landing/media__1786092055369.png" 
+                src="/images/landing/media__1786098306851.png" 
                 alt="Layora Workspace Dashboard" 
                 className="w-full rounded-xl object-cover relative z-10 border border-white/5 shadow-inner transition duration-700 group-hover:scale-[1.01]"
               />
@@ -286,7 +286,7 @@ export default function RootPage() {
               <ScrollReveal direction="left">
                 <div className="border border-white/10 rounded-2xl overflow-hidden bg-black/40 shadow-xl p-1 relative group">
                   <img 
-                    src="/images/landing/media__1786092055369.png" 
+                    src="/images/landing/media__1786098306851.png" 
                     alt="Active Workspace Dashboard" 
                     className="w-full rounded-xl object-cover border border-white/5 transition duration-500 group-hover:scale-[1.015]"
                   />
