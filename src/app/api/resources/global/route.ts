@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, url, type } = body;
+    const { name, url, type, year } = body;
 
     if (!name || !url) {
       return NextResponse.json({ error: 'Missing name or url' }, { status: 400 });
@@ -80,6 +80,7 @@ export async function POST(request: Request) {
       name,
       url,
       type: type || 'pdf',
+      year: year || 'Others',
       uploadedBy: email,
       uploaderName,
       createdAt: new Date().toISOString()
