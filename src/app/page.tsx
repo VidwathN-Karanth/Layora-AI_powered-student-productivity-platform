@@ -164,12 +164,13 @@ export default function RootPage() {
           </div>
 
           {/* Center quick links */}
-          <nav className="hidden md:flex items-center gap-6 text-[10px] font-bold text-white/50 tracking-wider">
+          <nav className="hidden md:flex items-center gap-5 text-[10px] font-bold text-white/50 tracking-wider">
             <a href="#dashboard" className="hover:text-cyber-blue transition uppercase">Workspace</a>
             <a href="#resources" className="hover:text-cyber-blue transition uppercase">Vault</a>
             <a href="#global-resources" className="hover:text-cyber-blue transition uppercase">Shared Library</a>
             <a href="#courses" className="hover:text-cyber-blue transition uppercase">Bootcamps</a>
             <a href="#leaderboard" className="hover:text-cyber-blue transition uppercase">Scoreboard</a>
+            <a href="/privacy" className="text-cyber-blue hover:text-white transition uppercase font-extrabold">Privacy Policy</a>
           </nav>
 
           {/* Top Right Auth Buttons */}
@@ -502,17 +503,20 @@ export default function RootPage() {
                     <code className="block bg-white/5 p-2 rounded text-[8.5px] border border-white/5 break-all text-cyber-blue select-all">
                       https://www.googleapis.com/auth/calendar
                     </code>
+                    <span className="text-[8px] text-white/40 block mt-1">
+                      (Sensitive Scope: Read/Write Google Calendar)
+                    </span>
                   </div>
                   <div className="space-y-1">
-                    <h5 className="font-bold text-cyber-purple uppercase text-[9px] tracking-wider">Sync Purpose</h5>
+                    <h5 className="font-bold text-cyber-purple uppercase text-[9px] tracking-wider">Scope Purpose & Limited Use</h5>
                     <p className="text-white/65 text-[9px]">
-                      This scope is used solely to insert weekly AI timetable blocks (lectures, revision periods, workouts) as recurring events on your primary Google Calendar.
+                      Our application requests calendar access exclusively to write and synchronize your study timetable blocks (lectures, revision periods, custom routines) as recurring weekly events on your primary Google Calendar. <strong>Layora's use of information received from Google APIs will adhere to the Google API Services User Data Policy, including the Limited Use requirements.</strong>
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <h5 className="font-bold text-cyber-purple uppercase text-[9px] tracking-wider">Data Boundaries</h5>
+                    <h5 className="font-bold text-cyber-purple uppercase text-[9px] tracking-wider">Data Boundaries & Security</h5>
                     <p className="text-white/65 text-[9px]">
-                      We enforce zero-read policies: we never read, alter, or delete other calendar details and do not transmit credentials to third-party databases.
+                      We enforce a zero-read, zero-storage policy: we do not read, alter, or delete any other calendars, and we do not store your calendar information on our servers. <strong>We do not sell, rent, or transfer your Google User Data or Calendar events to any third-party advertising platforms or external database systems.</strong>
                     </p>
                   </div>
                 </div>
