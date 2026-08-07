@@ -21,6 +21,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const store = useStore();
 
+  const isAiActive = store.globalAiChatEnabled !== false && store.userAiChatEnabled !== false;
+
   const { isLoaded, isSignedIn, user: clerkUser } = useUser();
   const { signOut } = useAuth();
 
@@ -67,6 +69,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       return () => window.removeEventListener('resize', handleResize);
     }
   }, []);
+
+  useEffect(() => {
+    if (!isAiActive) {
+      setChatOpen(false);
+    }
+  }, [isAiActive]);
 
   // Digital clock state
   const [timeStr, setTimeStr] = useState('');
@@ -316,9 +324,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <Menu className="w-5 h-5" strokeWidth={1.5} />
         </button>
         <span className="font-mono font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyber-purple to-cyber-blue">Layora</span>
-        <button onClick={() => setChatOpen(!chatOpen)} className="p-2 hover:bg-white/5 rounded-lg text-white">
-          <MessageCircle className="w-5 h-5" strokeWidth={1.5} />
-        </button>
+        {isAiActive ? (
+          <button onClick={() => setChatOpen(!chatOpen)} className="p-2 hover:bg-white/5 rounded-lg text-white">
+            <MessageCircle className="w-5 h-5" strokeWidth={1.5} />
+          </button>
+        ) : (
+          <div className="w-9" />
+        )}
       </div>
 
       {/* --- MOBILE SIDEBAR DRAWER --- */}
@@ -409,16 +421,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   initial={{ opacity: 0 }} 
                   animate={{ opacity: 1 }} 
                   exit={{ opacity: 0 }}
-                  className="flex flex-col items-center justify-center w-full gap-2 cursor-pointer"
-                  onClick={() => setChatOpen(!chatOpen)}
-                  title="Open Chatbot"
+                  className={`flex flex-col items-center justify-center w-full gap-2 ${isAiActive ? 'cursor-pointer' : ''}`}
+                  onClick={() => isAiActive && setChatOpen(!chatOpen)}
+                  title={isAiActive ? "Open Chatbot" : "Layora"}
                 >
                   <span className="font-mono font-black text-base text-primary w-full text-center">
                     L
                   </span>
-                  <span className="text-[8px] font-mono font-bold text-cyber-blue uppercase text-center bg-cyber-blue/10 px-1 py-0.5 rounded border border-cyber-blue/30 w-full whitespace-nowrap overflow-hidden">
-                    Chatbot
-                  </span>
+                  {isAiActive && (
+                    <span className="text-[8px] font-mono font-bold text-cyber-blue uppercase text-center bg-cyber-blue/10 px-1 py-0.5 rounded border border-cyber-blue/30 w-full whitespace-nowrap overflow-hidden">
+                      Chatbot
+                    </span>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -526,22 +540,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             )}
 
             {/* Chatbot trigger */}
-            <button 
-              onClick={() => setChatOpen(!chatOpen)}
-              className={`flex items-center justify-center rounded-full border transition cursor-pointer ${
-                chatOpen ? 'bg-cyber-blue/20 border-cyber-blue text-cyber-blue w-8 h-8 p-0' : 'gap-2 px-3 py-1.5 bg-white/5 border-white/10 text-white/50 hover:text-white'
-              }`}
-              title={chatOpen ? "Close Panel" : "Open Chatbot"}
-            >
-              {chatOpen ? (
-                <ChevronRight className="w-4 h-4" strokeWidth={2} />
-              ) : (
-                <>
-                  <MessageCircle className="w-4 h-4" strokeWidth={1.5} />
-                  <span className="font-mono text-[11px] font-bold uppercase tracking-wider">Chatbot</span>
-                </>
-              )}
-            </button>
+            {isAiActive && (
+              <button 
+                onClick={() => setChatOpen(!chatOpen)}
+                className={`flex items-center justify-center rounded-full border transition cursor-pointer ${
+                  chatOpen ? 'bg-cyber-blue/20 border-cyber-blue text-cyber-blue w-8 h-8 p-0' : 'gap-2 px-3 py-1.5 bg-white/5 border-white/10 text-white/50 hover:text-white'
+                }`}
+                title={chatOpen ? "Close Panel" : "Open Chatbot"}
+              >
+                {chatOpen ? (
+                  <ChevronRight className="w-4 h-4" strokeWidth={2} />
+                ) : (
+                  <>
+                    <MessageCircle className="w-4 h-4" strokeWidth={1.5} />
+                    <span className="font-mono text-[11px] font-bold uppercase tracking-wider">Chatbot</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </header>
 
@@ -566,7 +582,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* --- RIGHT PERSISTENT AI CHAT PANEL --- */}
       <AnimatePresence>
-        {chatOpen && isMobile && (
+        {isAiActive && chatOpen && isMobile && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -575,7 +591,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 xl:hidden"
           />
         )}
-        {chatOpen && (
+        {isAiActive && chatOpen && (
           <motion.aside
             initial={isMobile ? { x: '100%', opacity: 0 } : { width: 0, opacity: 0 }}
             animate={isMobile ? { x: 0, opacity: 1 } : { width: 340, opacity: 1 }}
