@@ -70,10 +70,13 @@ export async function GET(request: Request) {
       const todayStr = `${year}-${month}-${date}`;
 
       let stateUpdated = false;
-      const updatedCourses = state.courses.map((course: any) => {
+      const updatedCourses = [];
+
+      for (const course of state.courses) {
         // If reminders not enabled for this course, skip
         if (!course.reminderEnabled) {
-          return course;
+          updatedCourses.push(course);
+          continue;
         }
 
         const reminderTime = course.reminderTime || '09:00';
@@ -90,31 +93,33 @@ export async function GET(request: Request) {
           // Trigger email send
           console.log(`[Cron Route - Course Reminders] Sending reminder to ${userEmail} for course "${course.name}" (Timezone: ${timezone}, Local Time: ${todayStr} ${currentHour}:00)`);
           
-          sendCourseReminderMail({
+          const success = await sendCourseReminderMail({
             to: userEmail,
             subject: `📚 Time to study: ${course.name}`,
             courseName: course.name,
             progress: course.progress || 0,
             platform: course.platform || ''
-          }).catch(mailErr => {
-            console.error(`[Cron Route - Course Reminders] Async send error for ${userEmail}:`, mailErr);
           });
 
-          stateUpdated = true;
-          remindersSent.push({
-            userId,
-            email: userEmail,
-            courseName: course.name
-          });
-
-          return {
-            ...course,
-            lastReminderSentDate: todayStr
-          };
+          if (success) {
+            stateUpdated = true;
+            remindersSent.push({
+              userId,
+              email: userEmail,
+              courseName: course.name
+            });
+            updatedCourses.push({
+              ...course,
+              lastReminderSentDate: todayStr
+            });
+          } else {
+            console.error(`[Cron Route - Course Reminders] Failed to send email reminder to ${userEmail} for course "${course.name}". NOT updating lastReminderSentDate.`);
+            updatedCourses.push(course);
+          }
+        } else {
+          updatedCourses.push(course);
         }
-
-        return course;
-      });
+      }
 
       // 3. If there were updates, save them back to Supabase
       if (stateUpdated) {
