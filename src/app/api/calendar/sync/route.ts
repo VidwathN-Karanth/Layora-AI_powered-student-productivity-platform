@@ -53,9 +53,16 @@ export async function POST(request: Request) {
 
     // 3. Sync each block to Google Calendar primary calendar using plain fetch requests
     const syncResults = [];
+    const now = new Date();
+
     for (const block of timetable) {
       const startDateTime = getDateForDayOfCurrentWeek(block.day, block.start);
       const endDateTime = getDateForDayOfCurrentWeek(block.day, block.end);
+
+      // Skip blocks that have already finished
+      if (endDateTime.getTime() <= now.getTime()) {
+        continue;
+      }
 
       const eventData = {
         summary: block.title,
