@@ -659,7 +659,7 @@ export const useStore = create<AppState>()(
               ? {
                   ...c,
                   ...updatedFields,
-                  ...(hasTimeOrEnabledChange ? { lastReminderSentDate: null } : {})
+                  ...(hasTimeOrEnabledChange ? { lastReminderSentDate: undefined } : {})
                 }
               : c
           )

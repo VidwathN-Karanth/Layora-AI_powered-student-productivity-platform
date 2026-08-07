@@ -5,7 +5,7 @@ import { useStore } from '@/store/useStore';
 import { 
   BookMarked, PlusCircle, Trash, Award, 
   BookOpen, Calendar, HelpCircle, GraduationCap, Clock, ExternalLink,
-  Mail, Bell
+  Mail, Bell, Pencil
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getPlatformDisplay, formatCourseLink } from '@/lib/courseUtils';
@@ -19,9 +19,169 @@ export default function CoursesPage() {
   const [progress, setProgress] = useState(0);
   const [goal, setGoal] = useState(2);
   const [deadline, setDeadline] = useState('2026-06-30');
+  // Helper to calculate the next 15-minute boundary
+  const getNext15MinBoundary = () => {
+    const now = new Date();
+    let minutes = now.getMinutes();
+    let hour = now.getHours();
+
+    let nextMin = Math.ceil((minutes + 1) / 15) * 15;
+    if (nextMin === 60) {
+      nextMin = 0;
+      hour = (hour + 1) % 24;
+    }
+    return `${String(hour).padStart(2, '0')}:${String(nextMin).padStart(2, '0')}`;
+  };
+
+  const getNext15MinDisplay = () => {
+    const timeStr = getNext15MinBoundary();
+    const [hStr, mStr] = timeStr.split(':');
+    const h = parseInt(hStr, 10);
+    let displayHour = h % 12;
+    if (displayHour === 0) displayHour = 12;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    return `${displayHour}:${mStr} ${ampm}`;
+  };
+
+  const roundToNearest15Minutes = (timeStr: string): string => {
+    if (!timeStr) return '09:00';
+    const [hStr, mStr] = timeStr.split(':');
+    let h = parseInt(hStr, 10);
+    let m = parseInt(mStr, 10);
+
+    const roundedM = Math.round(m / 15) * 15;
+    if (roundedM === 60) {
+      m = 0;
+      h = (h + 1) % 24;
+    } else {
+      m = roundedM;
+    }
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  };
+
   const [reminderEnabled, setReminderEnabled] = useState(false);
-  const [reminderTime, setReminderTime] = useState('09:00');
+  const [reminderTime, setReminderTime] = useState(() => {
+    const now = new Date();
+    let minutes = now.getMinutes();
+    let hour = now.getHours();
+    let nextMin = Math.ceil((minutes + 1) / 15) * 15;
+    if (nextMin === 60) {
+      nextMin = 0;
+      hour = (hour + 1) % 24;
+    }
+    return `${String(hour).padStart(2, '0')}:${String(nextMin).padStart(2, '0')}`;
+  });
   const [formErrors, setFormErrors] = useState<Record<string, string | undefined>>({});
+
+  // Edit course state
+  const [showEditCourse, setShowEditCourse] = useState(false);
+  const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editPlatform, setEditPlatform] = useState('');
+  const [editReminderEnabled, setEditReminderEnabled] = useState(false);
+  const [editReminderTime, setEditReminderTime] = useState('09:00');
+  const [editFormErrors, setEditFormErrors] = useState<Record<string, string | undefined>>({});
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+
+  // 15-minute interval suggestions based on current clock
+  const getNextIntervals = () => {
+    const now = new Date();
+    const intervals = [];
+    let minutes = now.getMinutes();
+    let hour = now.getHours();
+
+    // Round up to the next 15-minute boundary
+    let nextMin = Math.ceil((minutes + 1) / 15) * 15;
+    if (nextMin === 60) {
+      nextMin = 0;
+      hour = (hour + 1) % 24;
+    }
+
+    let curHour = hour;
+    let curMin = nextMin;
+    const labels = ["Next 15m", "Next 30m", "Next 45m", "Next Hour"];
+
+    for (let i = 0; i < 4; i++) {
+      const formattedTime = `${String(curHour).padStart(2, '0')}:${String(curMin).padStart(2, '0')}`;
+      let displayHour = curHour % 12;
+      if (displayHour === 0) displayHour = 12;
+      const ampm = curHour >= 12 ? 'PM' : 'AM';
+      const displayTime = `${displayHour}:${String(curMin).padStart(2, '0')} ${ampm}`;
+
+      intervals.push({
+        value: formattedTime,
+        label: `${labels[i]} (${displayTime})`
+      });
+
+      curMin += 15;
+      if (curMin === 60) {
+        curMin = 0;
+        curHour = (curHour + 1) % 24;
+      }
+    }
+    return intervals;
+  };
+
+  const generate15MinIntervals = () => {
+    const options = [];
+    for (let h = 0; h < 24; h++) {
+      for (let m = 0; m < 60; m += 15) {
+        const value = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        let displayHour = h % 12;
+        if (displayHour === 0) displayHour = 12;
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const label = `${displayHour}:${String(m).padStart(2, '0')} ${ampm}`;
+        options.push({ value, label });
+      }
+    }
+    return options;
+  };
+
+  const handleOpenEditModal = (course: any) => {
+    setEditingCourseId(course.id);
+    setEditName(course.name);
+    setEditPlatform(course.platform || '');
+    setEditReminderEnabled(course.reminderEnabled || false);
+    setEditReminderTime(course.reminderTime || getNext15MinBoundary());
+    setEditFormErrors({});
+    setDeleteConfirmation('');
+    setShowEditCourse(true);
+  };
+
+  const handleSaveEditCourse = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCourseId) return;
+
+    const errors: Record<string, string> = {};
+    if (!editName.trim()) {
+      errors.name = "This field cannot be empty";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setEditFormErrors(errors);
+      return;
+    }
+
+    const formattedLink = formatCourseLink(editPlatform) || 'Self-Study';
+
+    store.updateCourse(editingCourseId, {
+      name: editName,
+      platform: formattedLink,
+      reminderEnabled: editReminderEnabled,
+      reminderTime: editReminderEnabled ? editReminderTime : undefined
+    });
+
+    setShowEditCourse(false);
+    setEditingCourseId(null);
+  };
+
+  const handleDeleteCourse = () => {
+    if (!editingCourseId || deleteConfirmation !== 'Delete') return;
+    store.removeCourse(editingCourseId);
+    setShowEditCourse(false);
+    setEditingCourseId(null);
+    setDeleteConfirmation('');
+  };
 
   const handleCreateCourse = (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,11 +266,11 @@ export default function CoursesPage() {
                   </div>
 
                   <button 
-                    onClick={() => store.removeCourse(course.id)}
-                    className="p-1 hover:bg-red-950/40 text-on-surface/20 hover:text-red-400 rounded-lg transition shrink-0"
-                    title="Remove course"
+                    onClick={() => handleOpenEditModal(course)}
+                    className="p-1 hover:bg-primary/20 text-on-surface/20 hover:text-primary rounded-lg transition shrink-0 cursor-pointer"
+                    title="Edit course"
                   >
-                    <Trash className="w-3.5 h-3.5" />
+                    <Pencil className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
@@ -275,13 +435,18 @@ export default function CoursesPage() {
                     </label>
                   </div>
                   {reminderEnabled && (
-                    <div className="flex items-center justify-between gap-2 pt-1">
-                      <span className="text-[9px] font-mono text-outline">Preferred Time:</span>
+                    <div className="flex flex-col gap-1.5 pt-1 border-t border-outline-variant/20">
+                      <div className="flex justify-between items-center text-[10px] font-mono text-outline">
+                        <span>Preferred Time (15m step):</span>
+                        <span className="text-[9px] text-primary">Next 15m Mark: {getNext15MinDisplay()}</span>
+                      </div>
                       <input
                         type="time"
+                        step="900"
                         value={reminderTime}
-                        onChange={(e) => setReminderTime(e.target.value)}
-                        className="bg-surface-container border border-outline-variant rounded-lg px-2 py-0.5 text-[10px] text-on-surface font-mono focus:outline-none focus:border-primary w-24 text-center cursor-pointer"
+                        onChange={(e) => setReminderTime(roundToNearest15Minutes(e.target.value))}
+                        onBlur={(e) => setReminderTime(roundToNearest15Minutes(e.target.value))}
+                        className="bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1 text-xs text-on-surface font-mono focus:outline-none focus:border-primary w-full text-center cursor-pointer"
                       />
                     </div>
                   )}
@@ -301,6 +466,134 @@ export default function CoursesPage() {
                   >
                     Log Course
                   </button>
+                </div>
+              </form>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Course Modal */}
+      <AnimatePresence>
+        {showEditCourse && (
+          <>
+            <div onClick={() => { setShowEditCourse(false); setEditingCourseId(null); }} className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"></div>
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm glass-panel-neon p-6 rounded-2xl z-50 border border-primary overflow-y-auto max-h-[90vh]"
+            >
+              <h3 className="text-sm font-mono font-bold text-primary border-b border-outline-variant pb-2 mb-4">Edit Course Settings</h3>
+              
+              <form onSubmit={handleSaveEditCourse} noValidate className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-mono text-outline mb-1">Course Title</label>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => {
+                      setEditName(e.target.value);
+                      setEditFormErrors(prev => ({ ...prev, name: undefined }));
+                    }}
+                    placeholder="E.g., Next.js 15 Web Apps"
+                    className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary font-mono"
+                  />
+                  {editFormErrors.name && <p className="text-red-500 text-[10px] font-mono mt-1">{editFormErrors.name}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-mono text-outline mb-1">Course Link (URL)</label>
+                  <input
+                    type="text"
+                    value={editPlatform}
+                    onChange={(e) => setEditPlatform(e.target.value)}
+                    placeholder="E.g., https://coursera.org/learn/..."
+                    className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary font-mono"
+                  />
+                </div>
+
+                {/* Daily Email Reminder Fields */}
+                <div className="bg-surface-container-low/50 p-3 rounded-xl border border-outline-variant/30 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-mono text-outline flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-primary" /> Daily Email Reminder
+                    </span>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editReminderEnabled}
+                        onChange={(e) => setEditReminderEnabled(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-8 h-4.5 bg-surface-container-high rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-outline after:border-outline-variant after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-purple-600 peer-checked:to-blue-500 peer-checked:after:bg-on-primary"></div>
+                    </label>
+                  </div>
+                  
+                  {editReminderEnabled && (
+                    <div className="space-y-3 pt-2 border-t border-outline-variant/20">
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex justify-between items-center text-[10px] font-mono text-outline">
+                          <span>Reminder Time (15m step):</span>
+                          <span className="text-[9px] text-primary">Next 15m Mark: {getNext15MinDisplay()}</span>
+                        </div>
+                        <input
+                          type="time"
+                          step="900"
+                          value={editReminderTime}
+                          onChange={(e) => setEditReminderTime(roundToNearest15Minutes(e.target.value))}
+                          onBlur={(e) => setEditReminderTime(roundToNearest15Minutes(e.target.value))}
+                          className="bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface font-mono focus:outline-none focus:border-primary w-full text-center cursor-pointer"
+                        />
+                        <p className="text-[8px] font-mono text-outline-variant text-right mt-0.5">
+                          Time will snap to the nearest 15-minute interval.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button 
+                    type="button"
+                    onClick={() => { setShowEditCourse(false); setEditingCourseId(null); }} 
+                    className="flex-1 bg-surface-container border border-outline-variant rounded-lg py-2 text-xs font-mono cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit"
+                    className="flex-1 bg-primary hover:bg-primary-container rounded-lg py-2 text-xs font-mono font-bold cursor-pointer"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+
+                {/* Danger Zone: Delete Course */}
+                <div className="border-t border-outline-variant/30 pt-4 mt-6">
+                  <div className="flex flex-col gap-2">
+                    <span className="text-[10px] font-mono text-outline uppercase tracking-wider text-red-400 font-bold">Danger Zone</span>
+                    <p className="text-[9px] font-mono text-outline-variant leading-normal">
+                      To delete this course, type <strong className="text-red-400 font-bold">Delete</strong> below and click the delete button.
+                    </p>
+                    <div className="flex gap-2 mt-1">
+                      <input
+                        type="text"
+                        value={deleteConfirmation}
+                        onChange={(e) => setDeleteConfirmation(e.target.value)}
+                        placeholder="Type 'Delete'"
+                        className="flex-1 bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-red-500 font-mono"
+                      />
+                      <button
+                        type="button"
+                        disabled={deleteConfirmation !== 'Delete'}
+                        onClick={handleDeleteCourse}
+                        className="bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 hover:border-red-500 text-red-300 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg px-3 py-1.5 text-xs font-mono font-bold transition flex items-center gap-1.5"
+                      >
+                        <Trash className="w-3.5 h-3.5" /> Delete
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </form>
             </motion.div>
