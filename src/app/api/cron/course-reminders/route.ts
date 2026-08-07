@@ -4,11 +4,16 @@ import { sendCourseReminderMail } from '@/lib/mailService';
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get('Authorization');
+  const customHeader = request.headers.get('x-cron-secret');
   const cronSecret = process.env.CRON_SECRET;
 
   // Enforce security in production when CRON_SECRET is configured
   if (process.env.NODE_ENV === 'production' && cronSecret) {
-    if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
+    const isAuthorized = 
+      (authHeader && authHeader === `Bearer ${cronSecret}`) ||
+      (customHeader && customHeader === cronSecret);
+
+    if (!isAuthorized) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
   }
