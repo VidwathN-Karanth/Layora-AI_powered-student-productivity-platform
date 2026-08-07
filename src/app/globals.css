@@ -139,8 +139,9 @@ html[data-theme="emerald"] {
   --color-on-surface: #0F172A;
   --color-on-surface-variant: #475569;
   
-  --color-outline: #94A3B8;
-  --color-outline-variant: #E2E8F0;
+  --color-outline: #475569;          /* High contrast dark slate for labels */
+  --color-outline-variant: #CBD5E1;  /* Slate border outline */
+  --color-cyber-dark: #FAF9F6;       /* Forces overall screen background to creme */
 }
 
 /* Light mode specific elements custom styling */
@@ -149,63 +150,152 @@ html[data-theme="emerald"] {
                     linear-gradient(90deg, rgba(15, 23, 42, 0.03) 1px, transparent 1px);
 }
 
+/* Hide or dim background neon glow orbs in light mode */
 .light-mode [class*="bg-cyber-purple/"],
 .light-mode [class*="bg-cyber-blue/"],
 .light-mode [class*="bg-cyber-purple/15"],
 .light-mode [class*="bg-cyber-blue/15"],
 .light-mode .blur-\[120px\],
 .light-mode .blur-\[140px\] {
-  opacity: 0.12 !important;
+  opacity: 0.06 !important;
 }
 
+/* Cards layout rules */
 .light-mode .glass-card,
 .light-mode .glass-panel-neon {
-  background: rgba(255, 255, 255, 0.8) !important;
-  backdrop-filter: blur(16px) !important;
-  border-color: rgba(15, 23, 42, 0.08) !important;
-  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04) !important;
+  background: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -1px rgba(15, 23, 42, 0.03) !important;
 }
 
 .light-mode .glass-card:hover {
   border-color: var(--cyber-primary) !important;
 }
 
+/* Force dark color on light elements */
 .light-mode .text-white\/30,
 .light-mode .text-white\/40,
 .light-mode .text-white\/50 {
-  color: rgba(15, 23, 42, 0.45) !important;
+  color: #64748B !important;
 }
 
 .light-mode .text-white\/60,
 .light-mode .text-white\/70,
 .light-mode .text-white\/80 {
-  color: rgba(15, 23, 42, 0.7) !important;
+  color: #334155 !important;
 }
 
 .light-mode .border-white\/5,
 .light-mode .border-white\/10,
 .light-mode .border-white\/15,
 .light-mode .border-white\/20 {
-  border-color: rgba(15, 23, 42, 0.08) !important;
+  border-color: #E2E8F0 !important;
 }
 
 .light-mode .bg-white\/2,
 .light-mode .bg-white\/3,
 .light-mode .bg-white\/5,
 .light-mode .bg-white\/10 {
-  background-color: rgba(15, 23, 42, 0.04) !important;
+  background-color: #F1F5F9 !important;
 }
 
-.light-mode .input-hud {
+/* Global input fields readability fixes */
+.light-mode input,
+.light-mode textarea,
+.light-mode select {
   background-color: #FFFFFF !important;
-  border-color: rgba(15, 23, 42, 0.15) !important;
+  border-color: #CBD5E1 !important;
   color: #0F172A !important;
 }
 
-.light-mode .input-hud:focus {
-  border-color: var(--cyber-primary) !important;
+.light-mode input::placeholder,
+.light-mode textarea::placeholder {
+  color: #94A3B8 !important;
 }
 
+.light-mode input:focus,
+.light-mode textarea:focus,
+.light-mode select:focus {
+  border-color: var(--cyber-primary) !important;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1) !important;
+}
+
+/* Sidebar theming */
+.light-mode aside {
+  background-color: #F8FAFC !important;
+  border-color: #E2E8F0 !important;
+}
+
+.light-mode aside span,
+.light-mode aside div {
+  color: #334155 !important;
+}
+
+.light-mode aside button {
+  color: #475569 !important;
+}
+
+.light-mode aside button:hover {
+  background-color: #F1F5F9 !important;
+  color: #0F172A !important;
+}
+
+/* Active navigation items in sidebar */
+.light-mode aside button[class*="bg-gradient-to-r"],
+.light-mode aside button[class*="bg-white/10"] {
+  background: rgba(79, 70, 229, 0.08) !important;
+  color: #4F46E5 !important;
+  border-color: rgba(79, 70, 229, 0.15) !important;
+  font-weight: 700 !important;
+}
+
+.light-mode aside button[class*="bg-gradient-to-r"] svg,
+.light-mode aside button[class*="bg-white/10"] svg {
+  color: #4F46E5 !important;
+}
+
+/* User identity card and logouts in sidebar */
+.light-mode aside div[class*="bg-white/5"] {
+  background-color: #F1F5F9 !important;
+  border-color: #E2E8F0 !important;
+}
+
+.light-mode aside div[class*="bg-white/5"] * {
+  color: #0F172A !important;
+}
+
+.light-mode aside div[class*="bg-white/5"] div[class*="text-white/40"] {
+  color: #64748B !important;
+}
+
+/* Header bar */
+.light-mode header {
+  background-color: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+}
+
+.light-mode header span {
+  color: #475569 !important;
+}
+
+.light-mode header span[class*="text-cyber-blue"] {
+  color: #4F46E5 !important;
+}
+
+/* Digital clock */
+.light-mode span[class*="from-cyan-400"] {
+  background-image: linear-gradient(to right, #4F46E5, #0EA5E9) !important;
+  color: transparent !important;
+  background-clip: text !important;
+  -webkit-background-clip: text !important;
+}
+
+.light-mode header div[class*="bg-white/5"] {
+  background-color: #F1F5F9 !important;
+  border-color: #E2E8F0 !important;
+}
+
+/* Fix overall text colors */
 .light-mode .text-white {
   color: #0F172A !important;
 }
@@ -214,6 +304,7 @@ html[data-theme="emerald"] {
   color: #0F172A !important;
 }
 
+/* Buttons and primary badge text color guards */
 .light-mode button.btn-neon,
 .light-mode button.bg-primary,
 .light-mode .bg-primary *,
