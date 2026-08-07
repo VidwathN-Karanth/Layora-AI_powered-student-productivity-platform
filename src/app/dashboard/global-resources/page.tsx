@@ -38,11 +38,52 @@ export default function GlobalResourcesPage() {
   const [fileName, setFileName] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
   const [fileData, setFileData] = useState<File | null>(null);
+  const [fileType, setFileType] = useState('pdf');
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadErrors, setUploadErrors] = useState<Record<string, string | undefined>>({});
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Helper to extract Google Drive file ID for thumbnail preview
+  const getDocumentPreview = (url: string) => {
+    const driveIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (driveIdMatch && driveIdMatch[1]) {
+      return `https://drive.google.com/thumbnail?id=${driveIdMatch[1]}&sz=w400`;
+    }
+    return null;
+  };
+
+  const getFileTypeBadge = (type: string) => {
+    const ext = type.toLowerCase();
+    let bgColor = 'bg-slate-800/80 border-slate-700 text-slate-300';
+    let label = ext.toUpperCase();
+
+    if (ext === 'pdf') {
+      bgColor = 'bg-rose-950/80 border-rose-500/30 text-rose-400';
+    } else if (['doc', 'docx'].includes(ext)) {
+      bgColor = 'bg-blue-950/80 border-blue-500/30 text-blue-400';
+      label = 'WORD';
+    } else if (['ppt', 'pptx'].includes(ext)) {
+      bgColor = 'bg-amber-950/80 border-amber-500/30 text-amber-400';
+      label = 'PPT';
+    } else if (['xls', 'xlsx'].includes(ext)) {
+      bgColor = 'bg-emerald-950/80 border-emerald-500/30 text-emerald-400';
+      label = 'EXCEL';
+    } else if (ext === 'txt') {
+      bgColor = 'bg-zinc-800/80 border-zinc-500/30 text-zinc-300';
+      label = 'TXT';
+    } else if (ext === 'link') {
+      bgColor = 'bg-cyan-950/80 border-cyan-500/30 text-cyan-400';
+      label = 'LINK';
+    }
+
+    return (
+      <span className={`px-2 py-0.5 rounded text-[8px] font-bold border tracking-wider uppercase ${bgColor}`}>
+        {label}
+      </span>
+    );
+  };
 
   // Fetch all global resources
   const fetchGlobalResources = async () => {
@@ -50,7 +91,6 @@ export default function GlobalResourcesPage() {
     setErrorMsg('');
     try {
       if (!isSupabaseConfigured) {
-        // Fallback for local demo mode
         setResources(store.globalResources || []);
         setLoading(false);
         return;
@@ -62,7 +102,6 @@ export default function GlobalResourcesPage() {
       }
       const data = await res.json();
       const list = data.resources || [];
-      // Sort by creation date descending
       list.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setResources(list);
       store.setGlobalResources(list);
@@ -78,14 +117,36 @@ export default function GlobalResourcesPage() {
     fetchGlobalResources();
   }, []);
 
-  // Handle Drag & Drop events
+  // Clipboard Paste Support for Documents
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      if (!showUploadForm || uploadMethod !== 'drive') return;
+      
+      const file = e.clipboardData?.files?.[0];
+      if (file) {
+        processSelectedFile(file);
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => {
+      window.removeEventListener('paste', handlePaste);
+    };
+  }, [showUploadForm, uploadMethod]);
+
   const processSelectedFile = (file: File) => {
-    if (file.type !== 'application/pdf') {
-      setUploadErrors(prev => ({ ...prev, file: "Only PDF files are allowed for direct uploads" }));
+    if (file.type.startsWith('image/')) {
+      setUploadErrors(prev => ({ ...prev, file: "Images/photos are not allowed. Please upload document files only." }));
+      return;
+    }
+    if (file.type.startsWith('video/')) {
+      setUploadErrors(prev => ({ ...prev, file: "Videos are not allowed. Please upload document files only." }));
       return;
     }
     const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'pdf';
     setFileName(nameWithoutExt);
+    setFileType(ext);
     setFileData(file);
     setUploadErrors(prev => ({ ...prev, file: undefined, fileName: undefined }));
   };
@@ -111,11 +172,14 @@ export default function GlobalResourcesPage() {
 
       setIsUploading(true);
       try {
+        const detectedType = linkUrl.split('?')[0].split('/').pop()?.split('.').pop()?.toLowerCase() || 'link';
+        const finalType = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt'].includes(detectedType) ? detectedType : 'link';
+
         if (isSupabaseConfigured) {
           const res = await fetch('/api/resources/global', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: fileName, url: linkUrl, type: 'link' })
+            body: JSON.stringify({ name: fileName, url: linkUrl, type: finalType })
           });
           if (!res.ok) {
             const errData = await res.json().catch(() => ({}));
@@ -125,12 +189,11 @@ export default function GlobalResourcesPage() {
           setResources(data.resources);
           store.setGlobalResources(data.resources);
         } else {
-          // Local mode
           const localItem = {
             id: `file-${Date.now()}`,
             name: fileName,
             url: linkUrl,
-            type: 'link',
+            type: finalType,
             uploadedBy: currentUserEmail || 'local_user',
             uploaderName: clerkUser?.fullName || 'Local Student',
             createdAt: new Date().toISOString()
@@ -150,7 +213,7 @@ export default function GlobalResourcesPage() {
     }
 
     // Direct Upload Path
-    if (!fileData) errors.file = "Please select a PDF file";
+    if (!fileData) errors.file = "Please select a document file";
     if (!fileName.trim()) errors.fileName = "Document Name is required";
 
     if (Object.keys(errors).length > 0 || !fileData) {
@@ -158,7 +221,6 @@ export default function GlobalResourcesPage() {
       return;
     }
 
-    // Direct upload limit (4.5MB Vercel serverless platform body limit)
     const MAX_FILE_SIZE = 4.5 * 1024 * 1024;
     if (fileData.size > MAX_FILE_SIZE) {
       alert(`File is too large (${(fileData.size / (1024 * 1024)).toFixed(2)}MB).\n\nDirect uploads are limited to 4.5MB due to serverless platform body-size limits. Please upload this file directly to your Google Drive and add it here as a "Google Drive Link".`);
@@ -173,7 +235,6 @@ export default function GlobalResourcesPage() {
         throw new Error('Supabase / Google Drive integrations are not configured in local demo mode. Please use "Web / Google Drive Link" instead.');
       }
 
-      // 1. Post to user's Google Drive proxy, flag to makePublic
       const formData = new FormData();
       formData.append('file', fileData);
       formData.append('name', fileName);
@@ -192,11 +253,10 @@ export default function GlobalResourcesPage() {
       const uploadData = await uploadRes.json();
       const driveUrl = uploadData.file.url;
 
-      // 2. Post metadata to Global List
       const saveRes = await fetch('/api/resources/global', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: fileName, url: driveUrl, type: 'pdf' })
+        body: JSON.stringify({ name: fileName, url: driveUrl, type: fileType })
       });
 
       if (!saveRes.ok) {
@@ -208,7 +268,7 @@ export default function GlobalResourcesPage() {
       setResources(saveData.resources);
       store.setGlobalResources(saveData.resources);
 
-      alert("PDF uploaded successfully to your Google Drive and shared with everyone!");
+      alert(`${fileType.toUpperCase()} uploaded successfully to your Google Drive and shared with everyone!`);
       resetUploadForm();
     } catch (err: any) {
       console.error(err);
@@ -222,12 +282,12 @@ export default function GlobalResourcesPage() {
     setFileName('');
     setLinkUrl('');
     setFileData(null);
+    setFileType('pdf');
     setUploadErrors({});
     setShowUploadForm(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // Delete Resource Handler
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to remove this document from the global library?")) return;
 
@@ -244,7 +304,6 @@ export default function GlobalResourcesPage() {
         setResources(data.resources);
         store.setGlobalResources(data.resources);
       } else {
-        // Local mode
         store.removeGlobalResource(id);
         setResources(prev => prev.filter(r => r.id !== id));
       }
@@ -254,7 +313,6 @@ export default function GlobalResourcesPage() {
     }
   };
 
-  // Filtered resource list
   const filteredResources = resources.filter(res => {
     const name = (res.name || '').toLowerCase();
     const uploader = (res.uploaderName || '').toLowerCase();
@@ -284,7 +342,7 @@ export default function GlobalResourcesPage() {
             Global Shared Resources
           </h2>
           <p className="text-xs text-outline font-mono mt-0.5">
-            Access, view, and share academic PDFs with the entire student body.
+            Access, view, and share study files and PDFs with the entire student body.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -326,7 +384,7 @@ export default function GlobalResourcesPage() {
                     : 'text-outline hover:text-white'
                 }`}
               >
-                Direct PDF Upload
+                Direct File Upload
               </button>
               <button
                 type="button"
@@ -366,7 +424,7 @@ export default function GlobalResourcesPage() {
                     type="file"
                     ref={fileInputRef}
                     onChange={handleFileChange}
-                    accept=".pdf"
+                    accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
                     className="hidden"
                   />
                   {fileData ? (
@@ -378,9 +436,9 @@ export default function GlobalResourcesPage() {
                   ) : (
                     <>
                       <UploadCloud className="w-8 h-8 text-outline" />
-                      <div className="text-xs font-mono font-semibold text-white">Drag & drop your study PDF here</div>
+                      <div className="text-xs font-mono font-semibold text-white">Drag & drop your study document here</div>
                       <div className="text-[9px] font-mono text-outline leading-normal max-w-xs">
-                        Accepts only <strong>PDF</strong> files. Max size is <strong>4.5MB</strong> due to serverless limitations.
+                        Supports <strong>PDF, Word, PPT, Excel, TXT</strong>. Max size is <strong>4.5MB</strong>. Images/photos are not allowed.
                       </div>
                     </>
                   )}
@@ -469,92 +527,120 @@ export default function GlobalResourcesPage() {
         />
       </div>
 
-      {/* --- SHARED DOCUMENTS LIBRARY PANEL --- */}
-      <div className="glass-card rounded-2xl border border-outline-variant overflow-hidden">
-        {loading ? (
-          <div className="p-12 text-center text-outline text-xs flex flex-col items-center gap-3 font-mono">
-            <RefreshCw className="w-5 h-5 animate-spin text-primary" />
-            Loading shared library files...
-          </div>
-        ) : errorMsg ? (
-          <div className="p-12 text-center text-rose-300 text-xs flex flex-col items-center gap-2 font-mono">
-            <AlertCircle className="w-5 h-5 text-rose-400" />
-            <span>{errorMsg}</span>
-          </div>
-        ) : filteredResources.length === 0 ? (
-          <div className="p-12 text-center text-outline text-xs font-mono leading-relaxed">
-            No global resources found. Be the first to share a study PDF notes document!
-          </div>
-        ) : (
-          <div className="overflow-x-auto font-mono text-xs">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-outline-variant bg-white/2 text-outline font-bold uppercase tracking-wider">
-                  <th className="p-3.5">Document Title</th>
-                  <th className="p-3.5 w-48">Uploader</th>
-                  <th className="p-3.5 w-36">Shared Date</th>
-                  <th className="p-3.5 w-32 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-variant/30">
-                {filteredResources.map((res) => {
-                  const isOwner = res.uploadedBy.toLowerCase() === currentUserEmail.toLowerCase();
+      {/* --- SHARED DOCUMENTS LIBRARY PANEL (RECTANGULAR CARDS) --- */}
+      {loading ? (
+        <div className="glass-card rounded-2xl border border-outline-variant p-12 text-center text-outline text-xs flex flex-col items-center gap-3 font-mono">
+          <RefreshCw className="w-5 h-5 animate-spin text-primary" />
+          Loading shared library files...
+        </div>
+      ) : errorMsg ? (
+        <div className="glass-card rounded-2xl border border-outline-variant p-12 text-center text-rose-300 text-xs flex flex-col items-center gap-2 font-mono">
+          <AlertCircle className="w-5 h-5 text-rose-400" />
+          <span>{errorMsg}</span>
+        </div>
+      ) : filteredResources.length === 0 ? (
+        <div className="glass-card rounded-2xl border border-outline-variant p-12 text-center text-outline text-xs font-mono leading-relaxed">
+          No global resources found. Be the first to share a study notes document!
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 font-mono text-xs">
+          {filteredResources.map((res) => {
+            const isOwner = res.uploadedBy.toLowerCase() === currentUserEmail.toLowerCase();
+            const previewUrl = getDocumentPreview(res.url);
+
+            return (
+              <div 
+                key={res.id} 
+                className={`glass-card rounded-2xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-lg flex flex-col overflow-hidden group ${
+                  isOwner 
+                    ? 'border-primary/45 hover:border-primary shadow-primary/5 hover:shadow-primary/10' 
+                    : 'border-outline-variant hover:border-primary/50'
+                }`}
+              >
+                {/* Document Preview Area */}
+                <div className="aspect-[4/3] bg-black/40 relative overflow-hidden flex items-center justify-center border-b border-outline-variant/30">
+                  {previewUrl ? (
+                    <img 
+                      src={previewUrl} 
+                      alt={res.name}
+                      className="w-full h-full object-cover object-top transition duration-500 group-hover:scale-105"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-50 pointer-events-none" />
+                  )}
+
+                  {/* Fallback File icon inside the preview container in case no preview img exists */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    {!previewUrl && (
+                      <FileText className="w-12 h-12 text-primary/40 group-hover:text-primary/60 transition-colors duration-300" />
+                    )}
+                  </div>
                   
-                  return (
-                    <tr key={res.id} className="hover:bg-white/2 transition">
-                      <td className="p-3.5">
-                        <div className="flex items-center gap-2.5">
-                          <FileText className="w-4 h-4 text-primary shrink-0" />
-                          <span className="font-bold text-on-surface truncate max-w-sm md:max-w-md lg:max-w-lg" title={res.name}>
-                            {res.name}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="p-3.5">
-                        <div className="flex items-center gap-1.5 text-outline">
-                          <User className="w-3.5 h-3.5 text-primary shrink-0" />
-                          <span className="truncate max-w-[150px] font-semibold text-white/80">{res.uploaderName}</span>
-                          {isOwner && (
-                            <span className="text-[8px] bg-primary/10 text-primary border border-primary/20 px-1 py-px rounded uppercase scale-90">YOU</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="p-3.5 text-outline">
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5 text-outline/50 shrink-0" />
-                          <span>{formatUploadedDate(res.createdAt)}</span>
-                        </div>
-                      </td>
-                      <td className="p-3.5 text-center">
-                        <div className="flex items-center justify-center gap-2.5">
-                          <a
-                            href={res.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-1.5 rounded-lg border border-outline-variant bg-white/2 hover:border-primary text-outline hover:text-white transition flex items-center gap-1 text-[10px]"
-                            title="Open Link"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
-                          {(isOwner || isAdmin) && (
-                            <button
-                              onClick={() => handleDelete(res.id)}
-                              className="p-1.5 rounded-lg border border-red-500/20 bg-red-950/5 hover:border-red-500 text-outline hover:text-red-400 transition cursor-pointer"
-                              title="Delete Shared File"
-                            >
-                              <Trash className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                  {/* File Type Badge Overlay */}
+                  <div className="absolute top-3 left-3">
+                    {getFileTypeBadge(res.type)}
+                  </div>
+
+                  {/* Actions Overlay */}
+                  <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
+                    <a
+                      href={res.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2.5 rounded-xl border border-outline-variant bg-[#0B0F19]/90 hover:border-primary text-outline hover:text-white transition-all scale-90 group-hover:scale-100 duration-300"
+                      title="Open/View Document"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                    {(isOwner || isAdmin) && (
+                      <button
+                        onClick={() => handleDelete(res.id)}
+                        className="p-2.5 rounded-xl border border-red-500/20 bg-red-950/80 hover:border-red-500 text-outline hover:text-red-400 transition-all scale-90 group-hover:scale-100 duration-300 cursor-pointer"
+                        title="Delete Shared Document"
+                      >
+                        <Trash className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Card Info Area */}
+                <div className="p-4 flex-1 flex flex-col justify-between space-y-3 bg-white/[0.02]">
+                  <div className="space-y-2">
+                    <h4 
+                      className="font-bold text-on-surface text-xs leading-snug line-clamp-2 min-h-[32px] group-hover:text-primary transition-colors duration-300"
+                      title={res.name}
+                    >
+                      {res.name}
+                    </h4>
+                    
+                    <div className="flex items-center gap-1.5 text-[10px] text-outline">
+                      <User className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <span className="truncate max-w-[140px] font-semibold text-white/85">{res.uploaderName}</span>
+                      {isOwner && (
+                        <span className="text-[8px] bg-primary/10 text-primary border border-primary/20 px-1 py-px rounded uppercase scale-90 font-extrabold">YOU</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[9px] text-outline/65 border-t border-outline-variant/35 pt-2.5">
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-primary/60" />
+                      {formatUploadedDate(res.createdAt)}
+                    </span>
+                    <span className="uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-white/5 border border-outline-variant/25 text-white/60">
+                      {res.type}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
