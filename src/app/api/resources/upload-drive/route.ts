@@ -11,6 +11,7 @@ export async function POST(req: Request) {
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const name = formData.get('name') as string;
+    const makePublic = formData.get('makePublic') === 'true';
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -97,6 +98,29 @@ export async function POST(req: Request) {
 
     // Fallback: if Google API doesn't return webViewLink directly, construct it from the file ID
     const fileUrl = driveData.webViewLink || (driveData.id ? `https://drive.google.com/file/d/${driveData.id}/view?usp=drivesdk` : '#');
+
+    // Make the file publicly viewable if requested
+    const fileId = driveData.id;
+    if (makePublic && fileId) {
+      try {
+        const permResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            role: 'reader',
+            type: 'anyone'
+          })
+        });
+        if (!permResponse.ok) {
+          console.warn('Failed to set public permission on Google Drive file:', await permResponse.text());
+        }
+      } catch (permErr) {
+        console.error('Google Drive permission update exception:', permErr);
+      }
+    }
 
     return NextResponse.json({
       success: true,
