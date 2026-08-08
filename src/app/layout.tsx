@@ -4,6 +4,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
 import { SyncProvider } from "@/components/SyncProvider";
 import CookieConsent from "@/components/CookieConsent";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -54,6 +55,7 @@ export default function RootLayout({
           <SyncProvider>
             {children}
             <CookieConsent />
+            <SpeedInsights />
           </SyncProvider>
         </body>
       </html>
