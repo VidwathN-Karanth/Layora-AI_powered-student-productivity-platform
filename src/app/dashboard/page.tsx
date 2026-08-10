@@ -268,7 +268,7 @@ export default function DashboardHome() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/10 pb-4">
         <div>
           <h2 className="text-xl font-geist font-bold tracking-tight text-white">
-            Welcome Back, <span className="text-cyber-blue text-glow-cyan">{user?.name || 'Student'}</span>
+            Welcome Back, <span className="text-primary font-semibold">{user?.name || 'Student'}</span>
           </h2>
           <div className="flex items-center gap-2 mt-3">
             <a
@@ -306,18 +306,18 @@ export default function DashboardHome() {
           {/* Instant Button */}
           <button 
             onClick={handleOpenInstantTaskModal}
-            className="flex items-center gap-2 bg-white/5 hover:bg-cyber-blue/10 border border-white/10 hover:border-cyber-blue/40 rounded-xl px-4 py-2 text-xs font-mono transition cursor-pointer"
+            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg px-4 py-2 text-xs transition cursor-pointer"
           >
-            <Plus className="w-4 h-4 text-cyber-blue" />
+            <Plus className="w-4 h-4 text-primary" />
             <span>Instant</span>
           </button>
 
           {/* Streak counter with fire glow */}
-          <div className="flex items-center gap-2.5 bg-gradient-to-r from-cyber-purple/20 to-cyber-blue/10 border border-cyber-purple/30 rounded-xl px-4 py-2 shadow-lg shadow-cyber-purple/20">
-            <Flame className="w-5 h-5 text-cyber-purple animate-bounce" strokeWidth={1.5} />
+          <div className="flex items-center gap-2.5 border border-white/10 bg-white/5 rounded-lg px-4 py-2">
+            <Flame className="w-5 h-5 text-primary" strokeWidth={1.5} />
             <div>
-              <div className="text-xs font-mono font-bold leading-none text-white">{user?.streakCount || 0} DAYS</div>
-              <span className="text-[9px] font-mono text-white/50 uppercase tracking-widest">Active Streak</span>
+              <div className="text-xs font-bold leading-none text-white">{user?.streakCount || 0} DAYS</div>
+              <span className="text-[9px] text-white/50 uppercase tracking-widest">Active Streak</span>
             </div>
           </div>
         </div>
@@ -331,8 +331,8 @@ export default function DashboardHome() {
           {/* Daily Schedule Timeline */}
           <div className="glass-card rounded-2xl p-5 space-y-4">
             <div className="flex justify-between items-center border-b border-white/10 pb-2">
-              <h3 className="text-xs font-geist font-bold tracking-wider text-cyber-blue uppercase text-glow-cyan">Daily Schedule</h3>
-              <Link href="/dashboard/planner" className="text-[10px] font-mono text-cyber-purple hover:underline flex items-center gap-1">
+              <h3 className="text-xs font-bold tracking-wide text-white uppercase">Daily Schedule</h3>
+              <Link href="/dashboard/planner" className="text-xs text-primary hover:underline flex items-center gap-1">
                 Full Planner <ChevronRight className="w-3.5 h-3.5" strokeWidth={1.5} />
               </Link>
             </div>
@@ -386,10 +386,10 @@ export default function DashboardHome() {
                           <div className="flex justify-end sm:justify-start w-full sm:w-auto pl-8 sm:pl-0 shrink-0">
                             <button
                               onClick={() => handleStartStudySession(block)}
-                              className={`px-3 py-1.5 rounded-xl text-[9px] font-mono font-bold flex items-center gap-1 transition cursor-pointer uppercase border w-full sm:w-auto justify-center ${
+                              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition cursor-pointer uppercase border w-full sm:w-auto justify-center ${
                                 isTicking
                                   ? 'bg-red-500/20 border-red-500/50 text-red-400 animate-pulse'
-                                  : 'bg-cyber-blue/10 hover:bg-cyber-blue/20 border border-cyber-blue/30 text-cyber-blue'
+                                  : 'bg-primary/10 hover:bg-primary/20 border border-primary/20 text-primary'
                               }`}
                             >
                               {isTicking ? `Stop (${formatTimer(remainingSeconds)})` : 'Start Session'}
@@ -407,10 +407,10 @@ export default function DashboardHome() {
           {/* Tomorrow's Schedule Timeline */}
           <div className="glass-card rounded-2xl p-5 space-y-4">
             <div className="flex justify-between items-center border-b border-white/10 pb-2">
-              <h3 className="text-xs font-geist font-bold tracking-wider text-cyber-purple uppercase text-glow-purple">
+              <h3 className="text-xs font-bold tracking-wide text-white uppercase">
                 {"Tomorrow's Schedule"} ({tomorrowLabel})
               </h3>
-              <span className="text-[9px] font-mono text-white/40 uppercase">Upcoming Blocks</span>
+              <span className="text-[9px] text-white/40 uppercase">Upcoming Blocks</span>
             </div>
 
             <div className="space-y-3 max-h-[260px] overflow-y-auto pr-1">
@@ -441,7 +441,7 @@ export default function DashboardHome() {
         <div className="space-y-6">
           {/* Active Courses Widget */}
           <div className="glass-card rounded-2xl p-5 space-y-4">
-            <h3 className="text-xs font-geist font-bold tracking-wider text-cyber-purple border-b border-white/10 pb-2 uppercase text-glow-purple">Active Courses</h3>
+            <h3 className="text-xs font-bold tracking-wide text-white border-b border-white/10 pb-2 uppercase">Active Courses</h3>
             
             <div className="space-y-4">
               {courses.length === 0 ? (
@@ -461,7 +461,7 @@ export default function DashboardHome() {
                               href={course.platform}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-[9px] font-mono text-cyber-blue hover:text-cyber-blue/80 hover:underline flex items-center gap-0.5 transition cursor-pointer"
+                              className="text-xs text-primary hover:underline flex items-center gap-0.5 transition cursor-pointer"
                             >
                               Continue <ExternalLink className="w-2.5 h-2.5" />
                             </a>
@@ -469,13 +469,13 @@ export default function DashboardHome() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0 ml-2">
-                        <span className="text-xs font-mono font-black text-cyber-blue text-glow-cyan">{course.progress}%</span>
+                        <span className="text-xs text-primary font-bold">{course.progress}%</span>
                         {course.platform && course.platform.startsWith('http') && (
                           <a
                             href={course.platform}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-1 hover:bg-white/10 rounded-lg text-cyber-blue hover:text-glow-cyan hover:scale-110 transition duration-200 cursor-pointer flex items-center justify-center"
+                            className="p-1 hover:bg-white/10 rounded-lg text-primary hover:scale-110 transition duration-200 cursor-pointer flex items-center justify-center"
                             title="Open course in new tab"
                           >
                             <ChevronRight className="w-4 h-4" />
@@ -487,7 +487,7 @@ export default function DashboardHome() {
                     {/* Progress Slider */}
                     <div className="progress-track bg-white/10">
                       <div 
-                        className="progress-fill bg-gradient-to-r from-cyber-purple to-cyber-blue shadow-[0_0_10px_rgba(0,240,255,0.5)]"
+                        className="progress-fill bg-primary"
                         style={{ width: `${course.progress}%` }}
                       ></div>
                     </div>
@@ -505,12 +505,12 @@ export default function DashboardHome() {
           {/* Quick Launchers Widget */}
           <div className="glass-card rounded-2xl p-5 space-y-4">
             <div className="flex justify-between items-center border-b border-white/10 pb-2">
-              <h3 className="text-xs font-geist font-bold tracking-wider text-cyber-blue uppercase text-glow-cyan flex items-center gap-1.5">
-                <Globe className="w-3.5 h-3.5 text-cyber-blue" /> Quick Launchers
+              <h3 className="text-xs font-bold tracking-wide text-white uppercase flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5 text-primary" /> Quick Launchers
               </h3>
               <button 
                 onClick={() => setIsAddingLauncher(!isAddingLauncher)} 
-                className="p-1 hover:bg-white/10 rounded-lg text-cyber-blue transition cursor-pointer"
+                className="p-1 hover:bg-white/10 rounded-lg text-primary transition cursor-pointer"
                 title="Add Launcher"
               >
                 <Plus className="w-4 h-4" />

@@ -7,18 +7,12 @@ export default function TermsAndConditionsPage() {
   const router = useRouter();
 
   return (
-    <main className="min-h-screen bg-[#070709] text-white flex flex-col items-center justify-start relative overflow-y-auto p-6 md:p-12 cyber-grid">
-      {/* Background Glow Container to prevent overflow scrolling */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute w-[500px] h-[500px] bg-cyber-purple/15 -top-[10%] -right-[10%] rounded-full blur-[120px]"></div>
-        <div className="absolute w-[500px] h-[500px] bg-cyber-blue/15 -bottom-[10%] -left-[10%] rounded-full blur-[120px]"></div>
-      </div>
-
+    <main className="min-h-screen bg-[#070709] text-white flex flex-col items-center justify-start relative overflow-y-auto p-6 md:p-12">
       <div className="w-full max-w-3xl z-10 space-y-8 mt-6">
         {/* Back Button */}
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-xs font-mono text-white/60 hover:text-cyber-blue transition border border-white/5 hover:border-cyber-blue/30 bg-white/2 hover:bg-cyber-blue/5 px-3.5 py-1.5 rounded-xl cursor-pointer"
+          className="flex items-center gap-2 text-xs text-white/60 hover:text-white transition border border-white/10 bg-white/5 hover:bg-white/10 px-3.5 py-1.5 rounded-lg cursor-pointer"
         >
           <ArrowLeft className="w-3.5 h-3.5" /> BACK TO PORTAL
         </button>
@@ -26,21 +20,21 @@ export default function TermsAndConditionsPage() {
         {/* Header */}
         <div className="border-b border-white/10 pb-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyber-purple to-cyber-blue flex items-center justify-center border border-white/10">
-              <span className="text-white font-mono font-black text-sm">L</span>
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+              <span className="text-white font-bold text-sm">L</span>
             </div>
-            <span className="text-xs font-mono font-bold tracking-widest text-cyber-purple uppercase bg-cyber-purple/10 px-2 py-0.5 rounded border border-cyber-purple/20">
+            <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
               Legal Framework
             </span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight font-geist text-transparent bg-clip-text bg-gradient-to-r from-cyber-purple to-cyber-blue">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight font-geist text-white">
             Terms & Conditions
           </h1>
-          <p className="text-xs text-white/50 font-mono mt-1">Last updated: June 22, 2026</p>
+          <p className="text-xs text-white/40 mt-1">Last updated: June 22, 2026</p>
         </div>
 
         {/* Content Body */}
-        <div className="glass-card border border-white/10 rounded-2xl p-6 md:p-8 space-y-8 backdrop-blur-md bg-[#0d111c]/60 shadow-[0_4px_30px_rgba(0,0,0,0.5)] text-xs md:text-sm font-mono text-white/80 leading-relaxed">
+        <div className="border border-white/10 rounded-xl p-6 md:p-8 space-y-8 bg-[#0d111c]/40 text-sm text-white/80 leading-relaxed">
           
           <p className="text-white/70 italic">
             These Terms and Conditions ("Terms") govern your access to and use of Layora (the "Service"), including its daily coding activity tracker and leaderboard. By creating an account or using Layora, you agree to be bound by these Terms.
@@ -48,7 +42,7 @@ export default function TermsAndConditionsPage() {
 
           <section className="space-y-3">
             <div className="flex items-center gap-2 text-white font-bold text-sm border-b border-white/5 pb-1">
-              <ShieldCheck className="w-4 h-4 text-cyber-purple" />
+              <ShieldCheck className="w-4 h-4 text-primary" />
               <span>1. Acceptance of Terms</span>
             </div>
             <p>
@@ -58,7 +52,7 @@ export default function TermsAndConditionsPage() {
 
           <section className="space-y-3">
             <div className="flex items-center gap-2 text-white font-bold text-sm border-b border-white/5 pb-1">
-              <Terminal className="w-4 h-4 text-cyber-blue" />
+              <Terminal className="w-4 h-4 text-primary" />
               <span>2. Description of Service</span>
             </div>
             <p>
@@ -75,7 +69,7 @@ export default function TermsAndConditionsPage() {
 
           <section className="space-y-3">
             <div className="flex items-center gap-2 text-white font-bold text-sm border-b border-white/5 pb-1">
-              <Scale className="w-4 h-4 text-emerald-400" />
+              <Scale className="w-4 h-4 text-primary" />
               <span>3. Eligibility</span>
             </div>
             <p>
@@ -85,7 +79,7 @@ export default function TermsAndConditionsPage() {
 
           <section className="space-y-3">
             <div className="flex items-center gap-2 text-white font-bold text-sm border-b border-white/5 pb-1">
-              <ShieldCheck className="w-4 h-4 text-amber-400" />
+              <ShieldCheck className="w-4 h-4 text-primary" />
               <span>4. Account Registration</span>
             </div>
             <ul className="list-disc pl-5 space-y-2 text-white/70">
@@ -98,7 +92,7 @@ export default function TermsAndConditionsPage() {
 
           <section className="space-y-3">
             <div className="flex items-center gap-2 text-white font-bold text-sm border-b border-white/5 pb-1">
-              <HelpCircle className="w-4 h-4 text-cyber-blue" />
+              <HelpCircle className="w-4 h-4 text-primary" />
               <span>5. Third-Party Integrations</span>
             </div>
             <p>
@@ -108,7 +102,7 @@ export default function TermsAndConditionsPage() {
 
           <section className="space-y-3">
             <div className="flex items-center gap-2 text-white font-bold text-sm border-b border-white/5 pb-1">
-              <Terminal className="w-4 h-4 text-cyber-purple" />
+              <Terminal className="w-4 h-4 text-primary" />
               <span>6. Points, Leaderboard & Fair Use</span>
             </div>
             <ul className="list-disc pl-5 space-y-2 text-white/70">
@@ -138,7 +132,7 @@ export default function TermsAndConditionsPage() {
 
           <section className="space-y-3">
             <div className="flex items-center gap-2 text-white font-bold text-sm border-b border-white/5 pb-1">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <ShieldCheck className="w-4 h-4 text-primary" />
               <span>8. Intellectual Property</span>
             </div>
             <ul className="list-disc pl-5 space-y-2 text-white/70">
@@ -172,7 +166,7 @@ export default function TermsAndConditionsPage() {
 
           <section className="space-y-3">
             <div className="flex items-center gap-2 text-white font-bold text-sm border-b border-white/5 pb-1">
-              <Scale className="w-4 h-4 text-cyber-blue" />
+              <Scale className="w-4 h-4 text-primary" />
               <span>11. Governing Law & Dispute Resolution</span>
             </div>
             <p>
@@ -182,7 +176,7 @@ export default function TermsAndConditionsPage() {
 
           <section className="space-y-3">
             <div className="flex items-center gap-2 text-white font-bold text-sm border-b border-white/5 pb-1">
-              <ShieldCheck className="w-4 h-4 text-cyber-purple" />
+              <ShieldCheck className="w-4 h-4 text-primary" />
               <span>12. Contact Us</span>
             </div>
             <p>
@@ -194,7 +188,7 @@ export default function TermsAndConditionsPage() {
         </div>
 
         {/* Footer */}
-        <footer className="text-center font-mono text-[9px] text-white/30 pt-4 border-t border-white/5">
+        <footer className="text-center text-xs text-white/30 pt-4 border-t border-white/5">
           © {new Date().getFullYear()} Vidwath N Karanth. All rights reserved.
         </footer>
       </div>

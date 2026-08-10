@@ -159,22 +159,22 @@ export default function TasksPage() {
           const tickingTask = store.tasks.find((t) => t.id === store.activeTaskId);
           if (!tickingTask) return null;
           return (
-            <div className="glass-panel-neon rounded-2xl p-5 border border-cyber-blue flex flex-col md:flex-row justify-between items-center gap-4 animate-pulse-glow">
+            <div className="border border-white/10 bg-[#0d111c]/40 rounded-xl p-5 flex flex-col md:flex-row justify-between items-center gap-4">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-cyber-blue/10 border border-cyber-blue/40 flex items-center justify-center text-cyber-blue">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
                   <Clock className="w-6 h-6 animate-pulse" strokeWidth={1.5} />
                 </div>
                 <div>
-                  <span className="text-[9px] font-mono bg-cyber-purple/20 text-cyber-blue px-2 py-0.5 rounded border border-cyber-blue font-bold uppercase">
+                  <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded border border-primary/20 font-bold uppercase">
                     Focus Session Active
                   </span>
-                  <h3 className="text-sm font-geist font-bold text-white mt-1 text-glow-cyan">{tickingTask.title}</h3>
-                  <p className="text-xs text-white/50 font-sans mt-0.5">{tickingTask.subjectName}</p>
+                  <h3 className="text-sm font-bold text-white mt-1">{tickingTask.title}</h3>
+                  <p className="text-xs text-white/50 mt-0.5">{tickingTask.subjectName}</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-4">
-                <div className="text-2xl md:text-3xl font-mono font-black text-cyber-blue text-glow-cyan bg-cyber-blue/10 px-4 py-1.5 rounded-xl border border-cyber-blue/30">
+                <div className="text-2xl md:text-3xl font-mono font-bold text-primary bg-primary/10 px-4 py-1.5 rounded-xl border border-primary/20">
                   {formatTimer(Math.max(0, (tickingTask.estimatedMinutes * 60) - store.activeTimerElapsed))}
                 </div>
                 <div className="flex gap-2">
@@ -202,30 +202,30 @@ export default function TasksPage() {
       <div className="flex border-b border-white/10 mb-4">
         <button
           onClick={() => setActiveTab('pending')}
-          className={`pb-2.5 px-4 text-xs font-mono font-bold transition relative ${
-            activeTab === 'pending' ? 'text-cyber-blue text-glow-cyan' : 'text-white/50 hover:text-white'
+          className={`pb-2.5 px-4 text-xs font-bold transition relative ${
+            activeTab === 'pending' ? 'text-primary' : 'text-white/50 hover:text-white'
           }`}
         >
           Pending Tasks
-          {activeTab === 'pending' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-cyber-blue shadow-[0_0_10px_#00F0FF]"></div>}
+          {activeTab === 'pending' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary"></div>}
         </button>
         <button
           onClick={() => setActiveTab('completed')}
-          className={`pb-2.5 px-4 text-xs font-mono font-bold transition relative ${
-            activeTab === 'completed' ? 'text-cyber-blue text-glow-cyan' : 'text-white/50 hover:text-white'
+          className={`pb-2.5 px-4 text-xs font-bold transition relative ${
+            activeTab === 'completed' ? 'text-primary' : 'text-white/50 hover:text-white'
           }`}
         >
           Completed Tasks
-          {activeTab === 'completed' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-cyber-blue shadow-[0_0_10px_#00F0FF]"></div>}
+          {activeTab === 'completed' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary"></div>}
         </button>
         <button
           onClick={() => setActiveTab('all')}
-          className={`pb-2.5 px-4 text-xs font-mono font-bold transition relative ${
-            activeTab === 'all' ? 'text-cyber-blue text-glow-cyan' : 'text-white/50 hover:text-white'
+          className={`pb-2.5 px-4 text-xs font-bold transition relative ${
+            activeTab === 'all' ? 'text-primary' : 'text-white/50 hover:text-white'
           }`}
         >
           All Tasks
-          {activeTab === 'all' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-cyber-blue shadow-[0_0_10px_#00F0FF]"></div>}
+          {activeTab === 'all' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary"></div>}
         </button>
       </div>
 

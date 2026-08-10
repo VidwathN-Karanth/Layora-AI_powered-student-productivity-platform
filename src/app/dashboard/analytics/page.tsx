@@ -165,29 +165,40 @@ export default function AnalyticsPage() {
                   Analyzing weekly load...
                 </div>
               ) : aiRecs ? (
-                <div className="space-y-3">
-                  {aiRecs.workloadWarning && (
-                    <div className="flex items-start gap-2 text-amber-300 text-xs font-mono bg-amber-950/20 border border-amber-500/20 p-3 rounded-xl">
-                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
-                      <div>
-                        <span className="font-bold uppercase tracking-wider text-[8px] block text-amber-400/85 mb-0.5">Backlog Alert</span>
-                        {aiRecs.workloadWarning}
-                      </div>
+                (() => {
+                  const warningText = aiRecs.workloadWarning
+                    ? (typeof aiRecs.workloadWarning === 'object' ? Object.keys(aiRecs.workloadWarning).join(', ') : String(aiRecs.workloadWarning))
+                    : '';
+                  const adviceText = aiRecs.mentorAdvice
+                    ? (typeof aiRecs.mentorAdvice === 'object' ? Object.keys(aiRecs.mentorAdvice).join(', ') : String(aiRecs.mentorAdvice))
+                    : '';
+
+                  return (
+                    <div className="space-y-3">
+                      {warningText && (
+                        <div className="flex items-start gap-2 text-amber-300 text-xs font-mono bg-amber-950/20 border border-amber-500/20 p-3 rounded-xl">
+                          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+                          <div>
+                            <span className="font-bold uppercase tracking-wider text-[8px] block text-amber-400/85 mb-0.5">Backlog Alert</span>
+                            {warningText}
+                          </div>
+                        </div>
+                      )}
+                      {adviceText && (
+                        <div className="flex items-start gap-2.5 text-cyber-blue text-xs bg-cyber-blue/5 border border-cyber-blue/20 p-3.5 rounded-xl">
+                          <Sparkles className="w-4 h-4 shrink-0 mt-0.5 text-cyber-blue animate-pulse" />
+                          <div>
+                            <span className="font-bold uppercase tracking-wider text-[8px] block text-cyber-blue/85 mb-0.5">Mentor Advice</span>
+                            <p className="font-sans leading-relaxed text-white/90">{adviceText}</p>
+                          </div>
+                        </div>
+                      )}
+                      {!warningText && !adviceText && (
+                        <p className="text-xs font-mono text-white/50 text-center py-4">No recommendations currently available.</p>
+                      )}
                     </div>
-                  )}
-                  {aiRecs.mentorAdvice && (
-                    <div className="flex items-start gap-2.5 text-cyber-blue text-xs bg-cyber-blue/5 border border-cyber-blue/20 p-3.5 rounded-xl">
-                      <Sparkles className="w-4 h-4 shrink-0 mt-0.5 text-cyber-blue animate-pulse" />
-                      <div>
-                        <span className="font-bold uppercase tracking-wider text-[8px] block text-cyber-blue/85 mb-0.5">Mentor Advice</span>
-                        <p className="font-sans leading-relaxed text-white/90">{aiRecs.mentorAdvice}</p>
-                      </div>
-                    </div>
-                  )}
-                  {!aiRecs.workloadWarning && !aiRecs.mentorAdvice && (
-                    <p className="text-xs font-mono text-white/50 text-center py-4">No recommendations currently available.</p>
-                  )}
-                </div>
+                  );
+                })()
               ) : (
                 <p className="text-xs font-mono text-white/50 text-center py-4">Load subjects and tasks to generate AI mentoring advice.</p>
               )}

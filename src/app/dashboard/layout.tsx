@@ -10,7 +10,7 @@ import {
   FolderLock, BarChart3, Settings, UserCheck, LogOut, ChevronLeft, 
   ChevronRight, Send, Sparkles, MessageCircle, Clock, 
   Pause, Check, Menu, X, ArrowUpRight, ShieldAlert, Trophy, Award,
-  Globe
+  Globe, Sun, Moon
 } from 'lucide-react';
 import { UserButton, useUser, useAuth } from '@clerk/nextjs';
 import OnboardingModal from '@/components/OnboardingModal';
@@ -339,10 +339,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* --- MOBILE NAV TOPBAR --- */}
       <div className="md:hidden w-full h-14 bg-black/40 backdrop-blur-md border-b border-white/10 flex items-center justify-between px-4 z-40 fixed top-0 left-0">
-        <button onClick={() => setMobileMenuOpen(true)} className="p-2 hover:bg-white/5 rounded-lg text-cyber-blue">
+        <button onClick={() => setMobileMenuOpen(true)} className="p-2 hover:bg-white/5 rounded-lg text-primary">
           <Menu className="w-5 h-5" strokeWidth={1.5} />
         </button>
-        <span className="font-mono font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyber-purple to-cyber-blue">Layora</span>
+        <span className="font-bold text-white text-sm">LAYORA</span>
         {isAiActive ? (
           <button onClick={() => setChatOpen(!chatOpen)} className="p-2 hover:bg-white/5 rounded-lg text-white">
             <MessageCircle className="w-5 h-5" strokeWidth={1.5} />
@@ -431,9 +431,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   initial={{ opacity: 0 }} 
                   animate={{ opacity: 1 }} 
                   exit={{ opacity: 0 }}
-                  className="font-mono font-black text-sm tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400 flex items-center gap-2"
+                  className="font-bold text-sm text-white flex items-center gap-2"
                 >
-                  <span className="w-6 h-6 rounded bg-primary flex items-center justify-center text-on-surface text-[10px]">L</span> LAYORA
+                  <span className="w-6 h-6 rounded bg-primary flex items-center justify-center text-white text-xs">L</span> LAYORA
                 </motion.span>
               ) : (
                 <motion.div 
@@ -526,27 +526,47 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               className={`w-2 h-2 rounded-full shrink-0 ${isSupabaseConfigured ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]'}`}
               title={isSupabaseConfigured ? "Synced to Supabase" : "Running in Local Demo Mode"}
             />
-            <Clock className="w-4 h-4 text-cyber-blue animate-spin-slow" strokeWidth={1.5} />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 font-black font-mono text-xl tracking-wider min-w-[110px] text-center">
+            <Clock className="w-4 h-4 text-primary" strokeWidth={1.5} />
+            <span className="text-white font-bold font-mono text-lg min-w-[100px] text-center">
               {timeStr || '00:00:00'}
             </span>
             <button 
               onClick={() => store.setIs24HourFormat(!store.is24HourFormat)}
-              className="ml-1 text-[9px] font-bold uppercase bg-white/10 hover:bg-white/20 text-cyber-blue px-1.5 py-0.5 rounded cursor-pointer transition border border-white/10"
+              className="ml-1 text-xs font-semibold uppercase bg-white/10 hover:bg-white/20 text-white/80 px-1.5 py-0.5 rounded cursor-pointer transition border border-white/10"
               title="Toggle 12h/24h Format"
             >
               {store.is24HourFormat ? '24H' : '12H'}
+            </button>
+            <div className="h-4 w-[1px] bg-white/15 ml-1.5 mr-0.5 shrink-0" />
+            <button
+              onClick={() => store.setThemeMode(store.themeMode === 'light' ? 'dark' : 'light')}
+              className={`relative flex h-5 w-9 items-center rounded-full transition-colors duration-200 cursor-pointer outline-none border border-white/10 shrink-0 ml-1.5 ${
+                store.themeMode === 'light' ? 'bg-zinc-300' : 'bg-zinc-800'
+              }`}
+              title="Toggle Theme Mode"
+            >
+              <span
+                className={`flex h-4 w-4 items-center justify-center rounded-full transition-transform duration-200 ${
+                  store.themeMode === 'light' ? 'translate-x-0.5 bg-white text-amber-500' : 'translate-x-4 bg-zinc-950 text-white'
+                }`}
+              >
+                {store.themeMode === 'light' ? (
+                  <Sun className="w-2.5 h-2.5 fill-amber-500 text-amber-500" strokeWidth={2.5} />
+                ) : (
+                  <Moon className="w-2.5 h-2.5 fill-white text-white" strokeWidth={2.5} />
+                )}
+              </span>
             </button>
           </div>
 
           <div className="flex items-center gap-4">
             {/* Live running task timer details */}
             {store.activeTaskId && activeTask && (
-              <div className="flex items-center gap-2.5 bg-cyber-blue/10 border border-cyber-blue/30 rounded-full px-3.5 py-1 text-xs text-cyber-blue animate-pulse-glow">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span>
-                <span className="font-mono text-[10px] text-white/50 uppercase">Timer:</span>
+              <div className="flex items-center gap-2.5 bg-primary/10 border border-primary/20 rounded-full px-3.5 py-1 text-xs text-primary">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                <span className="font-mono text-xs text-white/50 uppercase">Timer:</span>
                 <span className="font-bold truncate max-w-[120px] font-mono text-white">{activeTask.title}</span>
-                <span className="font-mono font-black text-cyber-blue text-glow-cyan">
+                <span className="font-mono font-bold text-primary">
                   {formatTimer(Math.max(0, (activeTask.estimatedMinutes * 60) - store.activeTimerElapsed))}
                 </span>
                 <button 

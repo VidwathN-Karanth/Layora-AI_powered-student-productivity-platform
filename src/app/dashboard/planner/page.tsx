@@ -202,7 +202,7 @@ export default function PlannerPage() {
       {/* Top Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-outline-variant pb-4">
         <div>
-          <h2 className="text-xl font-geist font-bold tracking-tight">Weekly Planner</h2>
+          <h2 className="text-xl font-bold tracking-tight">Weekly Planner</h2>
         </div>
 
         <div className="flex items-center gap-3">
@@ -210,16 +210,17 @@ export default function PlannerPage() {
           <button
             onClick={handleGoogleSync}
             disabled={syncingCalendar || store.timetable.length === 0}
-            className="bg-surface-container hover:bg-surface-container-high disabled:opacity-40 border border-outline-variant text-on-surface rounded-xl px-4 py-2.5 text-xs font-mono font-bold flex items-center gap-2 active:scale-95 transition cursor-pointer"
+            className="disabled:opacity-40 rounded-lg px-4 py-2.5 text-xs font-semibold flex items-center gap-2 active:scale-95 transition cursor-pointer"
+            style={{ backgroundColor: '#d4a76a', color: '#ffffff', border: '1px solid #c4975a' }}
           >
             {syncingCalendar ? (
               <>
-                <RefreshCw className="w-4 h-4 animate-spin text-primary" strokeWidth={1.5} />
+                <RefreshCw className="w-4 h-4 animate-spin text-white" strokeWidth={1.5} />
                 Syncing Calendar...
               </>
             ) : (
               <>
-                <CalendarRange className="w-4 h-4 text-secondary" strokeWidth={1.5} />
+                <CalendarRange className="w-4 h-4 text-white" strokeWidth={1.5} />
                 Sync to Google Calendar
               </>
             )}
@@ -228,7 +229,7 @@ export default function PlannerPage() {
           {/* Delete Week Sync Button */}
           <button
             onClick={() => setShowDeleteWeekConfirm(true)}
-            className="border border-red-500/20 bg-red-950/10 hover:bg-red-950/20 text-red-400 px-4 py-2.5 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition active:scale-95 cursor-pointer"
+            className="border border-red-500/20 bg-red-950/10 hover:bg-red-950/20 text-red-400 px-4 py-2.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition active:scale-95 cursor-pointer"
           >
             <Trash className="w-4 h-4 shrink-0" strokeWidth={1.5} />
             Wipe Week from Google Calendar
@@ -243,7 +244,7 @@ export default function PlannerPage() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 p-4 rounded-2xl text-xs font-mono flex items-center gap-2"
+            className="bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 p-4 rounded-lg text-xs flex items-center gap-2"
           >
             <Check className="w-4 h-4" strokeWidth={1.5} />
             SUCCESS: Exported {store.timetable.length} schedule events & deadlines directly to Google Calendar account!
@@ -257,8 +258,8 @@ export default function PlannerPage() {
           <button
             key={day.num}
             onClick={() => setActiveDay(day.num)}
-            className={`px-4 py-2 rounded-xl text-xs font-mono font-bold transition-all relative cursor-pointer ${
-              activeDay === day.num ? 'bg-primary text-on-surface' : 'bg-surface-container text-outline hover:bg-surface-container-high hover:text-on-surface'
+            className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all relative cursor-pointer ${
+              activeDay === day.num ? 'bg-primary text-black' : 'bg-surface-container text-outline hover:bg-surface-container-high hover:text-on-surface'
             }`}
           >
             {day.label}
@@ -273,18 +274,18 @@ export default function PlannerPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Timetable schedule grid */}
         <div className="lg:col-span-2 space-y-3">
-          <div className="flex justify-between items-center bg-white/2 p-3 rounded-xl border border-outline-variant">
-            <span className="text-[10px] font-mono text-outline">Sequence Timeline ({activeDayBlocks.length} Blocks)</span>
+          <div className="flex justify-between items-center bg-white/2 p-3 rounded-lg border border-outline-variant">
+            <span className="text-xs text-outline">Sequence Timeline ({activeDayBlocks.length} Blocks)</span>
             <div className="flex items-center gap-4">
               <button 
                 onClick={() => setShowAddBlock(true)} 
-                className="text-primary hover:text-primary text-xs font-mono flex items-center gap-1.5 cursor-pointer"
+                className="text-primary hover:underline text-xs flex items-center gap-1.5 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" strokeWidth={1.5} /> Add Custom Block
               </button>
               <button 
                 onClick={() => setShowDeleteDayConfirm(true)} 
-                className="text-red-400 hover:text-red-300 text-xs font-mono flex items-center gap-1.5 cursor-pointer border-l border-white/10 pl-4"
+                className="text-red-400 hover:text-red-300 text-xs flex items-center gap-1.5 cursor-pointer border-l border-white/10 pl-4"
               >
                 <Trash className="w-3.5 h-3.5" strokeWidth={1.5} /> Clear Day from Google Calendar
               </button>
@@ -293,9 +294,9 @@ export default function PlannerPage() {
 
           <div className="space-y-3 min-h-[300px]">
             {store.timetable.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-outline-variant rounded-2xl p-6">
+              <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-outline-variant rounded-xl p-6">
                 <AlertCircle className="w-10 h-10 text-on-surface/20 mb-3" strokeWidth={1.5} />
-                <h3 className="text-sm font-geist font-bold text-on-surface/70">Planner is empty</h3>
+                <h3 className="text-sm font-bold text-on-surface/70">Planner is empty</h3>
                 <p className="text-xs text-outline max-w-sm mt-1">
                   Click the **Add Custom Block** link to build your weekly schedule and push it to Google Calendar.
                 </p>
@@ -308,24 +309,24 @@ export default function PlannerPage() {
               activeDayBlocks.map((block, index) => (
                 <div 
                   key={block.id} 
-                  className={`flex items-center gap-2.5 sm:gap-3 p-3 sm:p-4 rounded-2xl ${block.color} border-l-4 relative group`}
+                  className={`flex items-center gap-2.5 sm:gap-3 p-3 sm:p-4 rounded-xl ${block.color} border-l-4 relative group`}
                 >
                   {/* Time columns */}
-                  <div className="font-mono text-center w-16 sm:w-20 shrink-0">
-                    <span className="text-xs sm:text-sm font-black text-on-surface">{formatTimeStr(block.start, store.is24HourFormat)}</span>
-                    <span className="text-[9px] sm:text-[10px] text-outline block leading-tight">{formatTimeStr(block.end, store.is24HourFormat)}</span>
+                  <div className="text-center w-16 sm:w-20 shrink-0">
+                    <span className="text-xs sm:text-sm font-bold text-on-surface">{formatTimeStr(block.start, store.is24HourFormat)}</span>
+                    <span className="text-xs text-outline block leading-tight">{formatTimeStr(block.end, store.is24HourFormat)}</span>
                   </div>
 
                   <div className="border-l border-outline-variant pl-3 sm:pl-4 flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-mono font-bold text-xs text-on-surface truncate">{block.title}</span>
+                      <span className="font-bold text-xs text-on-surface truncate">{block.title}</span>
                       {block.subjectCode && (
-                        <span className="text-[8px] sm:text-[9px] font-mono bg-surface-container border border-outline-variant px-1.5 py-0.5 rounded text-on-surface-variant">
+                        <span className="text-xs bg-surface-container border border-outline-variant px-1.5 py-0.5 rounded text-on-surface-variant">
                           {block.subjectCode}
                         </span>
                       )}
                     </div>
-                    <p className="text-[10px] sm:text-[11px] text-outline leading-relaxed font-sans mt-0.5 truncate">{block.details}</p>
+                    <p className="text-xs text-outline leading-relaxed font-sans mt-0.5 truncate">{block.details}</p>
                   </div>
 
                   {/* Drag re-arrange arrows and delete button */}
@@ -355,8 +356,8 @@ export default function PlannerPage() {
 
         {/* Info panel / instructions */}
         <div className="space-y-4">
-          <div className="glass-card rounded-2xl p-5 space-y-4">
-            <h4 className="text-xs font-geist font-bold text-primary border-b border-outline-variant pb-2 uppercase">Planning Guide</h4>
+          <div className="glass-card rounded-xl p-5 space-y-4">
+            <h4 className="text-xs font-bold text-primary border-b border-outline-variant pb-2 uppercase">Planning Guide</h4>
             
             <ul className="space-y-3 text-xs font-sans text-on-surface/70">
               {store.planningGuideInsights && store.planningGuideInsights.length > 0 ? (
@@ -396,13 +397,13 @@ export default function PlannerPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm glass-panel-neon p-6 rounded-2xl z-50 border border-primary"
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm p-6 rounded-xl z-50 border border-white/10 bg-[#0d111c]/95 shadow-2xl"
             >
-              <h3 className="text-sm font-geist font-bold text-primary border-b border-outline-variant pb-2 mb-4">Add Custom Timetable Block</h3>
+              <h3 className="text-sm font-bold text-white border-b border-outline-variant pb-2 mb-4">Add Custom Timetable Block</h3>
               
               <div className="space-y-3">
                 <div>
-                  <label className="block text-[10px] font-mono text-outline mb-1">Block Title</label>
+                  <label className="block text-xs text-outline mb-1">Block Title</label>
                   <input
                     type="text"
                     value={newBlockTitle}
@@ -414,7 +415,7 @@ export default function PlannerPage() {
                 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] font-mono text-outline mb-1">Start Time</label>
+                    <label className="block text-xs text-outline mb-1">Start Time</label>
                     <input
                       type="time"
                       value={newBlockStart}
@@ -423,7 +424,7 @@ export default function PlannerPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-mono text-outline mb-1">End Time</label>
+                    <label className="block text-xs text-outline mb-1">End Time</label>
                     <input
                       type="time"
                       value={newBlockEnd}
@@ -434,7 +435,7 @@ export default function PlannerPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-mono text-outline mb-1">Block Type</label>
+                  <label className="block text-xs text-outline mb-1">Block Type</label>
                   <select
                     value={newBlockType}
                     onChange={(e) => setNewBlockType(e.target.value as any)}
@@ -476,17 +477,17 @@ export default function PlannerPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm glass-panel-neon p-6 rounded-2xl z-50 border border-red-500/50 shadow-2xl"
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm p-6 rounded-xl z-50 border border-red-500/50 bg-[#0d111c]/95 shadow-2xl"
             >
-              <h3 className="text-sm font-geist font-bold text-red-400 border-b border-red-500/20 pb-2 mb-4 uppercase tracking-wide flex items-center gap-2">
+              <h3 className="text-sm font-bold text-red-400 border-b border-red-500/20 pb-2 mb-4 uppercase tracking-wide flex items-center gap-2">
                 <Trash className="w-4 h-4" /> Wipe Day Schedule
               </h3>
               
               <div className="space-y-4">
-                <p className="text-xs text-outline leading-relaxed font-mono">
+                <p className="text-xs text-outline leading-relaxed">
                   This will remove all Layora-synced calendar events for <strong>{daysOfWeek.find(d => d.num === activeDay)?.label || ''}</strong> from your primary Google Calendar.
                 </p>
-                <div className="bg-red-950/15 border border-red-500/10 p-3 rounded-xl text-[10px] text-red-300 font-mono">
+                <div className="bg-red-950/15 border border-red-500/10 p-3 rounded-lg text-xs text-red-300">
                   Type <strong>DELETE</strong> below to confirm.
                 </div>
                 
@@ -499,18 +500,17 @@ export default function PlannerPage() {
                     className="w-full input-hud text-center tracking-wider border-red-500/20 focus:border-red-500 uppercase"
                   />
                 </div>
-
                 <div className="flex gap-2.5 pt-2">
                   <button 
                     onClick={() => { setShowDeleteDayConfirm(false); setDeleteDayInput(''); }} 
-                    className="flex-1 bg-surface-container border border-outline-variant rounded-lg py-2 text-xs font-mono cursor-pointer"
+                    className="flex-1 bg-surface-container border border-outline-variant rounded-lg py-2 text-xs cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button 
                     onClick={handleDeleteDaySchedule} 
                     disabled={deleteDayInput !== 'DELETE' || deletingDay}
-                    className="flex-1 bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:hover:bg-red-600 text-white rounded-lg py-2 text-xs font-mono font-bold cursor-pointer transition active:scale-95 animate-none"
+                    className="flex-1 bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:hover:bg-red-600 text-white rounded-lg py-2 text-xs font-bold cursor-pointer transition active:scale-95 animate-none"
                   >
                     {deletingDay ? 'Deleting...' : 'Wipe Day'}
                   </button>
@@ -530,9 +530,9 @@ export default function PlannerPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm glass-panel-neon p-6 rounded-2xl z-50 border border-red-500/50 shadow-2xl"
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm p-6 rounded-xl z-50 border border-red-500/50 bg-[#0d111c]/95 shadow-2xl"
             >
-              <h3 className="text-sm font-geist font-bold text-red-400 border-b border-red-500/20 pb-2 mb-4 uppercase tracking-wide flex items-center gap-2">
+              <h3 className="text-sm font-bold text-red-400 border-b border-red-500/20 pb-2 mb-4 uppercase tracking-wide flex items-center gap-2">
                 <Trash className="w-4 h-4" /> Wipe Week Sync
               </h3>
               

@@ -200,8 +200,8 @@ export default function CoursesPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-outline-variant pb-4">
         <div>
-          <h2 className="text-xl font-mono font-bold tracking-wide">Active Courses</h2>
-          <p className="text-xs text-outline font-mono mt-0.5">Manage external platforms, bootcamps, and certification milestones.</p>
+          <h2 className="text-xl font-bold tracking-wide">Active Courses</h2>
+          <p className="text-xs text-outline mt-0.5">Manage external platforms, bootcamps, and certification milestones.</p>
         </div>
 
         <button
@@ -209,31 +209,30 @@ export default function CoursesPage() {
             setFormErrors({});
             setShowAddCourse(true);
           }}
-          className="bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-on-surface rounded-xl px-4 py-2.5 text-xs font-mono font-bold flex items-center gap-2 active:scale-95 transition cursor-pointer shadow-lg shadow-purple-500/10"
+          className="bg-primary hover:brightness-110 text-black rounded-lg px-4 py-2.5 text-xs font-semibold flex items-center gap-2 active:scale-95 transition cursor-pointer shadow-lg"
         >
           <PlusCircle className="w-4 h-4" />
           Add Online Course
         </button>
       </div>
 
-      {/* Courses Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {store.courses.length === 0 ? (
-          <div className="col-span-2 text-center py-20 border border-dashed border-outline-variant rounded-2xl font-mono text-xs text-outline-variant">
+          <div className="col-span-2 text-center py-20 border border-dashed border-outline-variant rounded-xl text-xs text-outline-variant">
             No courses logged yet. Add online bootcamps or course trackers.
           </div>
         ) : (
           store.courses.map((course) => (
-            <div key={course.id} className="glass-card rounded-2xl p-5 border border-outline-variant space-y-4 flex flex-col justify-between">
+            <div key={course.id} className="border border-white/10 bg-[#0d111c]/40 rounded-xl p-5 space-y-4 flex flex-col justify-between">
               <div className="space-y-4">
                 <div className="flex justify-between items-start gap-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary-fixed border border-primary flex items-center justify-center text-primary shrink-0">
-                      <GraduationCap className="w-5 h-5" />
+                    <div className="w-10 h-10 rounded-full bg-primary border border-white/10 flex items-center justify-center text-white shrink-0">
+                      <GraduationCap className="w-5 h-5" strokeWidth={3} />
                     </div>
                     <div>
-                      <h3 className="font-mono font-bold text-sm text-on-surface">{course.name}</h3>
-                      <span className="text-[10px] font-mono text-outline truncate block max-w-[200px]" title={course.platform}>
+                      <h3 className="font-bold text-sm text-on-surface">{course.name}</h3>
+                      <span className="text-xs text-outline truncate block max-w-[200px]" title={course.platform}>
                         {getPlatformDisplay(course.platform)}
                       </span>
                     </div>
@@ -261,7 +260,10 @@ export default function CoursesPage() {
                     max="100"
                     value={course.progress}
                     onChange={(e) => handleProgressChange(course.id, parseInt(e.target.value))}
-                    className="w-full accent-purple-500 bg-surface-container-high rounded-lg cursor-pointer h-1.5"
+                    className="w-full accent-purple-500 bg-transparent rounded-lg cursor-pointer h-1.5"
+                    style={{
+                      background: `linear-gradient(to right, var(--color-primary) 0%, var(--color-primary) ${course.progress}%, var(--color-surface-container-high) ${course.progress}%, var(--color-surface-container-high) 100%)`
+                    }}
                   />
                 </div>
 
@@ -453,13 +455,13 @@ export default function CoursesPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm glass-panel-neon p-6 rounded-2xl z-50 border border-primary overflow-y-auto max-h-[90vh]"
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm p-6 rounded-xl z-50 border border-white/10 bg-[#0d111c]/95 shadow-2xl overflow-y-auto max-h-[90vh]"
             >
-              <h3 className="text-sm font-mono font-bold text-primary border-b border-outline-variant pb-2 mb-4">Edit Course Settings</h3>
+              <h3 className="text-sm font-bold text-white border-b border-outline-variant pb-2 mb-4">Edit Course Settings</h3>
               
               <form onSubmit={handleSaveEditCourse} noValidate className="space-y-4">
                 <div>
-                  <label className="block text-[10px] font-mono text-outline mb-1">Course Title</label>
+                  <label className="block text-xs text-outline mb-1">Course Title</label>
                   <input
                     type="text"
                     value={editName}
@@ -468,26 +470,26 @@ export default function CoursesPage() {
                       setEditFormErrors(prev => ({ ...prev, name: undefined }));
                     }}
                     placeholder="E.g., Next.js 15 Web Apps"
-                    className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary font-mono"
+                    className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                   />
-                  {editFormErrors.name && <p className="text-red-500 text-[10px] font-mono mt-1">{editFormErrors.name}</p>}
+                  {editFormErrors.name && <p className="text-red-500 text-xs mt-1">{editFormErrors.name}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-mono text-outline mb-1">Course Link (URL)</label>
+                  <label className="block text-xs text-outline mb-1">Course Link (URL)</label>
                   <input
                     type="text"
                     value={editPlatform}
                     onChange={(e) => setEditPlatform(e.target.value)}
                     placeholder="E.g., https://coursera.org/learn/..."
-                    className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary font-mono"
+                    className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                   />
                 </div>
 
                 {/* Daily Email Reminder Fields */}
                 <div className="bg-surface-container-low/50 p-3 rounded-xl border border-outline-variant/30 space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-mono text-outline flex items-center gap-1.5">
+                    <span className="text-xs text-outline flex items-center gap-1.5">
                       <Mail className="w-3.5 h-3.5 text-primary" /> Daily Email Reminder
                     </span>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -497,16 +499,16 @@ export default function CoursesPage() {
                         onChange={(e) => setEditReminderEnabled(e.target.checked)}
                         className="sr-only peer"
                       />
-                      <div className="w-8 h-4.5 bg-surface-container-high rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-outline after:border-outline-variant after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-purple-600 peer-checked:to-blue-500 peer-checked:after:bg-on-primary"></div>
+                      <div className="w-8 h-4.5 bg-surface-container-high rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-outline after:border-outline-variant after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-primary"></div>
                     </label>
                   </div>
                   
                   {editReminderEnabled && (
                     <div className="space-y-3 pt-2 border-t border-outline-variant/20">
                       <div className="flex flex-col gap-1.5">
-                        <div className="flex justify-between items-center text-[10px] font-mono text-outline">
+                        <div className="flex justify-between items-center text-xs text-outline">
                           <span>Reminder Time (15m step):</span>
-                          <span className="text-[9px] text-primary">Next 15m Mark: {getNext15MinDisplay()}</span>
+                          <span className="text-[11px] text-primary">Next 15m Mark: {getNext15MinDisplay()}</span>
                         </div>
                         <input
                           type="time"
@@ -514,9 +516,9 @@ export default function CoursesPage() {
                           value={editReminderTime}
                           onChange={(e) => setEditReminderTime(roundToNearest15Minutes(e.target.value))}
                           onBlur={(e) => setEditReminderTime(roundToNearest15Minutes(e.target.value))}
-                          className="bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface font-mono focus:outline-none focus:border-primary w-full text-center cursor-pointer"
+                          className="bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary w-full text-center cursor-pointer"
                         />
-                        <p className="text-[8px] font-mono text-outline-variant text-right mt-0.5">
+                        <p className="text-[11px] text-outline-variant text-right mt-0.5">
                           Time will snap to the nearest 15-minute interval.
                         </p>
                       </div>

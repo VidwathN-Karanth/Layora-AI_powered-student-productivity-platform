@@ -497,7 +497,7 @@ export default function ResourcesPage() {
                     <button
                       type="submit"
                       disabled={isUploading || (uploadMethod === 'drive' && !!fileData && fileData.size > 4.5 * 1024 * 1024)}
-                      className="w-full bg-gradient-to-r from-cyber-purple/50 to-cyber-blue/50 hover:from-cyber-purple hover:to-cyber-blue text-white rounded-lg py-2.5 text-xs font-mono font-bold flex items-center justify-center gap-1.5 cursor-pointer border border-cyber-blue/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full bg-[#AF52DE] hover:bg-[#963ec8] text-white rounded-lg py-2.5 text-xs font-mono font-bold flex items-center justify-center gap-1.5 cursor-pointer border border-[#AF52DE]/30 hover:border-[#963ec8] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <UploadCloud className="w-4 h-4" /> {isUploading ? 'Uploading...' : (uploadMethod === 'drive' && fileData && fileData.size > 4.5 * 1024 * 1024) ? 'File Too Large (Max 4.5MB)' : uploadMethod === 'drive' ? 'Upload to Google Drive' : 'Add Link Resource'}
                     </button>
@@ -583,7 +583,7 @@ export default function ResourcesPage() {
 
                   <button
                     type="submit"
-                    className="w-full bg-gradient-to-r from-cyber-purple/50 to-cyber-blue/50 hover:from-cyber-purple hover:to-cyber-blue text-white rounded-lg py-2.5 text-xs font-mono font-bold flex items-center justify-center gap-1.5 cursor-pointer border border-cyber-purple/30"
+                    className="w-full bg-[#AF52DE] hover:bg-[#963ec8] text-white rounded-lg py-2.5 text-xs font-mono font-bold flex items-center justify-center gap-1.5 cursor-pointer border border-[#AF52DE]/30 hover:border-[#963ec8]"
                   >
                     <Plus className="w-4 h-4" /> Create Subject
                   </button>

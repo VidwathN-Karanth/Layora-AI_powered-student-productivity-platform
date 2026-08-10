@@ -230,20 +230,20 @@ export default function OnboardingModal() {
       <div className="absolute inset-0 bg-black/30 backdrop-blur-md"></div>
 
       {/* Modal Container */}
-      <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col glass-panel-neon border border-primary rounded-2xl overflow-hidden shadow-2xl shadow-purple-500/5 z-10">
+      <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col border border-white/10 bg-[#0d111c]/95 rounded-2xl overflow-hidden shadow-2xl z-10">
         
         {/* Dynamic Glowing Border Line */}
-        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-purple-500 via-cyan-400 to-blue-500"></div>
+        <div className="absolute top-0 left-0 right-0 h-[3px] bg-primary"></div>
 
         {/* Modal Header */}
         <div className="flex items-center justify-between p-5 border-b border-outline-variant bg-white/2">
           <div className="flex items-center gap-2.5">
             <span className="w-2.5 h-2.5 rounded bg-primary-container animate-pulse"></span>
-            <span className="font-mono text-xs font-bold tracking-wider text-primary">Initialize Academic Profile</span>
+            <span className="text-xs font-bold text-primary">Initialize Academic Profile</span>
           </div>
           
           <div className="flex items-center gap-4">
-            <span className="text-[10px] font-mono text-secondary border border-secondary bg-secondary-fixed px-2.5 py-0.5 rounded-full">
+            <span className="text-xs text-secondary border border-secondary bg-secondary-fixed px-2.5 py-0.5 rounded-full">
               Step 0{step} of 0{totalSteps}
             </span>
           </div>
@@ -845,7 +845,7 @@ export default function OnboardingModal() {
                       <button 
                         type="button" 
                         onClick={handleAddCourse}
-                        className="w-full bg-primary hover:bg-primary-container text-on-surface rounded-lg py-1.5 text-xs font-mono font-bold flex items-center justify-center gap-1 cursor-pointer mt-1"
+                        className="w-full bg-primary hover:bg-primary-container text-black rounded-lg py-1.5 text-xs font-mono font-bold flex items-center justify-center gap-1 cursor-pointer mt-1"
                       >
                         <Plus className="w-3.5 h-3.5" /> Add Course
                       </button>
@@ -940,7 +940,7 @@ export default function OnboardingModal() {
                 setStepErrors({});
                 setStep(Math.min(totalSteps, step + 1));
               }}
-              className="flex items-center gap-1 bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-on-surface px-5 py-2 rounded-xl text-xs font-mono font-bold active:scale-95 transition cursor-pointer shadow-lg shadow-purple-500/10"
+              className="flex items-center gap-1 bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-black px-5 py-2 rounded-xl text-xs font-mono font-bold active:scale-95 transition cursor-pointer shadow-lg shadow-purple-500/10"
             >
               Next <ChevronRight className="w-4 h-4" />
             </button>

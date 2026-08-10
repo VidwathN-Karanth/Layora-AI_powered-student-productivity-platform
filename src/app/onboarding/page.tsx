@@ -227,19 +227,15 @@ export default function OnboardingPage() {
   };
 
   return (
-    <main className="min-h-screen bg-background text-on-surface flex flex-col items-center justify-center p-4 md:p-8 cyber-grid">
-      {/* Glow Orbs */}
-      <div className="hidden w-[400px] h-[400px] bg-purple-900/10 top-1/4 left-10"></div>
-      <div className="hidden w-[400px] h-[400px] bg-blue-900/10 bottom-10 right-10"></div>
-
+    <main className="min-h-screen bg-background text-on-surface flex flex-col items-center justify-center p-4 md:p-8">
       <div className="w-full max-w-4xl z-10">
         {/* Onboarding Header */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
-            <span className="text-xl font-mono text-primary font-bold">Layora Onboarding</span>
-            <span className="text-xs font-mono text-outline-variant">| v1.0.4</span>
+            <span className="text-xl text-primary font-bold">Layora Onboarding</span>
+            <span className="text-xs text-outline-variant">| v1.0.4</span>
           </div>
-          <div className="text-xs font-mono text-secondary">
+          <div className="text-xs text-secondary font-medium">
             Step {step} of {totalSteps}
           </div>
         </div>
@@ -247,21 +243,21 @@ export default function OnboardingPage() {
         {/* Progress Bar */}
         <div className="w-full h-1 bg-surface-container rounded-full overflow-hidden mb-8 relative border border-outline-variant">
           <div 
-            className="absolute left-0 top-0 h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-500"
+            className="absolute left-0 top-0 h-full bg-primary transition-all duration-500"
             style={{ width: `${(step / totalSteps) * 100}%` }}
           ></div>
         </div>
 
         {/* Warning if Supabase is not configured */}
         {!isSupabaseConfigured && (
-          <div className="bg-amber-950/45 border border-amber-500/30 rounded-xl px-5 py-3 mb-6 flex items-center gap-2.5 text-xs text-amber-400 font-mono leading-relaxed">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping shrink-0"></span>
+          <div className="bg-amber-950/45 border border-amber-500/30 rounded-xl px-5 py-3 mb-6 flex items-center gap-2.5 text-xs text-amber-400 leading-relaxed">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0"></span>
             <span>WARNING: Supabase database is not configured. The application is running in Local Demo Mode, and all settings/subjects will be lost upon refreshing the page. Please add the environment variables in your Vercel Project Settings or .env.local file.</span>
           </div>
         )}
 
         {/* Form panel container */}
-        <div className="glass-panel-neon rounded-2xl p-6 md:p-10 min-h-[450px] flex flex-col justify-between relative overflow-hidden">
+        <div className="border border-white/10 bg-[#0d111c]/40 rounded-2xl p-6 md:p-10 min-h-[450px] flex flex-col justify-between relative overflow-hidden shadow-lg">
           
           <AnimatePresence mode="wait">
             <motion.div
@@ -836,7 +832,7 @@ export default function OnboardingPage() {
                       <button 
                         type="button" 
                         onClick={handleAddCourse}
-                        className="w-full bg-primary hover:bg-primary-container text-on-surface rounded-lg py-2 text-xs font-mono font-bold flex items-center justify-center gap-1.5 cursor-pointer mt-2"
+                        className="w-full bg-primary hover:bg-primary-container text-black rounded-lg py-2 text-xs font-mono font-bold flex items-center justify-center gap-1.5 cursor-pointer mt-2"
                       >
                         <Plus className="w-3.5 h-3.5" /> Add Course
                       </button>
@@ -933,7 +929,7 @@ export default function OnboardingPage() {
                   setStepErrors({});
                   setStep(Math.min(totalSteps, step + 1));
                 }}
-                className="flex items-center gap-1 bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-on-surface px-5 py-2 rounded-xl text-xs font-mono font-bold active:scale-95 transition cursor-pointer shadow-lg shadow-purple-500/10"
+                className="flex items-center gap-1 bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-black px-5 py-2 rounded-xl text-xs font-mono font-bold active:scale-95 transition cursor-pointer shadow-lg shadow-purple-500/10"
               >
                 Next <ChevronRight className="w-4 h-4" />
               </button>

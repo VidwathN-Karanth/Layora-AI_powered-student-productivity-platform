@@ -510,30 +510,26 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
   if (isLoaded && user && !isCloudLoaded) {
     return (
-      <main className="min-h-screen bg-[#070709] text-white flex flex-col items-center justify-center relative overflow-hidden cyber-grid font-mono">
-        <div className="absolute w-[500px] h-[500px] bg-cyber-purple/15 -top-[10%] -right-[10%] rounded-full blur-[120px] animate-[pulse_8s_infinite_alternate] pointer-events-none"></div>
-        <div className="absolute w-[500px] h-[500px] bg-cyber-blue/15 -bottom-[10%] -left-[10%] rounded-full blur-[120px] animate-[pulse_10s_infinite_alternate] pointer-events-none"></div>
-
+      <main className="min-h-screen bg-[#070709] text-white flex flex-col items-center justify-center relative overflow-hidden">
         <div className="z-10 flex flex-col items-center gap-6">
-          <div className="relative w-20 h-20">
-            <div className="absolute inset-0 rounded-full border border-cyber-purple animate-ping"></div>
-            <div className="absolute inset-2 rounded-full border border-cyber-blue/50 animate-pulse"></div>
-            <div className="absolute inset-4 rounded-full bg-gradient-to-tr from-cyber-purple to-cyber-blue flex items-center justify-center shadow-lg shadow-cyber-purple/20">
-              <span className="text-white font-mono font-bold text-2xl tracking-tighter">L</span>
+          <div className="relative w-16 h-16">
+            <div className="absolute inset-0 rounded-full border border-primary/30 animate-pulse"></div>
+            <div className="absolute inset-2 rounded-full bg-primary flex items-center justify-center shadow-lg">
+              <span className="text-white font-bold text-xl tracking-tighter">L</span>
             </div>
           </div>
           
           <div className="text-center">
-            <h1 className="text-2xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyber-purple to-cyber-blue font-mono">
+            <h1 className="text-xl font-bold tracking-wider text-white">
               LAYORA
             </h1>
-            <p className="text-xs text-cyber-blue/60 font-mono mt-1">
-              Synchronizing academic core...
+            <p className="text-xs text-white/40 mt-1">
+              Loading workspace...
             </p>
           </div>
 
           <div className="w-48 h-1 bg-white/10 rounded-full overflow-hidden relative">
-            <div className="absolute left-0 top-0 h-full bg-gradient-to-r from-cyber-purple to-cyber-blue w-1/3 rounded-full animate-[loading-bar_1.5s_infinite_ease-in-out]"></div>
+            <div className="absolute left-0 top-0 h-full bg-primary w-1/3 rounded-full animate-[loading-bar_1.5s_infinite_ease-in-out]"></div>
           </div>
         </div>
         <style jsx global>{`

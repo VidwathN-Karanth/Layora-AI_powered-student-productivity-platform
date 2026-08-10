@@ -126,14 +126,6 @@ export default function SettingsPage() {
   };
 
 
-
-  const themeAccents = [
-    { name: 'purple', label: 'Neon Purple', color: 'bg-[#B026FF] border-[#e1a6ff]' },
-    { name: 'blue', label: 'Cyber Blue', color: 'bg-[#00F0FF] border-[#a6f7ff]' },
-    { name: 'pink', label: 'Tokyo Pink', color: 'bg-[#ff007f] border-[#ffa6d2]' },
-    { name: 'emerald', label: 'Matrix Emerald', color: 'bg-[#10b981] border-[#a7f3d0]' }
-  ];
-
   return (
     <div className="space-y-6">
       {/* Top Header */}
@@ -414,7 +406,7 @@ export default function SettingsPage() {
                     onClick={() => store.setThemeMode('light')}
                     className={`p-2.5 rounded-xl border text-xs font-mono transition text-center cursor-pointer ${
                       store.themeMode === 'light'
-                        ? 'border-primary bg-primary-fixed text-primary font-bold'
+                        ? 'border-primary bg-primary text-white font-bold'
                         : 'border-outline-variant bg-white/2 text-on-surface-variant hover:bg-surface-container'
                     }`}
                   >
@@ -425,7 +417,7 @@ export default function SettingsPage() {
                     onClick={() => store.setThemeMode('dark')}
                     className={`p-2.5 rounded-xl border text-xs font-mono transition text-center cursor-pointer ${
                       store.themeMode === 'dark' || !store.themeMode
-                        ? 'border-primary bg-primary-fixed text-primary font-bold'
+                        ? 'border-primary bg-primary text-white font-bold'
                         : 'border-outline-variant bg-white/2 text-on-surface-variant hover:bg-surface-container'
                     }`}
                   >
@@ -434,30 +426,7 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Accent themes selection (only enabled when dark mode is active) */}
-              <div className={`space-y-2 pt-2 transition duration-300 ${store.themeMode === 'light' ? 'opacity-30 pointer-events-none' : ''}`}>
-                <span className="text-[10px] font-mono text-outline uppercase block">Neon Accents (Dark Mode Only)</span>
-                <div className="grid grid-cols-2 gap-2">
-                  {themeAccents.map((acc) => {
-                    const active = store.themeAccent === acc.name;
-                    return (
-                      <button
-                        key={acc.name}
-                        disabled={store.themeMode === 'light'}
-                        onClick={() => store.setThemeAccent(acc.name as any)}
-                        className={`flex items-center gap-3 p-3 rounded-xl border text-xs font-mono transition text-left cursor-pointer ${
-                          active 
-                            ? 'border-primary bg-primary-fixed text-primary font-bold' 
-                            : 'border-outline-variant bg-white/2 text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
-                        }`}
-                      >
-                        <span className={`w-3.5 h-3.5 rounded-full border ${acc.color} shrink-0`}></span>
-                        <span>{acc.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+
 
               <div className="border-t border-outline-variant pt-4 space-y-2">
                 <span className="text-[10px] font-mono text-outline uppercase block">Time Display Format</span>
@@ -467,7 +436,7 @@ export default function SettingsPage() {
                     onClick={() => store.setIs24HourFormat(false)}
                     className={`p-2.5 rounded-xl border text-xs font-mono transition text-center cursor-pointer ${
                       !store.is24HourFormat
-                        ? 'border-primary bg-primary-fixed text-on-surface font-bold'
+                        ? 'border-primary bg-primary text-white font-bold'
                         : 'border-outline-variant bg-white/2 text-on-surface-variant hover:bg-surface-container'
                     }`}
                   >
@@ -478,7 +447,7 @@ export default function SettingsPage() {
                     onClick={() => store.setIs24HourFormat(true)}
                     className={`p-2.5 rounded-xl border text-xs font-mono transition text-center cursor-pointer ${
                       store.is24HourFormat
-                        ? 'border-primary bg-primary-fixed text-on-surface font-bold'
+                        ? 'border-primary bg-primary text-white font-bold'
                         : 'border-outline-variant bg-white/2 text-on-surface-variant hover:bg-surface-container'
                     }`}
                   >

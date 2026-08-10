@@ -502,24 +502,24 @@ export default function AdminPage() {
 
   if (!authorized) {
     return (
-      <main className="min-h-screen bg-[#070709] text-white flex flex-col items-center justify-center relative overflow-hidden cyber-grid">
+      <main className="min-h-screen bg-background text-white flex flex-col items-center justify-center relative overflow-hidden">
         <div className="z-10 flex flex-col items-center gap-6">
-          <div className="relative w-20 h-20">
-            <div className="absolute inset-0 rounded-full border border-cyber-purple/50 animate-ping"></div>
-            <div className="absolute inset-4 rounded-full bg-gradient-to-tr from-cyber-purple to-cyber-blue flex items-center justify-center shadow-lg shadow-cyber-purple/20">
-              <span className="text-black font-mono font-bold text-2xl tracking-tighter">🔒</span>
+          <div className="relative w-16 h-16">
+            <div className="absolute inset-0 rounded-full border border-primary/30 animate-pulse"></div>
+            <div className="absolute inset-2 rounded-full bg-primary flex items-center justify-center shadow-lg">
+              <span className="text-white font-bold text-xl tracking-tighter">🔒</span>
             </div>
           </div>
           <div className="text-center">
-            <h1 className="text-2xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyber-purple to-cyber-blue font-mono">
+            <h1 className="text-xl font-bold tracking-wider text-white">
               LAYORA BACKEND
             </h1>
-            <p className="text-xs text-white/60 font-mono mt-1">
+            <p className="text-xs text-white/40 mt-1">
               Authenticating credentials & firewall rules...
             </p>
           </div>
           <div className="w-48 h-1 bg-white/10 rounded-full overflow-hidden relative">
-            <div className="absolute left-0 top-0 h-full bg-gradient-to-r from-cyber-purple to-cyber-blue w-1/3 rounded-full animate-[loading-bar_1.5s_infinite_ease-in-out]"></div>
+            <div className="absolute left-0 top-0 h-full bg-primary w-1/3 rounded-full animate-[loading-bar_1.5s_infinite_ease-in-out]"></div>
           </div>
         </div>
         <style jsx global>{`
@@ -534,17 +534,14 @@ export default function AdminPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#070709] text-white p-4 md:p-8 relative overflow-x-hidden cyber-grid font-mono">
-      {/* Background Neon Orbs */}
-      <div className="absolute w-[600px] h-[600px] bg-cyber-purple/10 -top-[20%] -left-[10%] rounded-full blur-[150px] pointer-events-none"></div>
-      <div className="absolute w-[600px] h-[600px] bg-cyber-blue/10 -bottom-[20%] -right-[10%] rounded-full blur-[150px] pointer-events-none"></div>
+    <main className="min-h-screen bg-background text-white p-4 md:p-8 relative overflow-x-hidden">
 
       <div className="max-w-7xl mx-auto space-y-8 relative z-10">
         
         {/* Header Terminal */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
           <div className="space-y-1">
-            <h1 className="text-3xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyber-purple to-cyber-blue text-glow-cyan">
+            <h1 className="text-3xl font-black tracking-widest text-white">
               ADMIN CONTROL CENTER
             </h1>
           </div>
@@ -861,7 +858,7 @@ export default function AdminPage() {
                                 </button>
                                 <button
                                   onClick={() => setShowDeleteConfirm(u.id)}
-                                  className="p-1.5 rounded-lg border border-white/10 hover:border-red-500 text-white/60 hover:text-red-400 transition cursor-pointer"
+                                  className="p-1.5 rounded-full border border-rose-200 dark:border-rose-900/30 bg-white dark:bg-zinc-900 hover:bg-rose-50 dark:hover:bg-rose-950/20 hover:border-red-300 text-red-600 dark:text-red-400 transition cursor-pointer flex items-center justify-center"
                                   title="Purge Sync State"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
@@ -1083,7 +1080,7 @@ export default function AdminPage() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-2xl h-screen bg-[#0c0d12]/95 border-l border-white/10 flex flex-col z-10 shadow-2xl"
+              className="relative w-full max-w-2xl h-screen bg-[#0B0F19]/95 border-l border-white/10 flex flex-col z-10 shadow-2xl"
             >
               {/* Drawer Header */}
               <div className="p-6 border-b border-white/10 bg-white/2 flex items-center justify-between">

@@ -99,39 +99,7 @@ export default function CommandPalette() {
       action: () => router.push('/dashboard/settings') 
     },
 
-    // Themes
-    { 
-      id: 'theme-purple', 
-      title: 'Accent: Purple Neon', 
-      subtitle: 'Switch theme highlights to Royal Purple',
-      category: 'Accent Customizer', 
-      icon: Paintbrush, 
-      action: () => store.setThemeAccent('purple') 
-    },
-    { 
-      id: 'theme-blue', 
-      title: 'Accent: Electric Cyan', 
-      subtitle: 'Switch theme highlights to Cyber Cyan',
-      category: 'Accent Customizer', 
-      icon: Paintbrush, 
-      action: () => store.setThemeAccent('blue') 
-    },
-    { 
-      id: 'theme-pink', 
-      title: 'Accent: Hot Pink', 
-      subtitle: 'Switch theme highlights to Synth Pink',
-      category: 'Accent Customizer', 
-      icon: Paintbrush, 
-      action: () => store.setThemeAccent('pink') 
-    },
-    { 
-      id: 'theme-emerald', 
-      title: 'Accent: Emerald Glow', 
-      subtitle: 'Switch theme highlights to Matrix Green',
-      category: 'Accent Customizer', 
-      icon: Paintbrush, 
-      action: () => store.setThemeAccent('emerald') 
-    },
+
 
     // Quick Actions
     { 
