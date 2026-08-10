@@ -1,48 +1,48 @@
 @import "tailwindcss";
 
 @theme {
-  --color-surface: #131313;
-  --color-surface-dim: #131313;
-  --color-surface-bright: #393939;
-  --color-surface-container-lowest: #0e0e0e;
-  --color-surface-container-low: #1b1b1b;
-  --color-surface-container: #1f1f1f;
-  --color-surface-container-high: #2a2a2a;
-  --color-surface-container-highest: #353535;
-  --color-on-surface: #e2e2e2;
-  --color-on-surface-variant: #b9cacb;
-  --color-inverse-surface: #e2e2e2;
-  --color-inverse-on-surface: #131313;
-  --color-outline: #849495;
-  --color-outline-variant: #3b494b;
-  --color-surface-tint: #00dbe9;
+  --color-surface: #1C1C1E;
+  --color-surface-dim: #1C1C1E;
+  --color-surface-bright: #2C2C2E;
+  --color-surface-container-lowest: #0A0A0C;
+  --color-surface-container-low: #151517;
+  --color-surface-container: #1C1C1E;
+  --color-surface-container-high: #2C2C2E;
+  --color-surface-container-highest: #3A3A3C;
+  --color-on-surface: #FFFFFF;
+  --color-on-surface-variant: rgba(255, 255, 255, 0.6);
+  --color-inverse-surface: #FFFFFF;
+  --color-inverse-on-surface: #1C1C1E;
+  --color-outline: rgba(255, 255, 255, 0.15);
+  --color-outline-variant: rgba(255, 255, 255, 0.10);
+  --color-surface-tint: #0A84FF;
   --color-primary: var(--cyber-primary);
-  --color-on-primary: #00363a;
-  --color-primary-container: #00f0ff;
-  --color-on-primary-container: #006970;
-  --color-inverse-primary: #006970;
+  --color-on-primary: #FFFFFF;
+  --color-primary-container: rgba(10, 132, 255, 0.15);
+  --color-on-primary-container: #0A84FF;
+  --color-inverse-primary: #007AFF;
   --color-secondary: var(--cyber-secondary);
-  --color-on-secondary: #520072;
-  --color-secondary-container: #b600f8;
-  --color-on-secondary-container: #fff6fc;
-  --color-tertiary: #faf3ff;
-  --color-on-tertiary: #3c0090;
-  --color-tertiary-container: #e1d2ff;
-  --color-on-tertiary-container: #7213ff;
-  --color-error: #ffb4ab;
-  --color-on-error: #690005;
-  --color-error-container: #93000a;
-  --color-on-error-container: #ffdad6;
+  --color-on-secondary: #FFFFFF;
+  --color-secondary-container: rgba(94, 92, 230, 0.15);
+  --color-on-secondary-container: #5E5CE6;
+  --color-tertiary: #BF5AF2;
+  --color-on-tertiary: #FFFFFF;
+  --color-tertiary-container: rgba(191, 90, 242, 0.15);
+  --color-on-tertiary-container: #BF5AF2;
+  --color-error: #FF453A;
+  --color-on-error: #FFFFFF;
+  --color-error-container: rgba(255, 69, 58, 0.15);
+  --color-on-error-container: #FF453A;
   
-  --color-background: #131313;
-  --color-on-background: #e2e2e2;
+  --color-background: #000000;
+  --color-on-background: #FFFFFF;
   
   /* Fallback aliases */
   --color-white: #ffffff;
   --color-black: #000000;
   
-  --color-cyber-dark: #131313;
-  --color-cyber-light: #E0E7FF;
+  --color-cyber-dark: #000000;
+  --color-cyber-light: #F2F2F7;
   --color-cyber-blue: var(--cyber-primary);
   --color-cyber-purple: var(--cyber-secondary);
 
@@ -73,80 +73,108 @@
 }
 
 :root {
-  --background: #131313;
-  --foreground: #e2e2e2;
+  --background: #000000;
+  --foreground: #ffffff;
   
-  /* Cyber theme custom variables */
-  --cyber-primary: #B026FF;
-  --cyber-secondary: #00F0FF;
-  --cyber-glow-primary: rgba(176, 38, 255, 0.45);
-  --cyber-glow-secondary: rgba(0, 240, 255, 0.45);
+  /* Apple theme standard default variables */
+  --cyber-primary: #0A84FF;
+  --cyber-secondary: #5E5CE6;
+  --cyber-glow-primary: rgba(10, 132, 255, 0.45);
+  --cyber-glow-secondary: rgba(94, 92, 230, 0.45);
 }
 
 /* Theme variables per theme selection attribute */
 html[data-theme="purple"],
 html:not([data-theme]) {
-  --cyber-primary: #B026FF;     /* Neon Purple is Primary */
-  --cyber-secondary: #00F0FF;   /* Cyber Blue is Secondary */
-  --cyber-glow-primary: rgba(176, 38, 255, 0.45);
-  --cyber-glow-secondary: rgba(0, 240, 255, 0.45);
+  --cyber-primary: #BF5AF2;     /* Apple Dark Purple is Primary */
+  --cyber-secondary: #5E5CE6;   /* Apple Dark Indigo is Secondary */
+  --cyber-glow-primary: rgba(191, 90, 242, 0.45);
+  --cyber-glow-secondary: rgba(94, 92, 230, 0.45);
 }
 
 html[data-theme="blue"] {
-  --cyber-primary: #00F0FF;     /* Cyber Blue is Primary */
-  --cyber-secondary: #3b82f6;   /* Royal Blue is Secondary */
-  --cyber-glow-primary: rgba(0, 240, 255, 0.45);
-  --cyber-glow-secondary: rgba(59, 130, 246, 0.45);
+  --cyber-primary: #0A84FF;     /* Apple Dark Blue is Primary */
+  --cyber-secondary: #5E5CE6;   /* Apple Dark Indigo is Secondary */
+  --cyber-glow-primary: rgba(10, 132, 255, 0.45);
+  --cyber-glow-secondary: rgba(94, 92, 230, 0.45);
 }
 
 html[data-theme="pink"] {
-  --cyber-primary: #ff007f;     /* Tokyo Pink is Primary */
-  --cyber-secondary: #00F0FF;   /* Cyber Blue is Secondary */
-  --cyber-glow-primary: rgba(255, 0, 127, 0.45);
-  --cyber-glow-secondary: rgba(0, 240, 255, 0.45);
+  --cyber-primary: #FF375F;     /* Apple Dark Pink is Primary */
+  --cyber-secondary: #BF5AF2;   /* Apple Dark Purple is Secondary */
+  --cyber-glow-primary: rgba(255, 55, 95, 0.45);
+  --cyber-glow-secondary: rgba(191, 90, 242, 0.45);
 }
 
 html[data-theme="emerald"] {
-  --cyber-primary: #10b981;     /* Matrix Emerald is Primary */
-  --cyber-secondary: #00F0FF;   /* Cyber Blue is Secondary */
-  --cyber-glow-primary: rgba(16, 185, 129, 0.45);
-  --cyber-glow-secondary: rgba(0, 240, 255, 0.45);
+  --cyber-primary: #30D158;     /* Apple Dark Green is Primary */
+  --cyber-secondary: #63E6E2;   /* Apple Dark Mint is Secondary */
+  --cyber-glow-primary: rgba(48, 209, 88, 0.45);
+  --cyber-glow-secondary: rgba(99, 230, 226, 0.45);
 }
 
 /* --- LIGHT MODE CUSTOM VARIABLE OVERRIDES --- */
 .light-mode {
-  --background: #f8f9ff;
-  --foreground: #191c20;
+  --background: #ffffff;
+  --foreground: #000000;
   
-  --cyber-primary: #2B6CB0;
-  --cyber-secondary: #4F46E5;
-  --cyber-glow-primary: rgba(43, 108, 176, 0.08);
-  --cyber-glow-secondary: rgba(79, 70, 229, 0.08);
+  --cyber-primary: #007AFF;
+  --cyber-secondary: #5856D6;
+  --cyber-glow-primary: rgba(0, 122, 255, 0.08);
+  --cyber-glow-secondary: rgba(88, 86, 214, 0.08);
 
-  --color-background: #f8f9ff;
-  --color-on-background: #191c20;
+  --color-background: #ffffff;
+  --color-on-background: #000000;
   
   --color-surface: #ffffff;
-  --color-surface-dim: #d9dae0;
+  --color-surface-dim: #f2f2f7;
   --color-surface-bright: #ffffff;
   
   --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #f2f3fa;
-  --color-surface-container: #ededf4;
-  --color-surface-container-high: #e7e8ee;
-  --color-surface-container-highest: #e1e2e8;
+  --color-surface-container-low: #f2f2f7;
+  --color-surface-container: #ffffff;
+  --color-surface-container-high: #e5e5ea;
+  --color-surface-container-highest: #d1d1d6;
   
-  --color-on-surface: #191c20;
-  --color-on-surface-variant: #414750;
+  --color-on-surface: #000000;
+  --color-on-surface-variant: rgba(0, 0, 0, 0.6);
   
-  --color-outline: #727782;          /* Slate Gray outline */
-  --color-outline-variant: #c1c7d2;  /* Soft Slate Gray border outline */
-  --color-cyber-dark: #f8f9ff;       /* Forces overall screen background to neutral */
+  --color-outline: rgba(0, 0, 0, 0.15);
+  --color-outline-variant: rgba(0, 0, 0, 0.08);
+  --color-cyber-dark: #ffffff;
   
-  --color-tertiary: #784600;
+  --color-tertiary: #AF52DE;
   --color-on-tertiary: #ffffff;
-  --color-tertiary-container: #9a5b00;
-  --color-on-tertiary-container: #ffe7d2;
+  --color-tertiary-container: rgba(175, 82, 222, 0.15);
+  --color-on-tertiary-container: #AF52DE;
+}
+
+.light-mode[data-theme="purple"] {
+  --cyber-primary: #AF52DE;     /* Apple Light Purple */
+  --cyber-secondary: #5856D6;   /* Apple Light Indigo */
+  --cyber-glow-primary: rgba(175, 82, 222, 0.08);
+  --cyber-glow-secondary: rgba(88, 86, 214, 0.08);
+}
+
+.light-mode[data-theme="blue"] {
+  --cyber-primary: #007AFF;     /* Apple Light Blue */
+  --cyber-secondary: #5856D6;   /* Apple Light Indigo */
+  --cyber-glow-primary: rgba(0, 122, 255, 0.08);
+  --cyber-glow-secondary: rgba(88, 86, 214, 0.08);
+}
+
+.light-mode[data-theme="pink"] {
+  --cyber-primary: #FF2D55;     /* Apple Light Pink */
+  --cyber-secondary: #AF52DE;   /* Apple Light Purple */
+  --cyber-glow-primary: rgba(255, 45, 85, 0.08);
+  --cyber-glow-secondary: rgba(175, 82, 222, 0.08);
+}
+
+.light-mode[data-theme="emerald"] {
+  --cyber-primary: #34C759;     /* Apple Light Green */
+  --cyber-secondary: #00C7BE;   /* Apple Light Mint */
+  --cyber-glow-primary: rgba(52, 199, 89, 0.08);
+  --cyber-glow-secondary: rgba(0, 199, 190, 0.08);
 }
 
 /* Light mode specific elements custom styling */
