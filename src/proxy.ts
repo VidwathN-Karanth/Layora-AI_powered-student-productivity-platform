@@ -8,7 +8,8 @@ const isProtectedRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
-  if (isProtectedRoute(req)) {
+  const mockAuth = false; // Set to true to bypass Clerk middleware protection for testing
+  if (!mockAuth && isProtectedRoute(req)) {
     // If the user isn't signed in and the route is private, redirect to login
     await auth.protect();
   }

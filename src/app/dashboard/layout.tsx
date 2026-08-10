@@ -22,12 +22,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const store = useStore();
 
+  const mockAuth = false; // Set to true to bypass Clerk login for local testing
   const isAiActive = store.globalAiChatEnabled !== false && store.userAiChatEnabled !== false;
 
   const { isLoaded, isSignedIn, user: clerkUser } = useUser();
   const { signOut } = useAuth();
 
   useEffect(() => {
+    if (mockAuth && store.hasHydrated) {
+      if (!store.isAuthenticated) {
+        store.login('mock-student@layora.edu', 'Mock Student');
+      } else {
+        if (store.user && !store.user.isOnboarded) {
+          store.updateOnboardingStatus(true);
+        }
+        if (store.themeMode !== 'light') {
+          store.setThemeMode('light');
+        }
+      }
+    }
+  }, [mockAuth, store.hasHydrated, store.isAuthenticated, store.user?.isOnboarded, store.themeMode]);
+
+  useEffect(() => {
+    if (mockAuth) return;
     if (!store.hasHydrated || !store.isCloudLoaded) return;
     if (isLoaded && isSignedIn && clerkUser) {
       const primaryEmail = clerkUser.primaryEmailAddress?.emailAddress || '';
@@ -36,7 +53,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         store.login(primaryEmail, fullName);
       }
     }
-  }, [isLoaded, isSignedIn, clerkUser, store.hasHydrated, store.isCloudLoaded, store.isAuthenticated, store.user?.email]);
+  }, [isLoaded, isSignedIn, clerkUser, store.hasHydrated, store.isCloudLoaded, store.isAuthenticated, store.user?.email, mockAuth]);
 
   useEffect(() => {
     if (store.isAuthenticated) {
@@ -312,7 +329,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }).catch(() => {});
   }
 
-  if (!isLoaded || !store.isAuthenticated) return null;
+  if (!mockAuth && (!isLoaded || !store.isAuthenticated)) return null;
 
   return (
     <div className="min-h-screen bg-cyber-dark text-white flex relative overflow-hidden font-mono">
