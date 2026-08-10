@@ -304,9 +304,18 @@ html[data-theme="emerald"] {
   color: #1C1C1E !important; /* Apple primary label */
 }
 
-/* Stage box background and opacity overrides for Light Mode */
-.light-mode [class*="bg-white/5"],
-.light-mode [class*="bg-white/10"],
+/* Stage box background overrides for Light Mode */
+/* bg-white/5 (used for schedule rows, task rows, icon containers) → light grey, NOT white */
+.light-mode [class*="bg-white/5"] {
+  background-color: #F2F2F7 !important; /* Apple secondary background – visible row tint */
+}
+
+/* bg-white/10 (used for icon boxes, hover trays) → slightly darker grey */
+.light-mode [class*="bg-white/10"] {
+  background-color: #E5E5EA !important;
+}
+
+/* Very dark named backgrounds → white */
 .light-mode [class*="bg-zinc-900"],
 .light-mode [class*="bg-zinc-950"],
 .light-mode [class*="bg-neutral-900"],
@@ -323,10 +332,15 @@ html[data-theme="emerald"] {
   background-color: #FFFFFF !important;
 }
 
+/* Solid black/checkbox area backgrounds */
+.light-mode [class*="bg-black/40"] {
+  background-color: #F2F2F7 !important;
+}
+
 .light-mode [class*="bg-white/15"],
 .light-mode [class*="bg-white/20"],
 .light-mode [class*="bg-white/30"] {
-  background-color: #F2F2F7 !important; /* Apple secondary background */
+  background-color: #E5E5EA !important; /* Slightly more visible than F2F2F7 */
 }
 
 /* Stage border/outline overrides for Light Mode */
@@ -343,6 +357,11 @@ html[data-theme="emerald"] {
 .light-mode .border-white\/20,
 .light-mode .border-white\/5 {
   border-color: #D1D1D6 !important; /* Apple separator */
+}
+
+/* Dashed empty-state borders */
+.light-mode [class*="border-dashed"][class*="border-white"] {
+  border-color: #C7C7CC !important;
 }
 
 .light-mode .hover\:bg-white\/5:hover,
@@ -363,7 +382,7 @@ html[data-theme="emerald"] {
 }
 
 .light-mode .text-outline-variant {
-  color: #C7C7CC !important; /* Apple separator */
+  color: #8E8E93 !important; /* Apple tertiary label — more visible than C7C7CC */
 }
 
 .light-mode .text-cyber-blue {
@@ -388,6 +407,147 @@ html[data-theme="emerald"] {
 
 .light-mode .border-outline-variant {
   border-color: #D1D1D6 !important;
+}
+
+/* ── Schedule / Task row border-l dividers ── */
+.light-mode [class*="border-l"][class*="border-white"] {
+  border-color: #D1D1D6 !important;
+}
+
+/* ── Task card specific: secondary/5 background for pending tasks ── */
+.light-mode [class*="bg-secondary/5"] {
+  background-color: #F2F2F7 !important;
+}
+.light-mode [class*="border-secondary/20"] {
+  border-color: #D1D1D6 !important;
+}
+.light-mode [class*="hover:border-secondary/40"]:hover {
+  border-color: #AF52DE !important;
+}
+
+/* ── Completed task row (emerald tint) ── */
+.light-mode [class*="bg-emerald-950/10"] {
+  background-color: #D1FAE5 !important;
+  border-color: #34D399 !important;
+}
+
+/* ── Analytics icon containers ── */
+.light-mode [class*="bg-emerald-500/10"] {
+  background-color: rgba(52, 199, 89, 0.12) !important;
+}
+.light-mode [class*="bg-pink-500/10"] {
+  background-color: rgba(255, 45, 85, 0.08) !important;
+}
+
+/* ── Analytics chart: bar track background ── */
+.light-mode .bg-surface-container.border.border-outline-variant {
+  background-color: #E5E5EA !important;
+  border-color: #D1D1D6 !important;
+}
+
+/* ── AI Mentor card (glass-panel-neon) in light mode ── */
+.light-mode .glass-panel-neon {
+  background: #FFFFFF !important;
+  border-color: #007AFF !important;
+  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.08) !important;
+}
+
+/* ── Amber/cyan mentor advice cards in light mode ── */
+.light-mode [class*="bg-amber-950"] {
+  background-color: #FEF3C7 !important;
+  border-color: #F59E0B !important;
+  color: #92400E !important;
+}
+.light-mode [class*="bg-cyber-blue/5"],
+.light-mode [class*="bg-cyber-blue/10"] {
+  background-color: rgba(0, 122, 255, 0.06) !important;
+}
+
+/* ── Input range sliders (course progress meter) ── */
+.light-mode input[type="range"] {
+  background-color: #E5E5EA !important;
+  accent-color: #AF52DE !important;
+}
+.light-mode input[type="range"]::-webkit-slider-runnable-track {
+  background: #E5E5EA !important;
+  border-radius: 9999px;
+}
+.light-mode input[type="range"]::-webkit-slider-thumb {
+  background: #AF52DE !important;
+  border: 2px solid #FFFFFF !important;
+  box-shadow: 0 0 6px rgba(175, 82, 222, 0.3) !important;
+}
+
+/* ── Course reminder time input ── */
+.light-mode input[type="time"] {
+  background-color: #F2F2F7 !important;
+  border-color: #D1D1D6 !important;
+  color: #1C1C1E !important;
+}
+
+/* ── Primary / secondary / tertiary tinted badge containers ── */
+.light-mode [class*="bg-primary/10"] {
+  background-color: rgba(0, 122, 255, 0.08) !important;
+}
+.light-mode [class*="bg-primary/20"] {
+  background-color: rgba(0, 122, 255, 0.15) !important;
+}
+.light-mode [class*="border-primary/20"] {
+  border-color: rgba(0, 122, 255, 0.3) !important;
+}
+.light-mode [class*="border-primary/30"] {
+  border-color: rgba(0, 122, 255, 0.4) !important;
+}
+.light-mode [class*="bg-secondary/10"] {
+  background-color: rgba(175, 82, 222, 0.08) !important;
+}
+.light-mode [class*="border-secondary/25"] {
+  border-color: rgba(175, 82, 222, 0.3) !important;
+}
+
+/* ── Task checkbox ── */
+.light-mode input[type="checkbox"] {
+  background-color: #FFFFFF !important;
+  border-color: #D1D1D6 !important;
+  accent-color: #007AFF !important;
+}
+
+/* ── Planner timeline colored blocks: text contrast on purple/blue fills ── */
+.light-mode [class*="bg-primary/5"] {
+  background-color: rgba(0, 122, 255, 0.08) !important;
+}
+.light-mode [class*="border-primary"] {
+  border-color: #007AFF !important;
+}
+
+/* ── Weekly planner Planning Guide card ── */
+.light-mode [class*="bg-[#0B0F19]"],
+.light-mode [class*="bg-[#0b0f19]"] {
+  background-color: #FFFFFF !important;
+}
+
+/* ── Quick Launcher rows ── */
+.light-mode [class*="bg-white/3"] {
+  background-color: #F2F2F7 !important;
+}
+
+/* ── Streak counter gradient pill ── */
+.light-mode [class*="from-cyber-purple/20"] {
+  background: linear-gradient(to right, rgba(175, 82, 222, 0.10), rgba(0, 122, 255, 0.06)) !important;
+  border-color: rgba(175, 82, 222, 0.25) !important;
+}
+
+/* ── Day tab buttons in planner ── */
+.light-mode button[class*="bg-cyber-purple"] {
+  background-color: #AF52DE !important;
+  color: #FFFFFF !important;
+}
+
+/* ── "Start Session" & timer button in schedule rows ── */
+.light-mode [class*="bg-cyber-blue/10"][class*="border-cyber-blue"] {
+  background-color: rgba(0, 122, 255, 0.08) !important;
+  border-color: rgba(0, 122, 255, 0.35) !important;
+  color: #007AFF !important;
 }
 
 /* Time fields and inputs shadow DOM fields readability overrides */
