@@ -517,7 +517,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <header className="relative h-14 border-b border-white/10 bg-black/20 backdrop-blur-md px-6 hidden md:flex items-center justify-between z-20">
           <div className="flex items-center gap-2 font-mono text-xs text-white/40">
             <span>Workspace:</span>
-            <span className="text-cyber-blue font-bold uppercase">{pathname.split('/').pop() || 'DASHBOARD'}</span>
+            <span className="text-cyber-blue font-bold uppercase">{menuItems.find(item => pathname.replace(/\/$/, '') === item.path.replace(/\/$/, ''))?.name || 'DASHBOARD'}</span>
           </div>
 
           {/* Live digital clock with 12/24 toggle */}
