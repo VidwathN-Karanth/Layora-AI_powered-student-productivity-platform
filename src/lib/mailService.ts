@@ -418,3 +418,39 @@ ${textContent.trim()}
   }
 }
 
+export async function sendAdminNotificationMail(targetUserEmail: string): Promise<boolean> {
+  const host = process.env.SMTP_HOST;
+  const port = parseInt(process.env.SMTP_PORT || '587');
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  const from = process.env.SMTP_FROM || 'Layora Reminders <noreply@layora.com>';
+  
+  const adminEmails = ['vidwathkaranth@gmail.com', 'shreejith@mite.ac.in'];
+  const subject = `[Layora Admin] Inactivity Mail Sent`;
+  const textContent = `An inactivity reminder email (7 days) was just sent to the following user:\n\nEmail: ${targetUserEmail}`;
+  
+  if (host && user && pass && pass.trim() !== 'paste_your_app_password_here' && !pass.includes('paste_your')) {
+    try {
+      const nodemailer = require('nodemailer');
+      const transporter = nodemailer.createTransport({
+        host,
+        port,
+        secure: port === 465,
+        auth: { user, pass },
+      });
+
+      await transporter.sendMail({
+        from,
+        to: adminEmails.join(', '),
+        subject,
+        text: textContent,
+      });
+      return true;
+    } catch (err) {
+      console.error(`[MailService] Error sending admin notification:`, err);
+      return false;
+    }
+  }
+  return false;
+}
+

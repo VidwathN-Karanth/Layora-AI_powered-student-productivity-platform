@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { sendInactivityReminderMail } from '@/lib/mailService';
+import { sendInactivityReminderMail, sendAdminNotificationMail } from '@/lib/mailService';
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get('Authorization');
@@ -59,8 +59,8 @@ export async function GET(request: Request) {
       const diffTime = Math.abs(now.getTime() - updatedAt.getTime());
       const diffDays = diffTime / (1000 * 60 * 60 * 24);
 
-      // We only target users who have been inactive for more than 4 days
-      if (diffDays > 4) {
+      // We only target users who have been inactive for more than 7 days
+      if (diffDays > 7) {
         // Check if we already sent a reminder for this inactivity period
         let shouldSend = false;
         
@@ -83,6 +83,9 @@ export async function GET(request: Request) {
           });
 
           if (success) {
+            // Send a notification to admins that an inactivity mail was sent
+            await sendAdminNotificationMail(userEmail);
+
             // Update the state with the date we sent the reminder
             const updatedState = {
               ...state,
