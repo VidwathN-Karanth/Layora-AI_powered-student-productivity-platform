@@ -341,7 +341,7 @@ export async function sendInactivityReminderMail({ to, userName = 'there' }: Ina
                 Consistency is key to mastering your goals. You haven't checked into your Layora dashboard for the past few days. 
                 Don't let your streak slip away—jump back in and tackle those tasks!
               </p>
-              <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard" class="cta-btn" target="_blank">Go to Dashboard</a>
+              <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://layora239.vercel.app'}/dashboard" class="cta-btn" target="_blank">Go to Dashboard</a>
             </div>
 
             <p class="greeting" style="font-size: 14px; color: #a5a1b8; text-align: center;">
@@ -350,7 +350,7 @@ export async function sendInactivityReminderMail({ to, userName = 'there' }: Ina
           </div>
           <div class="footer">
             Sent by Layora - Your AI-Powered Productivity Assistant.<br>
-            Visit your <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard">dashboard</a> to resume your progress.
+            Visit your <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://layora239.vercel.app'}/dashboard">dashboard</a> to resume your progress.
           </div>
         </div>
       </body>
@@ -363,7 +363,7 @@ export async function sendInactivityReminderMail({ to, userName = 'there' }: Ina
     We noticed you haven't checked into Layora for a few days. Consistency is key to reaching your goals!
     
     Don't let your momentum slip. Log in now and get back on track:
-    ${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard
+    ${process.env.NEXT_PUBLIC_APP_URL || 'https://layora239.vercel.app'}/dashboard
     
     You've got this!
     - The Layora Team
