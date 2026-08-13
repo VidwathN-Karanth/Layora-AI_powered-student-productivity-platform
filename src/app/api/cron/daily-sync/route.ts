@@ -5,11 +5,12 @@ export async function GET(request: Request) {
   const authHeader = request.headers.get('Authorization');
   const cronSecret = process.env.CRON_SECRET;
 
-  // Enforce security in production when CRON_SECRET is configured
-  if (process.env.NODE_ENV === 'production' && cronSecret) {
-    if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  // Fail closed: this route must always be protected by CRON_SECRET
+  if (!cronSecret) {
+    return NextResponse.json({ error: 'Server misconfigured: CRON_SECRET not set' }, { status: 500 });
+  }
+  if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {

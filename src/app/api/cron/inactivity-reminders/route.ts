@@ -7,15 +7,16 @@ export async function GET(request: Request) {
   const customHeader = request.headers.get('x-cron-secret');
   const cronSecret = process.env.CRON_SECRET;
 
-  // Enforce security in production when CRON_SECRET is configured
-  if (process.env.NODE_ENV === 'production' && cronSecret) {
-    const isAuthorized = 
-      (authHeader && authHeader === `Bearer ${cronSecret}`) ||
-      (customHeader && customHeader === cronSecret);
+  // Fail closed: this route must always be protected by CRON_SECRET
+  if (!cronSecret) {
+    return NextResponse.json({ error: 'Server misconfigured: CRON_SECRET not set' }, { status: 500 });
+  }
+  const isAuthorized =
+    (authHeader && authHeader === `Bearer ${cronSecret}`) ||
+    (customHeader && customHeader === cronSecret);
 
-    if (!isAuthorized) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  if (!isAuthorized) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {

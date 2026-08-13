@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
 import { runSyncForDate } from '@/lib/syncLogic';
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
+import { isAdminEmail } from '@/lib/admin';
 
 export async function POST(request: Request) {
   try {
     const { userId } = await auth();
-    if (!userId) {
+    const user = await currentUser();
+    const email = user?.primaryEmailAddress?.emailAddress || '';
+
+    if (!userId || !isAdminEmail(email)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

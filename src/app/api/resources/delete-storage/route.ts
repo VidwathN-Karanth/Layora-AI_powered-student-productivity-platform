@@ -14,9 +14,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing storagePath parameter' }, { status: 400 });
     }
 
-    // Security check: ensure path is valid and authorized for the user
-    // (typically prefixed with the user's clerk ID).
-    if (!storagePath.startsWith(userId) && !storagePath.includes(userId)) {
+    // Security check: path must live inside the requesting user's own folder
+    // (files are stored under `${userId}/...`). A substring/prefix check without
+    // a separator would let a userId that happens to be a substring of another
+    // path match and delete someone else's file.
+    if (typeof storagePath !== 'string' || storagePath.includes('..') || !storagePath.startsWith(`${userId}/`)) {
       return NextResponse.json({ error: 'Access denied: Unauthorized to delete this resource' }, { status: 403 });
     }
 
