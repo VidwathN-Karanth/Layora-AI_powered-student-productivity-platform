@@ -63,7 +63,11 @@ export const COHORT_ROSTER: Record<Cohort, string[]> = {
     // e.g. '4mt24cs001@mite.ac.in',
   ],
 
-  "3rd Year": ["4mt24cs239@mite.ac.in", "4mt24cs130@mite.ac.in"],
+  "3rd Year": [
+    "4mt24cs239@mite.ac.in",
+    "4mt24cs130@mite.ac.in",
+    "4mt24cs140@mite.ac.in",
+  ],
 
   "4th Year": [
     // e.g. '4mt22cs001@mite.ac.in',
