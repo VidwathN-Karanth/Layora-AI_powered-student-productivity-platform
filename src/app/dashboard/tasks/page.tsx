@@ -159,7 +159,7 @@ export default function TasksPage() {
           const tickingTask = store.tasks.find((t) => t.id === store.activeTaskId);
           if (!tickingTask) return null;
           return (
-            <div className="border border-white/10 bg-[#0d111c]/40 rounded-xl p-5 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="border border-white/10 bg-[#1A1D22]/40 rounded-xl p-5 flex flex-col md:flex-row justify-between items-center gap-4">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
                   <Clock className="w-6 h-6 animate-pulse" strokeWidth={1.5} />

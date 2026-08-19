@@ -4,10 +4,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '@/store/useStore';
 import { useUser } from '@clerk/nextjs';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
+import { apiFetch } from '@/lib/apiClient';
 import { isAdminEmail } from '@/lib/admin';
+import { SHARED_RESOURCE_TAG, resolveResourceTag, shortCohortLabel, type Cohort } from '@/lib/cohorts';
 import { 
   Globe, UploadCloud, File, Plus, Trash, FileText, 
-  ExternalLink, RefreshCw, Loader2, Search, User, Clock, AlertCircle
+  ExternalLink, RefreshCw, Loader2, Search, User, Clock, AlertCircle, Users
 } from 'lucide-react';
 
 interface GlobalResource {
@@ -25,13 +27,14 @@ export default function GlobalResourcesPage() {
   const { user: clerkUser } = useUser();
   const currentUserEmail = clerkUser?.primaryEmailAddress?.emailAddress || '';
   const isAdmin = isAdminEmail(currentUserEmail) || isAdminEmail(store.user?.email);
+  const cohort = store.cohort;
 
   // Component States
   const [resources, setResources] = useState<GlobalResource[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedYearFilter, setSelectedYearFilter] = useState<'All' | '1st Year' | '2nd Year' | '3rd Year' | '4th Year' | 'Others'>('All');
+  const [shelfFilter, setShelfFilter] = useState<'All' | 'MyYear' | 'Shared'>('All');
 
   // Upload Form Panel States
   const [showUploadForm, setShowUploadForm] = useState(false);
@@ -40,7 +43,6 @@ export default function GlobalResourcesPage() {
   const [linkUrl, setLinkUrl] = useState('');
   const [fileData, setFileData] = useState<File | null>(null);
   const [fileType, setFileType] = useState('pdf');
-  const [documentYear, setDocumentYear] = useState('Others');
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadErrors, setUploadErrors] = useState<Record<string, string | undefined>>({});
@@ -98,7 +100,7 @@ export default function GlobalResourcesPage() {
         return;
       }
 
-      const res = await fetch('/api/resources/global');
+      const res = await apiFetch('/api/resources/global');
       if (!res.ok) {
         throw new Error(`Failed to load shared resources: HTTP ${res.status}`);
       }
@@ -178,10 +180,12 @@ export default function GlobalResourcesPage() {
         const finalType = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt'].includes(detectedType) ? detectedType : 'link';
 
         if (isSupabaseConfigured) {
-          const res = await fetch('/api/resources/global', {
+          const res = await apiFetch('/api/resources/global', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: fileName, url: linkUrl, type: finalType, year: documentYear })
+            // No `year` is sent: the server tags every student upload with the
+            // uploader's own cohort, so nothing can land in another year's library.
+            body: JSON.stringify({ name: fileName, url: linkUrl, type: finalType })
           });
           if (!res.ok) {
             const errData = await res.json().catch(() => ({}));
@@ -196,7 +200,7 @@ export default function GlobalResourcesPage() {
             name: fileName,
             url: linkUrl,
             type: finalType,
-            year: documentYear,
+            year: cohort || SHARED_RESOURCE_TAG,
             uploadedBy: currentUserEmail || 'local_user',
             uploaderName: clerkUser?.fullName || 'Local Student',
             createdAt: new Date().toISOString()
@@ -243,7 +247,7 @@ export default function GlobalResourcesPage() {
       formData.append('name', fileName);
       formData.append('makePublic', 'true');
 
-      const uploadRes = await fetch('/api/resources/upload-drive', {
+      const uploadRes = await apiFetch('/api/resources/upload-drive', {
         method: 'POST',
         body: formData,
       });
@@ -256,10 +260,10 @@ export default function GlobalResourcesPage() {
       const uploadData = await uploadRes.json();
       const driveUrl = uploadData.file.url;
 
-      const saveRes = await fetch('/api/resources/global', {
+      const saveRes = await apiFetch('/api/resources/global', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: fileName, url: driveUrl, type: fileType, year: documentYear })
+        body: JSON.stringify({ name: fileName, url: driveUrl, type: fileType })
       });
 
       if (!saveRes.ok) {
@@ -286,7 +290,6 @@ export default function GlobalResourcesPage() {
     setLinkUrl('');
     setFileData(null);
     setFileType('pdf');
-    setDocumentYear('Others');
     setUploadErrors({});
     setShowUploadForm(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -297,7 +300,7 @@ export default function GlobalResourcesPage() {
 
     try {
       if (isSupabaseConfigured) {
-        const res = await fetch(`/api/resources/global?id=${id}`, {
+        const res = await apiFetch(`/api/resources/global?id=${id}`, {
           method: 'DELETE'
         });
         if (!res.ok) {
@@ -323,10 +326,15 @@ export default function GlobalResourcesPage() {
     const query = searchQuery.toLowerCase();
     
     const matchesSearch = name.includes(query) || uploader.includes(query);
-    const resYear = (res as any).year || 'Others';
-    const matchesYear = selectedYearFilter === 'All' || resYear === selectedYearFilter;
-    
-    return matchesSearch && matchesYear;
+
+    // The server already scoped this list to the student's own year plus the
+    // shared shelf, so the only useful split here is between those two.
+    const tag = resolveResourceTag((res as any).year);
+    const matchesShelf =
+      shelfFilter === 'All' ||
+      (shelfFilter === 'Shared' ? tag === SHARED_RESOURCE_TAG : tag !== SHARED_RESOURCE_TAG);
+
+    return matchesSearch && matchesShelf;
   });
 
   const formatUploadedDate = (isoString: string) => {
@@ -348,10 +356,12 @@ export default function GlobalResourcesPage() {
         <div>
           <h2 className="text-xl font-mono font-bold tracking-wide flex items-center gap-2">
             <Globe className="w-5 h-5 text-primary" />
-            Global Shared Resources
+            {cohort ? `${cohort} Shared Resources` : 'Shared Resources'}
           </h2>
           <p className="text-xs text-outline font-mono mt-0.5">
-            Access, view, and share study files and PDFs with the entire student body.
+            {cohort
+              ? `Notes and papers shared by your ${cohort} classmates, plus anything the department shares with everyone.`
+              : 'Notes and papers shared by your classmates, plus anything the department shares with everyone.'}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -501,25 +511,14 @@ export default function GlobalResourcesPage() {
               )}
             </div>
 
-            {/* Target Year Level Selection */}
-            <div>
-              <label className="block text-[10px] font-mono text-outline mb-2">Target Academic Year</label>
-              <div className="flex flex-wrap items-center gap-1.5 p-1 bg-surface-container rounded-xl border border-outline-variant/30 w-max">
-                {(['1st Year', '2nd Year', '3rd Year', '4th Year', 'Others'] as const).map((y) => (
-                  <button
-                    key={y}
-                    type="button"
-                    onClick={() => setDocumentYear(y)}
-                    className={`px-3 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase transition cursor-pointer ${
-                      documentYear === y
-                        ? 'bg-primary text-on-surface'
-                        : 'text-outline hover:text-white'
-                    }`}
-                  >
-                    {y.replace('Year', 'Yr')}
-                  </button>
-                ))}
-              </div>
+            {/* Where this lands is decided by the roster, not by the uploader. */}
+            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-primary/5 border border-primary/20">
+              <Users className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+              <p className="text-[10px] font-mono text-outline leading-relaxed">
+                {cohort
+                  ? <>This will be shared with your <strong className="text-primary">{cohort}</strong> classmates. Other years will not see it.</>
+                  : <>This will be shared with your own year group only.</>}
+              </p>
             </div>
 
             <div className="flex gap-2">
@@ -562,19 +561,24 @@ export default function GlobalResourcesPage() {
           />
         </div>
         
-        {/* Year Filter Button group */}
+        {/* Shelf filter — a student can only ever reach their own year and the
+            department-wide shelf, so those are the only two options offered. */}
         <div className="flex flex-wrap items-center gap-1.5 p-1 bg-surface-container rounded-xl border border-outline-variant/30 self-start md:self-auto">
-          {(['All', '1st Year', '2nd Year', '3rd Year', '4th Year', 'Others'] as const).map((y) => (
+          {([
+            { key: 'All', label: 'All' },
+            { key: 'MyYear', label: cohort ? shortCohortLabel(cohort) : 'My Year' },
+            { key: 'Shared', label: 'Everyone' },
+          ] as const).map((opt) => (
             <button
-              key={y}
-              onClick={() => setSelectedYearFilter(y)}
+              key={opt.key}
+              onClick={() => setShelfFilter(opt.key)}
               className={`px-2.5 py-1 rounded-lg text-[9px] font-mono font-bold uppercase transition cursor-pointer ${
-                selectedYearFilter === y
+                shelfFilter === opt.key
                   ? 'bg-primary text-on-surface'
                   : 'text-outline hover:text-white'
               }`}
             >
-              {y === 'All' ? 'All' : y.replace('Year', 'Yr')}
+              {opt.label}
             </button>
           ))}
         </div>
@@ -632,12 +636,18 @@ export default function GlobalResourcesPage() {
                     )}
                   </div>
                   
-                  {/* File Type & Year Badge Overlay */}
+                  {/* File type, and which shelf this came from */}
                   <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
                     {getFileTypeBadge(res.type)}
-                    <span className="px-1.5 py-0.5 rounded text-[8px] font-bold border tracking-wider bg-black/60 border-white/10 text-white/90 uppercase">
-                      {(res as any).year || 'Others'}
-                    </span>
+                    {resolveResourceTag((res as any).year) === SHARED_RESOURCE_TAG ? (
+                      <span className="px-1.5 py-0.5 rounded text-[8px] font-bold border tracking-wider bg-black/60 border-primary/30 text-primary uppercase">
+                        Everyone
+                      </span>
+                    ) : (
+                      <span className="px-1.5 py-0.5 rounded text-[8px] font-bold border tracking-wider bg-black/60 border-white/10 text-white/90 uppercase">
+                        {shortCohortLabel(resolveResourceTag((res as any).year) as Cohort)}
+                      </span>
+                    )}
                   </div>
 
                   {/* Actions Overlay */}
@@ -646,7 +656,7 @@ export default function GlobalResourcesPage() {
                       href={res.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-2.5 rounded-xl border border-outline-variant bg-[#0B0F19]/90 hover:border-primary text-outline hover:text-white transition-all scale-90 group-hover:scale-100 duration-300"
+                      className="p-2.5 rounded-xl border border-outline-variant bg-[#1A1D22]/90 hover:border-primary text-outline hover:text-white transition-all scale-90 group-hover:scale-100 duration-300"
                       title="Open/View Document"
                     >
                       <ExternalLink className="w-4 h-4" />

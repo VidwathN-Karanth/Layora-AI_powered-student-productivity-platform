@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { useUser } from '@clerk/nextjs';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
+import { apiFetch } from '@/lib/apiClient';
 import { 
   FolderLock, UploadCloud, File, BookOpen, Plus, 
   Trash, Download, FileText, ExternalLink 
@@ -165,7 +166,7 @@ export default function ResourcesPage() {
       formData.append('file', fileData);
       formData.append('name', fileName || fileData.name);
 
-      const res = await fetch('/api/resources/upload-drive', {
+      const res = await apiFetch('/api/resources/upload-drive', {
         method: 'POST',
         body: formData,
       });
@@ -678,7 +679,7 @@ export default function ResourcesPage() {
                                       if (file.url && file.url.includes('/storage/v1/object/public/resources/')) {
                                         const storagePath = file.url.split('/storage/v1/object/public/resources/')[1];
                                         if (storagePath) {
-                                          const res = await fetch('/api/resources/delete-storage', {
+                                          const res = await apiFetch('/api/resources/delete-storage', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify({ storagePath })

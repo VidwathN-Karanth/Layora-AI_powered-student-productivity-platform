@@ -1,11 +1,9 @@
-// AI Integration & Planner Logic Service
+// Scheduling logic.
+//
+// This module used to front the Groq-backed planner and chat copilot. Those
+// features were removed; what remains is the deterministic local scheduler,
+// which is now the only way a timetable gets built.
 
-export interface AIKeys {
-  groq?: string;
-  openai?: string;
-  claude?: string;
-  grok?: string;
-}
 
 export interface Task {
   id: string;
@@ -710,80 +708,5 @@ export function resolveScheduleOverlaps(schedule: TimetableBlock[]): TimetableBl
   return adjustedSchedule.sort((a, b) => {
     if (a.day !== b.day) return a.day - b.day;
     return a.start.localeCompare(b.start);
-  });
-}
-
-// Client service request coordinators
-export async function generateAISchedule(
-  keys: AIKeys,
-  routine: Routine,
-  subjects: Subject[],
-  activities: Activity[],
-  courses: Course[],
-  tasks?: Task[]
-): Promise<{ schedule: TimetableBlock[]; insights: string[] }> {
-  try {
-    const response = await fetch('/api/ai/planner', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ keys, routine, subjects, activities, courses, tasks }),
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      if (data.schedule) {
-        return {
-          schedule: resolveScheduleOverlaps(data.schedule),
-          insights: data.insights || []
-        };
-      }
-    }
-  } catch (error) {
-    console.error('Failed to request remote AI planner schedule. Using local optimizer.', error);
-  }
-
-  // Fallback to local scheduling logic
-  return generateLocalWeeklySchedule(routine, subjects, activities, courses, tasks);
-}
-
-export async function sendAIChatMessage(
-  message: string,
-  history: { role: 'user' | 'assistant'; content: string }[],
-  provider: 'groq' | 'openai' | 'claude' | 'grok',
-  keys: AIKeys,
-  context?: any
-): Promise<string> {
-  try {
-    const response = await fetch('/api/ai/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, history, provider, keys, ...context }),
-    });
-
-
-    if (response.ok) {
-      const data = await response.json();
-      if (data.reply) return data.reply;
-    }
-  } catch (error) {
-    console.error('Failed to send remote AI chat request. Using realistic local planner fallback replies.', error);
-  }
-
-  // Fallback realistic mock AI chatbot response
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const userMessageLower = message.toLowerCase();
-      
-      let reply = `Greetings! As your AI academic co-pilot, I'm here to help you optimize your studies. Under my settings panel, you can provide an active **${provider.toUpperCase()} API Key** to connect to live models. \n\nCurrently, here are a few actionable suggestions based on your routine:\n`;
-
-      if (userMessageLower.includes('schedule') || userMessageLower.includes('timetable') || userMessageLower.includes('plan')) {
-        reply += `1. **Credit Allocation**: Make sure you allocate study blocks right after your college lectures when your mind is primed for learning.\n2. **Break Optimizations**: Try using the Pomodoro technique (45 minutes of deep focus followed by 10 minutes of rest) for your Hard subjects.\n3. **Streak Tracking**: Maintain your daily task completion streak to unlock positive momentum! Let me know if you want to generate a new optimized week schedule in the planner.`;
-      } else if (userMessageLower.includes('exam') || userMessageLower.includes('test') || userMessageLower.includes('deadline')) {
-        reply += `1. **Spaced Repetition**: Revise your subject notes 1 day, 3 days, and 7 days after uploading them.\n2. **High Priority Filter**: Your high-credit subjects should receive priority blocks on weekends. Use the timer tool to track actual study minutes so you can balance study vs. test performance in the analytics tracker.`;
-      } else {
-        reply += `1. **Start Task Timer**: When starting a study block, click the **Start** button on your task card to track your actual study hours.\n2. **Google Calendar**: You can sync your planned study blocks to your Google Calendar using the "Sync to Google Calendar" button.\n3. **Study Resource Uploads**: Go to the resources dashboard to organize PPTs and PDFs for easy revision. What subject are we focusing on today?`;
-      }
-      resolve(reply);
-    }, 1500);
   });
 }

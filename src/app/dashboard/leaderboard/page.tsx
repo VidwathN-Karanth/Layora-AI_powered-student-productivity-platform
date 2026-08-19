@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useStore } from '@/store/useStore';
-import { isAdminEmail } from '@/lib/admin';
+import { apiFetch } from '@/lib/apiClient';
 import { 
   Trophy, Award, TrendingUp, Calendar, RefreshCw,
-  AlertTriangle, Terminal, GitBranch, ShieldAlert
+  AlertTriangle, Terminal, GitBranch
 } from 'lucide-react';
 
 interface RangeStats {
@@ -26,6 +26,7 @@ interface UserStats {
 export default function LeaderboardPage() {
   const store = useStore();
   const { user: clerkUser } = useUser();
+  const cohort = store.cohort;
 
   // Stats States
   const [userStats, setUserStats] = useState<UserStats | null>(null);
@@ -41,14 +42,11 @@ export default function LeaderboardPage() {
   const [syncingStats, setSyncingStats] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  const isAdmin = isAdminEmail(clerkUser?.primaryEmailAddress?.emailAddress) || 
-                  isAdminEmail(store.user?.email);
-
   const fetchUserStats = async () => {
     const targetUserId = clerkUser?.id || store.user?.email || 'test_user';
     setLoadingStats(true);
     try {
-      const res = await fetch(`/api/users/${targetUserId}/activity-stats`);
+      const res = await apiFetch(`/api/users/${targetUserId}/activity-stats`);
       if (res.ok) {
         const data = await res.json();
         setUserStats(data);
@@ -64,12 +62,12 @@ export default function LeaderboardPage() {
     setLoadingLeaderboard(true);
     setLeaderboardError('');
     try {
-      const res = await fetch(`/api/admin/leaderboard?range=${range}`);
+      const res = await apiFetch(`/api/leaderboard?range=${range}`);
       if (!res.ok) {
         throw new Error('Failed to fetch leaderboard data.');
       }
       const data = await res.json();
-      setLeaderboard(data);
+      setLeaderboard(data.leaderboard || []);
     } catch (err) {
       console.error(err);
       setLeaderboardError('Could not load leaderboard data.');
@@ -82,7 +80,7 @@ export default function LeaderboardPage() {
     setSyncingStats(true);
     setSyncFeedback(null);
     try {
-      const res = await fetch('/api/admin/sync-now', {
+      const res = await apiFetch('/api/admin/sync-now', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -130,8 +128,14 @@ export default function LeaderboardPage() {
       {/* Top Header */}
       <div className="border-b border-outline-variant pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-mono font-bold tracking-wide">🏆 Global Scoreboard</h2>
-          <p className="text-xs text-outline font-mono mt-0.5">Compare study progress, coding accomplishments, and contribution streaks.</p>
+          <h2 className="text-xl font-mono font-bold tracking-wide">
+            🏆 {cohort ? `${cohort} Scoreboard` : 'Scoreboard'}
+          </h2>
+          <p className="text-xs text-outline font-mono mt-0.5">
+            {cohort
+              ? `You are ranked against your ${cohort} classmates only.`
+              : 'Compare coding accomplishments and contribution streaks with your classmates.'}
+          </p>
         </div>
         <button
           onClick={handleSyncNow}
@@ -230,12 +234,12 @@ export default function LeaderboardPage() {
           <div className="p-4 border-b border-outline-variant bg-white/3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Trophy className="w-4 h-4 text-primary" />
-              <span className="text-xs font-mono font-bold tracking-wider text-primary uppercase">Global Leaderboard</span>
-              {!isAdmin && (
-                <span className="text-[8px] border border-outline-variant text-outline bg-white/2 px-1.5 py-0.5 rounded font-mono font-normal uppercase">
-                  🔒 Privacy Mode Active
-                </span>
-              )}
+              <span className="text-xs font-mono font-bold tracking-wider text-primary uppercase">
+                {cohort ? `${cohort} Leaderboard` : 'Leaderboard'}
+              </span>
+              <span className="text-[8px] border border-outline-variant text-outline bg-white/2 px-1.5 py-0.5 rounded font-mono font-normal uppercase">
+                🔒 Privacy Mode Active
+              </span>
             </div>
             
             <div className="flex items-center gap-1.5">
@@ -276,13 +280,6 @@ export default function LeaderboardPage() {
                   <tr className="border-b border-outline-variant bg-white/2 text-outline font-bold uppercase tracking-wider">
                     <th className="p-3 text-center w-12">Rank</th>
                     <th className="p-3">Student</th>
-                    {isAdmin && (
-                      <>
-                        <th className="p-3 text-right">LC Solves</th>
-                        <th className="p-3 text-right">CC Solves</th>
-                        <th className="p-3 text-right">Commits</th>
-                      </>
-                    )}
                     <th className="p-3 text-right">Total Score</th>
                   </tr>
                 </thead>
@@ -315,22 +312,6 @@ export default function LeaderboardPage() {
 
                           </div>
                         </td>
-                        
-                        {/* Privacy Check: Detailed solves/commits columns only rendered for Admin */}
-                        {isAdmin && (
-                          <>
-                            <td className="p-3 text-right font-bold text-on-surface">
-                              {item.totalLeetcodeSolved}
-                            </td>
-                            <td className="p-3 text-right font-bold text-on-surface">
-                              {item.totalCodechefSolved || 0}
-                            </td>
-                            <td className="p-3 text-right font-bold text-on-surface">
-                              {item.totalGithubContributions}
-                            </td>
-                          </>
-                        )}
-                        
                         <td className="p-3 text-right">
                           <span className="font-black text-glow text-primary">
                             {item.totalPoints} pts

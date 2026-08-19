@@ -1,50 +1,118 @@
 import { NextResponse } from 'next/server';
-import { auth, currentUser } from '@clerk/nextjs/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
-import { isAdminEmail } from '@/lib/admin';
+import { getRequester, requireAdminCohort } from '@/lib/authz';
+import {
+  SHARED_RESOURCE_TAG,
+  cohortCanSeeResource,
+  isCohort,
+  type Cohort,
+} from '@/lib/cohorts';
 
-export async function GET() {
+interface StoredResource {
+  id: string;
+  name: string;
+  url: string;
+  type?: string;
+  year?: string;
+  uploadedBy: string;
+  uploaderName?: string;
+  createdAt?: string;
+}
+
+async function readResourceList(): Promise<StoredResource[]> {
+  const { data, error } = await supabaseAdmin
+    .from('user_states')
+    .select('state')
+    .eq('id', 'global_resources')
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return []; // Not created yet
+    throw error;
+  }
+
+  return (data?.state?.resources || []) as StoredResource[];
+}
+
+async function writeResourceList(resources: StoredResource[]): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from('user_states')
+    .upsert({
+      id: 'global_resources',
+      state: { resources },
+      updated_at: new Date().toISOString(),
+    });
+
+  if (error) throw error;
+}
+
+/** What one cohort is allowed to see: its own year, plus the shared shelf. */
+function visibleTo(cohort: Cohort, resources: StoredResource[]): StoredResource[] {
+  return resources.filter((r) => cohortCanSeeResource(cohort, r.year));
+}
+
+/**
+ * The shared library, scoped to one academic year.
+ *
+ * Students get their own year plus anything tagged `Others`, which is the
+ * department-wide shelf. Admins must name a year with `?cohort=`, because the
+ * console shows one year at a time.
+ */
+export async function GET(request: Request) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const requester = await getRequester();
+    if (!requester) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    let cohort: Cohort;
+
+    if (requester.isAdmin) {
+      const guard = await requireAdminCohort(request.url);
+      if (!guard.ok) return guard.response;
+      cohort = guard.requester.cohort;
+    } else {
+      if (!requester.allowed || !requester.cohort) {
+        return NextResponse.json(
+          { error: 'Access denied', reason: requester.denialReason },
+          { status: 403 }
+        );
+      }
+      cohort = requester.cohort;
     }
 
     if (!isSupabaseConfigured) {
-      return NextResponse.json({ resources: [] });
+      return NextResponse.json({ resources: [], cohort });
     }
 
-    const { data, error } = await supabaseAdmin
-      .from('user_states')
-      .select('state')
-      .eq('id', 'global_resources')
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        // Not created yet
-        return NextResponse.json({ resources: [] });
-      }
-      throw error;
-    }
-
-    return NextResponse.json({ resources: data?.state?.resources || [] });
-  } catch (error: any) {
-    console.error('Failed to GET global resources:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const resources = await readResourceList();
+    return NextResponse.json({ resources: visibleTo(cohort, resources), cohort });
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error('Failed to GET global resources:', errMsg);
+    return NextResponse.json({ error: errMsg }, { status: 500 });
   }
 }
 
+/**
+ * Share a resource.
+ *
+ * A student's upload is always tagged with their own year — the client-supplied
+ * `year` is ignored, so nothing can be published into another cohort's library.
+ * Only an admin may tag a resource for a specific year or for everyone.
+ */
 export async function POST(request: Request) {
   try {
-    const { userId } = await auth();
-    const clerkUser = await currentUser();
-    const email = clerkUser?.primaryEmailAddress?.emailAddress || '';
-    const uploaderName = clerkUser?.fullName || email.split('@')[0];
-
-    if (!userId) {
+    const requester = await getRequester();
+    if (!requester) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (!requester.isAdmin && (!requester.allowed || !requester.cohort)) {
+      return NextResponse.json(
+        { error: 'Access denied', reason: requester.denialReason },
+        { status: 403 }
+      );
     }
 
     if (!isSupabaseConfigured) {
@@ -52,121 +120,120 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, url, type, year } = body;
+    const { name, url, type, year: requestedYear } = body;
 
     if (!name || !url) {
       return NextResponse.json({ error: 'Missing name or url' }, { status: 400 });
     }
 
-    // 1. Fetch the existing list
-    let list: any[] = [];
-    const { data, error: fetchError } = await supabaseAdmin
-      .from('user_states')
-      .select('state')
-      .eq('id', 'global_resources')
-      .single();
-
-    if (fetchError && fetchError.code !== 'PGRST116') {
-      throw fetchError;
+    let year: string;
+    if (requester.isAdmin) {
+      // Admins choose: one year, or the shared shelf.
+      if (requestedYear !== SHARED_RESOURCE_TAG && !isCohort(requestedYear)) {
+        return NextResponse.json(
+          { error: `Invalid "year". Expected a cohort or "${SHARED_RESOURCE_TAG}".` },
+          { status: 400 }
+        );
+      }
+      year = requestedYear;
+    } else {
+      year = requester.cohort as Cohort;
     }
 
-    if (data?.state?.resources) {
-      list = data.state.resources;
-    }
+    const list = await readResourceList();
 
-    // 2. Append the new resource
-    const newResource = {
+    const newResource: StoredResource = {
       id: `file-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       name,
       url,
       type: type || 'pdf',
-      year: year || 'Others',
-      uploadedBy: email,
-      uploaderName,
-      createdAt: new Date().toISOString()
+      year,
+      uploadedBy: requester.email,
+      uploaderName: requester.isAdmin ? 'Department' : requester.email.split('@')[0],
+      createdAt: new Date().toISOString(),
     };
 
     const updatedList = [...list, newResource];
+    await writeResourceList(updatedList);
 
-    // 3. Save back to database
-    const { error: saveError } = await supabaseAdmin
-      .from('user_states')
-      .upsert({
-        id: 'global_resources',
-        state: { resources: updatedList },
-        updated_at: new Date().toISOString()
-      });
+    const viewingCohort = requester.isAdmin
+      ? new URL(request.url).searchParams.get('cohort')
+      : requester.cohort;
 
-    if (saveError) throw saveError;
+    const visible = isCohort(viewingCohort) ? visibleTo(viewingCohort, updatedList) : [];
 
-    return NextResponse.json({ success: true, resource: newResource, resources: updatedList });
-  } catch (error: any) {
-    console.error('Failed to POST global resource:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: true, resource: newResource, resources: visible });
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error('Failed to POST global resource:', errMsg);
+    return NextResponse.json({ error: errMsg }, { status: 500 });
   }
 }
 
+/**
+ * Remove a resource. Uploaders can remove their own; admins can remove any.
+ * A student cannot touch a resource they were never able to see.
+ */
 export async function DELETE(request: Request) {
   try {
-    const { userId } = await auth();
-    const clerkUser = await currentUser();
-    const email = clerkUser?.primaryEmailAddress?.emailAddress || '';
-
-    if (!userId) {
+    const requester = await getRequester();
+    if (!requester) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (!requester.isAdmin && (!requester.allowed || !requester.cohort)) {
+      return NextResponse.json(
+        { error: 'Access denied', reason: requester.denialReason },
+        { status: 403 }
+      );
     }
 
     if (!isSupabaseConfigured) {
       return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
+    const id = new URL(request.url).searchParams.get('id');
     if (!id) {
       return NextResponse.json({ error: 'Missing resource ID' }, { status: 400 });
     }
 
-    // 1. Fetch current list
-    const { data, error: fetchError } = await supabaseAdmin
-      .from('user_states')
-      .select('state')
-      .eq('id', 'global_resources')
-      .single();
-
-    if (fetchError) throw fetchError;
-
-    const list = data?.state?.resources || [];
-    const itemToDelete = list.find((r: any) => r.id === id);
+    const list = await readResourceList();
+    const itemToDelete = list.find((r) => r.id === id);
 
     if (!itemToDelete) {
       return NextResponse.json({ error: 'Resource not found' }, { status: 404 });
     }
 
-    // 2. Check authorization: must be uploader or admin
-    const isAdmin = isAdminEmail(email);
-    const isUploader = itemToDelete.uploadedBy.toLowerCase() === email.toLowerCase();
+    if (!requester.isAdmin) {
+      const cohort = requester.cohort as Cohort;
+      const isUploader =
+        (itemToDelete.uploadedBy || '').toLowerCase() === requester.email.toLowerCase();
 
-    if (!isAdmin && !isUploader) {
-      return NextResponse.json({ error: 'Unauthorized to delete this resource' }, { status: 403 });
+      // Not visible to them means not theirs to act on — report it as missing
+      // rather than confirming a resource exists in another year's library.
+      if (!cohortCanSeeResource(cohort, itemToDelete.year)) {
+        return NextResponse.json({ error: 'Resource not found' }, { status: 404 });
+      }
+      // Only the uploader may remove it — which also means students can never
+      // remove department-wide material they did not publish themselves.
+      if (!isUploader) {
+        return NextResponse.json({ error: 'Unauthorized to delete this resource' }, { status: 403 });
+      }
     }
 
-    // 3. Filter list and save
-    const updatedList = list.filter((r: any) => r.id !== id);
+    const updatedList = list.filter((r) => r.id !== id);
+    await writeResourceList(updatedList);
 
-    const { error: saveError } = await supabaseAdmin
-      .from('user_states')
-      .upsert({
-        id: 'global_resources',
-        state: { resources: updatedList },
-        updated_at: new Date().toISOString()
-      });
+    const viewingCohort = requester.isAdmin
+      ? new URL(request.url).searchParams.get('cohort')
+      : requester.cohort;
 
-    if (saveError) throw saveError;
+    const visible = isCohort(viewingCohort) ? visibleTo(viewingCohort, updatedList) : [];
 
-    return NextResponse.json({ success: true, resources: updatedList });
-  } catch (error: any) {
-    console.error('Failed to DELETE global resource:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: true, resources: visible });
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error('Failed to DELETE global resource:', errMsg);
+    return NextResponse.json({ error: errMsg }, { status: 500 });
   }
 }
 

@@ -1,25 +1,24 @@
 import { NextResponse } from 'next/server';
-import { auth, currentUser } from '@clerk/nextjs/server';
 import { User } from '@/lib/models/User';
 import { DailyActivity } from '@/lib/models/DailyActivity';
-import { isAdminEmail } from '@/lib/admin';
+import { requireAdminCohort } from '@/lib/authz';
+import { emailsForCohort } from '@/lib/roster';
 
-export async function GET() {
+/** CSV export for one academic year, matching whichever year the console shows. */
+export async function GET(request: Request) {
   try {
-    const { userId: authedUserId } = await auth();
-    const clerkUser = await currentUser();
-    const email = clerkUser?.primaryEmailAddress?.emailAddress || '';
+    const guard = await requireAdminCohort(request.url);
+    if (!guard.ok) return guard.response;
 
-    // Verify requesting user is the system admin
-    if (!authedUserId || !isAdminEmail(email)) {
-      return NextResponse.json({ error: 'Unauthorized admin access' }, { status: 401 });
-    }
+    const { cohort } = guard.requester;
+    const rosterEmails = emailsForCohort(cohort);
+    const allowed = new Set(rosterEmails);
 
-    // Fetch all users
-    const users = await User.findAll();
+    const allUsers = await User.findAll();
+    const users = allUsers.filter((u) => allowed.has((u.email || '').trim().toLowerCase()));
 
-    // Fetch leaderboard of all users (which collects points and sums up contributions)
-    const leaderboard = await DailyActivity.getLeaderboard('all');
+    // Points and contribution totals, scoped to the same year
+    const leaderboard = await DailyActivity.getLeaderboard('all', { restrictToEmails: rosterEmails });
 
     // Create a map from userId to totalGithubContributions
     const githubContributionsMap = new Map<string, number>();

@@ -38,7 +38,7 @@ export default function CookieConsent() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="fixed bottom-6 right-6 left-6 md:left-auto md:w-[420px] bg-[#0b0f19]/95 border border-white/10 rounded-2xl p-5 shadow-[0_10px_50px_rgba(0,0,0,0.8),0_0_30px_rgba(182,0,248,0.05)] backdrop-blur-md z-[9999] flex flex-col gap-4 font-mono text-white select-none"
+          className="fixed bottom-6 right-6 left-6 md:left-auto md:w-[420px] bg-[#1A1D22]/95 border border-white/10 rounded-2xl p-5 shadow-[0_10px_50px_rgba(0,0,0,0.8),0_0_30px_rgba(182,0,248,0.05)] backdrop-blur-md z-[9999] flex flex-col gap-4 font-mono text-white select-none"
         >
           {/* Header */}
           <div className="flex items-start justify-between">

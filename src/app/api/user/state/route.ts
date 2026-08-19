@@ -1,34 +1,31 @@
 import { NextResponse } from 'next/server';
-import { auth, currentUser } from '@clerk/nextjs/server';
+import { currentUser } from '@clerk/nextjs/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
 import { isAdminEmail } from '@/lib/admin';
+import { getRequester } from '@/lib/authz';
 
 export async function GET() {
   try {
-    const { userId } = await auth();
+    // Roster gate: an account that is not an admin and not in a year list has
+    // no workspace to load, and must not get one created for it.
+    const requester = await getRequester();
 
-    if (!userId) {
+    if (!requester) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    if (!isSupabaseConfigured) {
-      return NextResponse.json({ state: null, isLocalMode: true });
+    if (!requester.allowed) {
+      return NextResponse.json(
+        { error: 'Access denied', reason: requester.denialReason },
+        { status: 403 }
+      );
     }
 
-    // Fetch global settings state
-    let globalAiChatEnabled = true;
-    try {
-      const { data: globalData } = await supabaseAdmin
-        .from('user_states')
-        .select('state')
-        .eq('id', 'global_settings')
-        .single();
-      if (globalData?.state?.globalAiChatEnabled !== undefined) {
-        globalAiChatEnabled = globalData.state.globalAiChatEnabled;
-      }
-    } catch (e) {
-      console.warn('Failed to fetch global settings, defaulting to true:', e);
+    const userId = requester.userId;
+    const cohort = requester.cohort;
+
+    if (!isSupabaseConfigured) {
+      return NextResponse.json({ state: null, isLocalMode: true, cohort });
     }
 
     // 1. Fetch the state from user_states table first
@@ -62,7 +59,7 @@ export async function GET() {
               ]
             }
           };
-          return NextResponse.json({ state: adminDefaultState, globalAiChatEnabled });
+          return NextResponse.json({ state: adminDefaultState, cohort });
         }
 
         // 3. Check if they exist in the users table
@@ -92,16 +89,16 @@ export async function GET() {
               ]
             }
           };
-          return NextResponse.json({ state: existingDefaultState, globalAiChatEnabled });
+          return NextResponse.json({ state: existingDefaultState, cohort });
         }
 
         // Truly a new user
-        return NextResponse.json({ state: null, globalAiChatEnabled });
+        return NextResponse.json({ state: null, cohort });
       }
       throw error;
     }
 
-    return NextResponse.json({ state: data?.state || null, globalAiChatEnabled });
+    return NextResponse.json({ state: data?.state || null, cohort });
   } catch (error: any) {
     console.error('Server GET state failed:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -110,11 +107,19 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { userId } = await auth();
+    const requester = await getRequester();
 
-    if (!userId) {
+    if (!requester) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    if (!requester.allowed) {
+      return NextResponse.json(
+        { error: 'Access denied', reason: requester.denialReason },
+        { status: 403 }
+      );
+    }
+
+    const userId = requester.userId;
 
     if (!isSupabaseConfigured) {
       return NextResponse.json({ error: 'Supabase is not configured' }, { status: 503 });
