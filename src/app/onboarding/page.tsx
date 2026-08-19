@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useUser } from '@clerk/nextjs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/store/useStore';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
@@ -11,10 +12,19 @@ import {
 } from 'lucide-react';
 import { getPlatformDisplay, formatCourseLink } from '@/lib/courseUtils';
 import { formatTimeStr } from '@/lib/timeUtils';
+import { isAdminEmail } from '@/lib/admin';
 
 export default function OnboardingPage() {
   const router = useRouter();
   const store = useStore();
+  const { isLoaded, user: clerkUser } = useUser();
+
+  // Admins use the console, not the student workspace — they never onboard.
+  useEffect(() => {
+    if (isLoaded && isAdminEmail(clerkUser?.primaryEmailAddress?.emailAddress)) {
+      router.replace('/admin');
+    }
+  }, [isLoaded, clerkUser, router]);
 
   const [step, setStep] = useState(1);
   const totalSteps = 7;
@@ -257,7 +267,7 @@ export default function OnboardingPage() {
         )}
 
         {/* Form panel container */}
-        <div className="border border-white/10 bg-[#0d111c]/40 rounded-2xl p-6 md:p-10 min-h-[450px] flex flex-col justify-between relative overflow-hidden shadow-lg">
+        <div className="border border-white/10 bg-[#1A1D22]/40 rounded-2xl p-6 md:p-10 min-h-[450px] flex flex-col justify-between relative overflow-hidden shadow-lg">
           
           <AnimatePresence mode="wait">
             <motion.div

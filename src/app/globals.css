@@ -6,27 +6,27 @@ html {
 
 @theme {
   /* ── Dark theme surface scale (neutral near-black) ── */
-  --color-surface: #1C1C1E;
-  --color-surface-dim: #1C1C1E;
-  --color-surface-bright: #2C2C2E;
-  --color-surface-container-lowest: #0A0A0C;
-  --color-surface-container-low: #121214;
-  --color-surface-container: #1C1C1E;
-  --color-surface-container-high: #2C2C2E;
-  --color-surface-container-highest: #3A3A3C;
+  --color-surface: #1E2126;
+  --color-surface-dim: #1A1D21;
+  --color-surface-bright: #272B31;
+  --color-surface-container-lowest: #121417;
+  --color-surface-container-low: #16181C;
+  --color-surface-container: #1E2126;
+  --color-surface-container-high: #272B31;
+  --color-surface-container-highest: #32373E;
   --color-on-surface: #F2F2F7;
   --color-on-surface-variant: #8E8E93;
   --color-inverse-surface: #F2F2F7;
-  --color-inverse-on-surface: #121214;
+  --color-inverse-on-surface: #16181C;
   --color-outline: rgba(142, 142, 147, 0.25);
   --color-outline-variant: rgba(142, 142, 147, 0.14);
-  --color-surface-tint: #007AFF;
+  --color-surface-tint: #2E95FF;
 
   /* ── Primary: Apple Blue ── */
   --color-primary: var(--cyber-primary);
   --color-on-primary: #000000;
   --color-primary-container: rgba(0, 122, 255, 0.15);
-  --color-on-primary-container: #007AFF;
+  --color-on-primary-container: #2E95FF;
   --color-inverse-primary: #0055CC;
 
   /* ── Secondary: Apple Grey ── */
@@ -36,10 +36,10 @@ html {
   --color-on-secondary-container: #8E8E93;
 
   /* ── Tertiary: Apple Purple ── */
-  --color-tertiary: #AF52DE;
+  --color-tertiary: #C56BF5;
   --color-on-tertiary: #FFFFFF;
   --color-tertiary-container: rgba(175, 82, 222, 0.15);
-  --color-on-tertiary-container: #AF52DE;
+  --color-on-tertiary-container: #C56BF5;
 
   /* ── Error ── */
   --color-error: #FF3B30;
@@ -48,10 +48,10 @@ html {
   --color-on-error-container: #FF3B30;
 
   /* ── Background ── */
-  --color-background: #121214;
+  --color-background: #16181C;
   --color-on-background: #F2F2F7;
 
-  --color-primary-fixed: #007AFF;
+  --color-primary-fixed: #2E95FF;
   --color-primary-fixed-dim: #0055CC;
   --color-on-primary-fixed: #FFFFFF;
   --color-on-primary-fixed-variant: #003A99;
@@ -64,7 +64,7 @@ html {
   /* ── Aliases ── */
   --color-white: #ffffff;
   --color-black: #000000;
-  --color-cyber-dark: #121214;
+  --color-cyber-dark: #16181C;
   --color-cyber-light: #F2F2F7;
   --color-cyber-blue: var(--cyber-primary);    /* Apple Blue */
   --color-cyber-purple: var(--cyber-secondary); /* Apple Purple accent */
@@ -98,121 +98,164 @@ html {
 }
 
 :root {
-  --background: #121214;
+  /* Soft charcoal, not black — dark enough to rest the eye, light enough that
+     card surfaces separate from the page without needing bright borders. */
+  --background: #16181C;
   --foreground: #F2F2F7;
 
   /* ── Dark theme default: Apple Blue primary, Apple Purple tertiary as secondary ── */
-  --cyber-primary: #007AFF;   /* Apple Blue */
-  --cyber-secondary: #AF52DE; /* Apple Purple */
+  --cyber-primary: #2E95FF;   /* Apple Blue */
+  --cyber-secondary: #C56BF5; /* Apple Purple */
   --cyber-glow-primary: rgba(0, 122, 255, 0.25);
   --cyber-glow-secondary: rgba(175, 82, 222, 0.25);
 }
 
-/* ── Dark theme variants ── */
+/* ── Dark theme variants ──
+   Brightened against the lifted charcoal surfaces: the original Apple light
+   values dropped to ~4.0:1 on #1E2126 cards, below AA for label-sized text. */
 html[data-theme="blue"],
 html:not([data-theme]) {
-  --cyber-primary: #007AFF;   /* Apple Blue */
-  --cyber-secondary: #AF52DE; /* Apple Purple */
+  --cyber-primary: #2E95FF;   /* Apple Blue */
+  --cyber-secondary: #C56BF5; /* Apple Purple */
   --cyber-glow-primary: rgba(0, 122, 255, 0.25);
   --cyber-glow-secondary: rgba(175, 82, 222, 0.25);
 }
 
 html[data-theme="purple"] {
-  --cyber-primary: #AF52DE;   /* Apple Purple as primary */
-  --cyber-secondary: #007AFF; /* Apple Blue as secondary */
+  --cyber-primary: #C56BF5;   /* Apple Purple as primary */
+  --cyber-secondary: #2E95FF; /* Apple Blue as secondary */
   --cyber-glow-primary: rgba(175, 82, 222, 0.25);
   --cyber-glow-secondary: rgba(0, 122, 255, 0.25);
 }
 
 html[data-theme="pink"] {
-  --cyber-primary: #FF2D55;   /* Apple Pink */
-  --cyber-secondary: #007AFF; /* Apple Blue */
+  --cyber-primary: #FF4E71;   /* Apple Pink */
+  --cyber-secondary: #2E95FF; /* Apple Blue */
   --cyber-glow-primary: rgba(255, 45, 85, 0.25);
   --cyber-glow-secondary: rgba(0, 122, 255, 0.25);
 }
 
 html[data-theme="emerald"] {
-  --cyber-primary: #30D158;   /* Apple Green */
-  --cyber-secondary: #007AFF; /* Apple Blue */
+  --cyber-primary: #32D74B;   /* Apple Green */
+  --cyber-secondary: #2E95FF; /* Apple Blue */
   --cyber-glow-primary: rgba(48, 209, 88, 0.25);
   --cyber-glow-secondary: rgba(0, 122, 255, 0.25);
 }
 
 /* ────────────────────────────────────────────────────────────────
-   LIGHT MODE  — Apple light palette on #FFFFFF / #F2F2F7 surfaces
+   LIGHT MODE — "Study desk"
+
+   Warmth lives in the neutrals: a clay-taupe paper ground, crisp
+   white card faces for the contrast that reads as professional, and
+   warm ink instead of grey. The user's accent hue is deepened to an
+   ink so it stays legible on paper, and brass carries the structural
+   warmth (micro-labels, focus) across all four accent themes.
    ──────────────────────────────────────────────────────────────── */
-.light-mode {
-  --background: #FFFFFF;
-  --foreground: #1C1C1E;
+/* Selector is `html.light-mode`, not `.light-mode`: the dark accent
+   variants are `html[data-theme="…"]`, so a bare class loses to them and
+   the neon hues leak into light mode. */
+html.light-mode {
+  /* ── Warm neutral ramp ── */
+  --l-paper: #FAF8F5;        /* page ground — barely warm, deliberately not cream */
+  --l-card: #FFFFFF;         /* card face — crispness against the warm ground */
+  --l-tint: #F4F0EA;         /* row tint, secondary surface */
+  --l-stone: #E8E2DA;        /* containers, chips, progress tracks */
+  --l-rule: #DAD2C7;         /* hairlines */
+  --l-rule-strong: #CBC1B4;  /* dashed empty-state edges */
 
-  --cyber-primary: #007AFF;   /* Apple Blue (unchanged in light) */
-  --cyber-secondary: #AF52DE; /* Apple Purple (unchanged in light) */
-  --cyber-glow-primary: rgba(0, 122, 255, 0.10);
-  --cyber-glow-secondary: rgba(175, 82, 222, 0.10);
+  --l-ink: #2B2723;          /* primary label — warm near-black */
+  --l-ink-soft: #6A625A;     /* secondary label */
+  --l-ink-mute: #7A7065;     /* tertiary label — held at AA on paper */
 
-  --color-background: #FFFFFF;
-  --color-on-background: #1C1C1E;
+  /* ── Structural warmth ── */
+  --l-brass: #8A5E1A;           /* eyebrows, micro-labels, focus */
+  --l-highlight: #FBEFCE;       /* highlighter wash — the signature */
+  --l-highlight-rule: #EBD59B;
 
-  --color-surface: #F2F2F7;
-  --color-surface-dim: #E5E5EA;
-  --color-surface-bright: #FFFFFF;
+  /* ── Warm shadows — never neutral grey ── */
+  --l-shadow-sm: 0 1px 2px rgba(74, 58, 42, 0.05);
+  --l-shadow-md: 0 2px 8px rgba(74, 58, 42, 0.07), 0 1px 2px rgba(74, 58, 42, 0.04);
 
-  --color-surface-container-lowest: #FFFFFF;
-  --color-surface-container-low: #F2F2F7;
-  --color-surface-container: #E5E5EA;
-  --color-surface-container-high: #D1D1D6;
-  --color-surface-container-highest: #C7C7CC;
+  /* ── Semantic washes, warmed to sit on paper ── */
+  --l-ok-wash: #E4F1E4;
+  --l-ok-rule: #8FC095;
+  --l-ok-ink: #2C6136;
+  --l-warn-wash: #FBEED2;
+  --l-warn-rule: #D9A544;
+  --l-warn-ink: #7A4E12;
+  --l-bad-wash: #F9E3DE;
+  --l-bad-rule: #D08979;
+  --l-bad-ink: #8E3325;
 
-  --color-on-surface: #1C1C1E;
-  --color-on-surface-variant: #48484A;
+  --background: var(--l-paper);
+  --foreground: var(--l-ink);
 
-  --color-outline: rgba(72, 72, 74, 0.20);
-  --color-outline-variant: rgba(72, 72, 74, 0.10);
-  --color-cyber-dark: #F2F2F7;
+  /* Accent ink drives primary; brass carries secondary in every theme. */
+  --cyber-primary: var(--l-accent);
+  --cyber-secondary: var(--l-brass);
+  --cyber-glow-primary: rgba(var(--l-accent-rgb), 0.10);
+  --cyber-glow-secondary: rgba(138, 94, 26, 0.10);
 
-  --color-tertiary: #AF52DE;
-  --color-on-tertiary: #FFFFFF;
-  --color-tertiary-container: rgba(175, 82, 222, 0.10);
-  --color-on-tertiary-container: #8944C0;
+  --color-background: var(--l-paper);
+  --color-on-background: var(--l-ink);
 
-  --color-primary-fixed: #E8F2FF;
-  --color-primary-fixed-dim: #C8DFFF;
-  --color-on-primary-fixed: #003A99;
-  --color-on-primary-fixed-variant: #0055CC;
+  --color-surface: var(--l-tint);
+  --color-surface-dim: var(--l-stone);
+  --color-surface-bright: var(--l-card);
 
-  --color-secondary-fixed: #F3E8FF;
-  --color-secondary-fixed-dim: #E0C8FF;
-  --color-on-secondary-fixed: #5C2D91;
-  --color-on-secondary-fixed-variant: #7B3FBD;
+  --color-surface-container-lowest: var(--l-card);
+  --color-surface-container-low: var(--l-tint);
+  --color-surface-container: var(--l-stone);
+  --color-surface-container-high: var(--l-rule);
+  --color-surface-container-highest: var(--l-rule-strong);
+
+  --color-on-surface: var(--l-ink);
+  --color-on-surface-variant: var(--l-ink-soft);
+
+  --color-outline: var(--l-rule);
+  --color-outline-variant: var(--l-rule);
+  --color-cyber-dark: var(--l-paper);
+
+  --color-tertiary: var(--l-brass);
+  --color-on-tertiary: var(--l-card);
+  --color-tertiary-container: var(--l-highlight);
+  --color-on-tertiary-container: #7A5418;
+
+  --color-primary-fixed: var(--l-highlight);
+  --color-primary-fixed-dim: var(--l-highlight-rule);
+  --color-on-primary-fixed: var(--l-accent-strong);
+  --color-on-primary-fixed-variant: var(--l-accent);
+
+  --color-secondary-fixed: var(--l-highlight);
+  --color-secondary-fixed-dim: var(--l-highlight-rule);
+  --color-on-secondary-fixed: #7A5418;
+  --color-on-secondary-fixed-variant: var(--l-brass);
 }
 
-.light-mode[data-theme="blue"],
-.light-mode:not([data-theme]) {
-  --cyber-primary: #007AFF;
-  --cyber-secondary: #AF52DE;
-  --cyber-glow-primary: rgba(0, 122, 255, 0.10);
-  --cyber-glow-secondary: rgba(175, 82, 222, 0.10);
+/* ── Accent inks: deepened so the user's hue holds contrast on paper ── */
+html.light-mode[data-theme="blue"],
+html.light-mode:not([data-theme]) {
+  --l-accent: #1E5AA8;
+  --l-accent-strong: #164378;
+  --l-accent-rgb: 30, 90, 168;
 }
 
-.light-mode[data-theme="purple"] {
-  --cyber-primary: #AF52DE;
-  --cyber-secondary: #007AFF;
-  --cyber-glow-primary: rgba(175, 82, 222, 0.10);
-  --cyber-glow-secondary: rgba(0, 122, 255, 0.10);
+html.light-mode[data-theme="purple"] {
+  --l-accent: #6E43A3;
+  --l-accent-strong: #543080;
+  --l-accent-rgb: 110, 67, 163;
 }
 
-.light-mode[data-theme="pink"] {
-  --cyber-primary: #FF2D55;
-  --cyber-secondary: #007AFF;
-  --cyber-glow-primary: rgba(255, 45, 85, 0.10);
-  --cyber-glow-secondary: rgba(0, 122, 255, 0.10);
+html.light-mode[data-theme="pink"] {
+  --l-accent: #AC3A5C;
+  --l-accent-strong: #8A2A46;
+  --l-accent-rgb: 172, 58, 92;
 }
 
-.light-mode[data-theme="emerald"] {
-  --cyber-primary: #34C759;   /* Apple light green */
-  --cyber-secondary: #007AFF;
-  --cyber-glow-primary: rgba(52, 199, 89, 0.10);
-  --cyber-glow-secondary: rgba(0, 122, 255, 0.10);
+html.light-mode[data-theme="emerald"] {
+  --l-accent: #1D7A50;
+  --l-accent-strong: #145C3B;
+  --l-accent-rgb: 29, 122, 80;
 }
 
 
@@ -231,37 +274,38 @@ html[data-theme="emerald"] {
 .light-mode .glass-card,
 .light-mode .glass-panel,
 .light-mode .glass-panel-neon {
-  background: #FFFFFF !important;
-  border-color: rgba(0, 0, 0, 0.35) !important;
-  border-width: 1.5px !important;
-  box-shadow: 0 4px 6px -1px rgba(28, 28, 30, 0.05), 0 2px 4px -1px rgba(28, 28, 30, 0.03) !important;
+  background: var(--l-card) !important;
+  border-color: var(--l-rule) !important;
+  border-width: 1px !important;
+  box-shadow: var(--l-shadow-md) !important;
 }
 
 .light-mode .glass-card:hover {
-  border-color: var(--cyber-primary) !important;
+  border-color: var(--l-accent) !important;
+  box-shadow: 0 4px 14px rgba(74, 58, 42, 0.10), 0 1px 2px rgba(74, 58, 42, 0.05) !important;
 }
 
 .light-mode .btn-neon {
-  background: var(--cyber-primary) !important;
-  color: #000000 !important;
-  border-color: var(--cyber-primary) !important;
-  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.25) !important;
+  background: var(--l-accent) !important;
+  color: var(--l-card) !important;
+  border-color: var(--l-accent) !important;
+  box-shadow: 0 2px 8px rgba(var(--l-accent-rgb), 0.25) !important;
 }
 
 .light-mode .btn-neon:hover:not(:disabled) {
-  background: #0055CC !important;
-  border-color: #0055CC !important;
-  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.45) !important;
+  background: var(--l-accent-strong) !important;
+  border-color: var(--l-accent-strong) !important;
+  box-shadow: 0 4px 12px rgba(var(--l-accent-rgb), 0.45) !important;
   transform: translateY(-1px) !important;
 }
 
 .light-mode [class*="shadow-cyber-purple/"] {
-  box-shadow: 0 4px 6px -1px rgba(175, 82, 222, 0.08), 0 2px 4px -1px rgba(175, 82, 222, 0.04) !important;
+  box-shadow: 0 4px 6px -1px rgba(var(--l-accent-rgb), 0.08), 0 2px 4px -1px rgba(var(--l-accent-rgb), 0.04) !important;
 }
 
 .light-mode [class*="shadow-[#00F0FF]"],
 .light-mode [class*="shadow-[0_0_10px_#00F0FF]"] {
-  box-shadow: 0 0 10px rgba(0, 122, 255, 0.35) !important;
+  box-shadow: 0 0 10px rgba(var(--l-accent-rgb), 0.35) !important;
 }
 
 /* Wildcard selector to override ALL transparent white text classes to muted neutral (Light Mode) */
@@ -278,14 +322,14 @@ html[data-theme="emerald"] {
 .light-mode [class*="text-slate-500"],
 .light-mode [class*="text-gray-400"],
 .light-mode [class*="text-gray-500"] {
-  color: #48484A !important; /* Apple secondary label */
+  color: var(--l-ink-soft) !important; /* Apple secondary label */
 }
 
 .light-mode [class*="text-white/60"],
 .light-mode [class*="text-white/70"],
 .light-mode [class*="text-white/80"],
 .light-mode [class*="text-white/90"] {
-  color: #1C1C1E !important; /* Apple primary label */
+  color: var(--l-ink) !important; /* Apple primary label */
 }
 
 .light-mode .text-white,
@@ -301,18 +345,18 @@ html[data-theme="emerald"] {
 .light-mode .text-slate-100,
 .light-mode .text-slate-200,
 .light-mode .text-slate-300 {
-  color: #1C1C1E !important; /* Apple primary label */
+  color: var(--l-ink) !important; /* Apple primary label */
 }
 
 /* Stage box background overrides for Light Mode */
 /* bg-white/5 (used for schedule rows, task rows, icon containers) → light grey, NOT white */
 .light-mode [class*="bg-white/5"] {
-  background-color: #F2F2F7 !important; /* Apple secondary background – visible row tint */
+  background-color: var(--l-tint) !important; /* Apple secondary background – visible row tint */
 }
 
 /* bg-white/10 (used for icon boxes, hover trays) → slightly darker grey */
 .light-mode [class*="bg-white/10"] {
-  background-color: #E5E5EA !important;
+  background-color: var(--l-stone) !important;
 }
 
 /* Very dark named backgrounds → white */
@@ -320,32 +364,25 @@ html[data-theme="emerald"] {
 .light-mode [class*="bg-zinc-950"],
 .light-mode [class*="bg-neutral-900"],
 .light-mode [class*="bg-neutral-950"],
-.light-mode [class*="bg-[#131313]"],
-.light-mode [class*="bg-[#0e0e0e]"],
-.light-mode [class*="bg-[#121214]"],
-.light-mode [class*="bg-[#0B0F19]"],
-.light-mode [class*="bg-[#0b0f19]"],
+.light-mode [class*="bg-[#16181C]"],
+.light-mode [class*="bg-[#1A1D22]"],
+.light-mode [class*="bg-[#1E2126]"],
 .light-mode [class*="bg-cyber-dark"],
 .light-mode .bg-black\/20,
 .light-mode .bg-black\/40,
 .light-mode .bg-black\/60 {
-  background-color: #FFFFFF !important;
+  background-color: var(--l-card) !important;
 }
 
 /* Solid black/checkbox area backgrounds */
 .light-mode [class*="bg-black/40"] {
-  background-color: #F2F2F7 !important;
+  background-color: var(--l-tint) !important;
 }
 
 .light-mode [class*="bg-white/15"],
 .light-mode [class*="bg-white/20"],
 .light-mode [class*="bg-white/30"] {
-  background-color: #E5E5EA !important; /* Slightly more visible than F2F2F7 */
-}
-
-/* Override dark grey bg-[#0d111c] containers to a premium lightest pink shade in light mode */
-.light-mode [class*="bg-[#0d111c]"] {
-  background-color: #FFF5F7 !important;
+  background-color: var(--l-stone) !important; /* Slightly more visible than F2F2F7 */
 }
 
 /* Stage border/outline overrides for Light Mode */
@@ -363,206 +400,205 @@ html[data-theme="emerald"] {
 .light-mode .border-white\/5,
 .light-mode [class*="border-outline"],
 .light-mode [class*="border-outline-variant"] {
-  border-color: rgba(0, 0, 0, 0.35) !important; /* Apple separator */
+  border-color: var(--l-rule) !important; /* Apple separator */
 }
 
-/* Thicken borders proportionally in light mode without changing their direction (e.g. border-b stays bottom-only) */
+/* Hairline rules: light mode reads as a well-set document, not an outlined wireframe. */
 .light-mode .border {
-  border-width: 1.5px !important;
+  border-width: 1px !important;
 }
 
 .light-mode .border-b {
-  border-bottom-width: 1.5px !important;
+  border-bottom-width: 1px !important;
 }
 
 /* Dashed empty-state borders */
 .light-mode [class*="border-dashed"][class*="border-white"] {
-  border-color: #C7C7CC !important;
+  border-color: var(--l-rule-strong) !important;
 }
 
 .light-mode .hover\:bg-white\/5:hover,
 .light-mode .hover\:bg-white\/10:hover,
 .light-mode .hover\:bg-zinc-800:hover,
 .light-mode .hover\:bg-zinc-900:hover {
-  background-color: #E5E5EA !important;
-  color: #1C1C1E !important;
+  background-color: var(--l-stone) !important;
+  color: var(--l-ink) !important;
 }
 
 .light-mode .text-on-surface,
 .light-mode .text-on-surface-variant {
-  color: #1C1C1E !important;
+  color: var(--l-ink) !important;
 }
 
 .light-mode .text-outline {
-  color: #48484A !important; /* Apple secondary label */
+  color: var(--l-ink-soft) !important; /* Apple secondary label */
 }
 
 .light-mode .text-outline-variant {
-  color: #8E8E93 !important; /* Apple tertiary label — more visible than C7C7CC */
+  color: var(--l-ink-mute) !important; /* Apple tertiary label — more visible than C7C7CC */
 }
 
 .light-mode .text-cyber-blue {
-  color: #007AFF !important; /* Keep Apple Blue */
+  color: var(--l-accent) !important; /* Keep Apple Blue */
 }
 
 .light-mode .text-cyber-purple {
-  color: #AF52DE !important; /* Keep Apple Purple */
+  color: var(--l-accent) !important; /* Keep Apple Purple */
 }
 
 .light-mode .bg-surface-container {
-  background-color: #E5E5EA !important;
+  background-color: var(--l-stone) !important;
 }
 
 .light-mode .bg-surface-container-high {
-  background-color: #D1D1D6 !important;
+  background-color: var(--l-rule) !important;
 }
 
 .light-mode .bg-surface-container-low {
-  background-color: #F2F2F7 !important;
+  background-color: var(--l-tint) !important;
 }
 
 .light-mode .border-outline-variant {
-  border-color: #D1D1D6 !important;
+  border-color: var(--l-rule) !important;
 }
 
 /* ── Schedule / Task row border-l dividers ── */
 .light-mode [class*="border-l"][class*="border-white"] {
-  border-color: #D1D1D6 !important;
+  border-color: var(--l-rule) !important;
 }
 
 /* ── Task card specific: secondary/5 background for pending tasks ── */
 .light-mode [class*="bg-secondary/5"] {
-  background-color: #F2F2F7 !important;
+  background-color: var(--l-tint) !important;
 }
 .light-mode [class*="border-secondary/20"] {
-  border-color: #D1D1D6 !important;
+  border-color: var(--l-rule) !important;
 }
 .light-mode [class*="hover:border-secondary/40"]:hover {
-  border-color: #AF52DE !important;
+  border-color: var(--l-accent) !important;
 }
 
 /* ── Completed task row (emerald tint) ── */
 .light-mode [class*="bg-emerald-950/10"] {
-  background-color: #D1FAE5 !important;
-  border-color: #34D399 !important;
+  background-color: var(--l-ok-wash) !important;
+  border-color: var(--l-ok-rule) !important;
 }
 
 /* ── Analytics icon containers ── */
 .light-mode [class*="bg-emerald-500/10"] {
-  background-color: rgba(52, 199, 89, 0.12) !important;
+  background-color: rgba(143, 192, 149, 0.12) !important;
 }
 .light-mode [class*="bg-pink-500/10"] {
-  background-color: rgba(255, 45, 85, 0.08) !important;
+  background-color: rgba(var(--l-accent-rgb), 0.08) !important;
 }
 
 /* ── Analytics chart: bar track background ── */
 .light-mode .bg-surface-container.border.border-outline-variant {
-  background-color: #E5E5EA !important;
-  border-color: #D1D1D6 !important;
+  background-color: var(--l-stone) !important;
+  border-color: var(--l-rule) !important;
 }
 
 /* ── AI Mentor card (glass-panel-neon) in light mode ── */
 .light-mode .glass-panel-neon {
-  background: #FFFFFF !important;
-  border-color: #007AFF !important;
-  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.08) !important;
+  background: var(--l-card) !important;
+  border-color: var(--l-accent) !important;
+  box-shadow: 0 4px 16px rgba(var(--l-accent-rgb), 0.08) !important;
 }
 
 /* ── Amber/cyan mentor advice cards in light mode ── */
 .light-mode [class*="bg-amber-950"] {
-  background-color: #FEF3C7 !important;
-  border-color: #F59E0B !important;
-  color: #92400E !important;
+  background-color: var(--l-warn-wash) !important;
+  border-color: var(--l-warn-rule) !important;
+  color: var(--l-warn-ink) !important;
 }
 .light-mode [class*="bg-cyber-blue/5"],
 .light-mode [class*="bg-cyber-blue/10"] {
-  background-color: rgba(0, 122, 255, 0.06) !important;
+  background-color: rgba(var(--l-accent-rgb), 0.06) !important;
 }
 
 /* ── Input range sliders (course progress meter) ── */
 .light-mode input[type="range"] {
-  accent-color: #AF52DE !important;
+  accent-color: var(--l-accent) !important;
 }
 .light-mode input[type="range"]::-webkit-slider-runnable-track {
   background: inherit !important;
   border-radius: 9999px;
 }
 .light-mode input[type="range"]::-webkit-slider-thumb {
-  background: #AF52DE !important;
-  border: 2px solid #FFFFFF !important;
-  box-shadow: 0 0 6px rgba(175, 82, 222, 0.3) !important;
+  background: var(--l-accent) !important;
+  border: 2px solid var(--l-card) !important;
+  box-shadow: 0 0 6px rgba(var(--l-accent-rgb), 0.3) !important;
 }
 
 /* ── Course reminder time input ── */
 .light-mode input[type="time"] {
-  background-color: #F2F2F7 !important;
-  border-color: #D1D1D6 !important;
-  color: #1C1C1E !important;
+  background-color: var(--l-tint) !important;
+  border-color: var(--l-rule) !important;
+  color: var(--l-ink) !important;
 }
 
 /* ── Primary / secondary / tertiary tinted badge containers ── */
 .light-mode [class*="bg-primary/10"] {
-  background-color: rgba(0, 122, 255, 0.08) !important;
+  background-color: rgba(var(--l-accent-rgb), 0.08) !important;
 }
 .light-mode [class*="bg-primary/20"] {
-  background-color: rgba(0, 122, 255, 0.15) !important;
+  background-color: rgba(var(--l-accent-rgb), 0.15) !important;
 }
 .light-mode [class*="border-primary/20"] {
-  border-color: rgba(0, 122, 255, 0.3) !important;
+  border-color: rgba(var(--l-accent-rgb), 0.3) !important;
 }
 .light-mode [class*="border-primary/30"] {
-  border-color: rgba(0, 122, 255, 0.4) !important;
+  border-color: rgba(var(--l-accent-rgb), 0.4) !important;
 }
 .light-mode [class*="bg-secondary/10"] {
-  background-color: rgba(175, 82, 222, 0.08) !important;
+  background-color: rgba(var(--l-accent-rgb), 0.08) !important;
 }
 .light-mode [class*="border-secondary/25"] {
-  border-color: rgba(175, 82, 222, 0.3) !important;
+  border-color: rgba(var(--l-accent-rgb), 0.3) !important;
 }
 
 /* ── Task checkbox ── */
 .light-mode input[type="checkbox"] {
-  background-color: #FFFFFF !important;
-  border-color: #D1D1D6 !important;
-  accent-color: #007AFF !important;
+  background-color: var(--l-card) !important;
+  border-color: var(--l-rule) !important;
+  accent-color: var(--l-accent) !important;
 }
 
 /* ── Planner timeline colored blocks: text contrast on purple/blue fills ── */
 .light-mode [class*="bg-primary/5"] {
-  background-color: rgba(0, 122, 255, 0.08) !important;
+  background-color: rgba(var(--l-accent-rgb), 0.08) !important;
 }
 .light-mode [class*="border-primary"] {
-  border-color: #007AFF !important;
+  border-color: var(--l-accent) !important;
 }
 
-/* ── Weekly planner Planning Guide card ── */
-.light-mode [class*="bg-[#0B0F19]"],
-.light-mode [class*="bg-[#0b0f19]"] {
-  background-color: #FFFFFF !important;
+/* ── Panel faces (planning guide, login notice, dialogs) ── */
+.light-mode [class*="bg-[#1A1D22]"] {
+  background-color: var(--l-card) !important;
 }
 
 /* ── Quick Launcher rows ── */
 .light-mode [class*="bg-white/3"] {
-  background-color: #F2F2F7 !important;
+  background-color: var(--l-tint) !important;
 }
 
 /* ── Streak counter gradient pill ── */
 .light-mode [class*="from-cyber-purple/20"] {
-  background: linear-gradient(to right, rgba(175, 82, 222, 0.10), rgba(0, 122, 255, 0.06)) !important;
-  border-color: rgba(175, 82, 222, 0.25) !important;
+  background: linear-gradient(to right, rgba(var(--l-accent-rgb), 0.10), rgba(var(--l-accent-rgb), 0.06)) !important;
+  border-color: rgba(var(--l-accent-rgb), 0.25) !important;
 }
 
 /* ── Day tab buttons in planner ── */
 .light-mode button[class*="bg-cyber-purple"] {
-  background-color: #AF52DE !important;
-  color: #FFFFFF !important;
+  background-color: var(--l-accent) !important;
+  color: var(--l-card) !important;
 }
 
 /* ── "Start Session" & timer button in schedule rows ── */
 .light-mode [class*="bg-cyber-blue/10"][class*="border-cyber-blue"] {
-  background-color: rgba(0, 122, 255, 0.08) !important;
-  border-color: rgba(0, 122, 255, 0.35) !important;
-  color: #007AFF !important;
+  background-color: rgba(var(--l-accent-rgb), 0.08) !important;
+  border-color: rgba(var(--l-accent-rgb), 0.35) !important;
+  color: var(--l-accent) !important;
 }
 
 /* Time fields and inputs shadow DOM fields readability overrides */
@@ -571,62 +607,62 @@ html[data-theme="emerald"] {
 .light-mode input[type="time"]::-webkit-datetime-edit-minute,
 .light-mode input[type="time"]::-webkit-datetime-edit-hour,
 .light-mode input[type="time"]::-webkit-datetime-edit-ampm {
-  color: #2C2520 !important;
+  color: var(--l-ink) !important;
 }
 
 /* Professional Light mode alert banner styling */
 .light-mode [class*="bg-amber-950/"] {
-  background-color: #FEF3C7 !important;
-  border-color: #FBBF24 !important;
-  color: #92400E !important;
+  background-color: var(--l-warn-wash) !important;
+  border-color: var(--l-warn-rule) !important;
+  color: var(--l-warn-ink) !important;
 }
 
 .light-mode [class*="bg-red-950/"] {
-  background-color: #FEE2E2 !important;
-  border-color: #F87171 !important;
-  color: #991B1B !important;
+  background-color: var(--l-bad-wash) !important;
+  border-color: var(--l-bad-rule) !important;
+  color: var(--l-bad-ink) !important;
 }
 
 .light-mode [class*="bg-emerald-950/"] {
-  background-color: #D1FAE5 !important;
-  border-color: #34D399 !important;
-  color: #065F46 !important;
+  background-color: var(--l-ok-wash) !important;
+  border-color: var(--l-ok-rule) !important;
+  color: var(--l-ok-ink) !important;
 }
 
 /* Global input fields readability fixes */
 .light-mode input,
 .light-mode textarea,
 .light-mode select {
-  background-color: #FFFFFF !important;
-  border-color: #DFDAD2 !important;
-  color: #2C2520 !important;
+  background-color: var(--l-card) !important;
+  border-color: var(--l-rule) !important;
+  color: var(--l-ink) !important;
 }
 
 .light-mode input::placeholder,
 .light-mode textarea::placeholder {
-  color: #A89F95 !important;
+  color: var(--l-ink-mute) !important;
 }
 
 .light-mode input:focus,
 .light-mode textarea:focus,
 .light-mode select:focus {
   border-color: var(--cyber-primary) !important;
-  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.1) !important;
+  box-shadow: 0 0 0 2px rgba(var(--l-accent-rgb), 0.14) !important;
 }
 
 /* Sidebar theming */
 .light-mode aside {
-  background-color: #FFFFFF !important;
-  border-color: #D1D1D6 !important;
+  background-color: var(--l-card) !important;
+  border-color: var(--l-rule) !important;
 }
 
 .light-mode aside span,
 .light-mode aside div {
-  color: #1C1C1E !important;
+  color: var(--l-ink) !important;
 }
 
 .light-mode aside button {
-  color: #48484A !important;
+  color: var(--l-ink-soft) !important;
   background-color: transparent !important;
   border-color: transparent !important;
 }
@@ -639,77 +675,102 @@ html[data-theme="emerald"] {
 .light-mode aside button:hover,
 .light-mode aside button[class*="bg-white/5"]:hover,
 .light-mode aside button[class*="hover:bg-white/5"]:hover {
-  background-color: #F2F2F7 !important; /* Grey hover background */
-  color: #1C1C1E !important;
+  background-color: var(--l-tint) !important;
+  color: var(--l-ink) !important;
 }
 
-/* Active navigation items in sidebar in light mode */
+/* Idle nav sits back in the soft ink so the highlighted page is the one
+   thing the eye lands on. The sweeping text-white/* overrides would
+   otherwise flatten idle and active to the same weight. */
+.light-mode aside nav button[class*="text-white/"] {
+  color: var(--l-ink-soft) !important;
+}
+
+.light-mode aside nav button[class*="text-white/"] svg {
+  color: var(--l-ink-mute) !important;
+}
+
+/* ── SIGNATURE: the highlighter swipe ────────────────────────────
+   The current page is marked the way a student marks a page they
+   are working from — a highlighter wash with a hand-drawn-weight
+   rule down its left edge. It is the one loud thing in light mode;
+   everything else stays hairline-quiet.
+   ──────────────────────────────────────────────────────────────── */
 .light-mode aside button[class*="bg-gradient-to-r"],
 .light-mode aside button[class*="bg-white/10"],
 .light-mode aside button[class*="bg-gradient-to-r"]:hover,
 .light-mode aside button[class*="bg-white/10"]:hover {
-  background: #FFF5F7 !important; /* Light pink background */
-  color: #AF52DE !important; /* Beautiful purple accent text */
-  border-color: #FFF0F3 !important;
+  background: linear-gradient(
+    to right,
+    var(--l-highlight) 0%,
+    var(--l-highlight) 72%,
+    rgba(251, 239, 206, 0.45) 100%
+  ) !important;
+  color: var(--l-ink) !important;
+  border-color: transparent !important;
+  border-left: 3px solid var(--l-accent) !important;
+  border-radius: 2px 8px 8px 2px !important;
   font-weight: 700 !important;
+  box-shadow: none !important;
 }
 
 .light-mode aside button[class*="bg-gradient-to-r"] svg,
 .light-mode aside button[class*="bg-white/10"] svg {
-  color: #AF52DE !important; /* Purple icon */
+  color: var(--l-accent) !important;
 }
 
 /* User identity card and logouts in sidebar */
 .light-mode aside div[class*="bg-white/5"] {
-  background-color: #E5E5EA !important;
-  border-color: #D1D1D6 !important;
+  background-color: var(--l-stone) !important;
+  border-color: var(--l-rule) !important;
 }
 
 .light-mode aside div[class*="bg-white/5"] * {
-  color: #1C1C1E !important;
+  color: var(--l-ink) !important;
 }
 
 .light-mode aside div[class*="bg-white/5"] div[class*="text-white/40"] {
-  color: #8E8E93 !important;
+  color: var(--l-ink-mute) !important;
 }
 
 /* Header bar */
 .light-mode header {
-  background-color: #FFFFFF !important;
-  border-color: #D1D1D6 !important;
+  background-color: var(--l-card) !important;
+  border-color: var(--l-rule) !important;
 }
 
 .light-mode header span {
-  color: #8E8E93 !important;
+  color: var(--l-ink-mute) !important;
 }
 
 .light-mode header span[class*="text-cyber-blue"] {
-  color: #007AFF !important;
+  color: var(--l-accent) !important;
 }
 
 /* Digital clock */
 .light-mode span[class*="from-cyan-400"] {
-  background-image: linear-gradient(to right, #007AFF, #AF52DE) !important;
+  background-image: linear-gradient(to right, var(--l-accent), var(--l-accent)) !important;
   color: transparent !important;
   background-clip: text !important;
   -webkit-background-clip: text !important;
 }
 
 .light-mode header div[class*="bg-white/5"] {
-  background-color: #E5E5EA !important;
-  border-color: #D1D1D6 !important;
+  background-color: var(--l-stone) !important;
+  border-color: var(--l-rule) !important;
 }
 
-/* Clean-up all layout elements — Apple neutral text, preserving Blue, Purple, Red, Green highlights */
+/* Everything unclaimed falls to the soft ink. Brass micro-labels and the
+   semantic highlights are excluded so they survive this sweep. */
 .light-mode p,
 .light-mode li,
 .light-mode td,
 .light-mode th,
 .light-mode code,
 .light-mode label,
-.light-mode span:not(.text-primary):not([class*="text-cyber-"]):not([class*="text-purple"]):not([class*="text-red-"]):not([class*="text-rose-"]):not([class*="text-emerald-"]):not([class*="text-blue-"]):not(.text-on-surface):not(.text-white),
-.light-mode div:not(.bg-primary):not(.bg-primary *):not([class*="text-red-"]):not([class*="text-rose-"]):not(.btn-neon):not(.bg-primary-fixed):not([class*="text-cyber-"]):not([class*="text-purple"]):not(.glass-card):not(.glass-panel-neon) {
-  color: #48484A !important; /* Apple secondary label */
+.light-mode span:not(.text-primary):not([class*="text-cyber-"]):not([class*="text-purple"]):not([class*="text-red-"]):not([class*="text-rose-"]):not([class*="text-emerald-"]):not([class*="text-blue-"]):not(.text-on-surface):not(.text-white):not(.hud-label):not([class*="tracking-widest"]),
+.light-mode div:not(.bg-primary):not(.bg-primary *):not([class*="text-red-"]):not([class*="text-rose-"]):not(.btn-neon):not(.bg-primary-fixed):not([class*="text-cyber-"]):not([class*="text-purple"]):not(.glass-card):not(.glass-panel-neon):not(.hud-label):not([class*="tracking-widest"]) {
+  color: var(--l-ink-soft) !important;
 }
 
 /* Headings and body texts that need deep high-contrast */
@@ -721,16 +782,16 @@ html[data-theme="emerald"] {
 .light-mode h6,
 .light-mode strong,
 .light-mode b {
-  color: #1C1C1E !important; /* Apple primary label */
+  color: var(--l-ink) !important; /* Apple primary label */
 }
 
 /* Fix overall text colors */
 .light-mode .text-white {
-  color: #1C1C1E !important;
+  color: var(--l-ink) !important;
 }
 
 .light-mode .hover\:text-white:hover {
-  color: #1C1C1E !important;
+  color: var(--l-ink) !important;
 }
 
 /* Buttons and primary badge text color guards */
@@ -741,12 +802,12 @@ html[data-theme="emerald"] {
 .light-mode button .text-on-surface,
 .light-mode button[class*="bg-red-600"],
 .light-mode button[class*="bg-red-600"] * {
-  color: #FFFFFF !important;
+  color: var(--l-card) !important;
 }
 
 .light-mode .bg-primary-fixed {
-  background-color: rgba(0, 122, 255, 0.08) !important;
-  color: #007AFF !important;
+  background-color: rgba(var(--l-accent-rgb), 0.08) !important;
+  color: var(--l-accent) !important;
 }
 
 body {
@@ -781,6 +842,103 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-jetbrains), monospace !important;
 }
 
+/* ────────────────────────────────────────────────────────────────
+   LIGHT MODE typography & finish
+
+   Hanken Grotesk sets the whole page, not only the headings — its
+   wider apertures and humanist forms are what make long planning
+   sessions feel warm. JetBrains Mono is held back for data and
+   micro-labels, which is where the product's metrics actually live.
+   ──────────────────────────────────────────────────────────────── */
+.light-mode body,
+.light-mode p,
+.light-mode li,
+.light-mode button,
+.light-mode input,
+.light-mode textarea,
+.light-mode select {
+  font-family: var(--font-hanken), system-ui, sans-serif;
+}
+
+/* Brass is reserved for eyebrows — the widest-tracked labels and .hud-label.
+   The 70-odd `tracking-wider` micro-labels stay in muted ink: brass on all of
+   them would wash the page sepia and out-shout the highlighter. */
+.light-mode .hud-label,
+.light-mode .uppercase.tracking-widest {
+  color: var(--l-brass) !important;
+  letter-spacing: 0.11em !important;
+}
+
+/* Numbers stay monospaced and tabular so columns of metrics line up. */
+.light-mode .font-mono,
+.light-mode .font-jetbrains,
+.light-mode code,
+.light-mode table td,
+.light-mode table th {
+  font-variant-numeric: tabular-nums;
+}
+
+.light-mode ::selection {
+  background: var(--l-highlight);
+  color: var(--l-ink);
+}
+
+.light-mode ::-webkit-scrollbar-track {
+  background: var(--l-tint);
+}
+
+.light-mode ::-webkit-scrollbar-thumb {
+  background: var(--l-rule);
+}
+
+.light-mode ::-webkit-scrollbar-thumb:hover {
+  background: var(--l-rule-strong);
+}
+
+.light-mode .progress-track {
+  background: var(--l-stone);
+}
+
+.light-mode .progress-fill {
+  background: var(--l-accent);
+}
+
+/* Light mode drops the neon glows outright — a glow on paper reads as
+   a print error, not as emphasis. */
+.light-mode .text-glow-cyan,
+.light-mode .text-glow-purple {
+  text-shadow: none !important;
+}
+
+.light-mode .animate-pulse-glow {
+  animation: none !important;
+}
+
+/* ── Quality floor: visible focus, honoured everywhere ── */
+.light-mode :focus-visible {
+  outline: 2px solid var(--l-brass) !important;
+  outline-offset: 2px !important;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 .hud-label {
   font-family: var(--font-geist), system-ui, sans-serif;
   font-size: 11px;
@@ -793,7 +951,7 @@ h1, h2, h3, h4, h5, h6 {
 /* Cyberpunk Glass panels */
 /* Dark: tight frosted panel */
 .glass-panel {
-  background: rgba(11, 15, 25, 0.7);
+  background: rgba(30, 33, 38, 0.72);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -802,21 +960,21 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .glass-panel-neon {
-  background: #09090b !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 25px rgba(0, 122, 255, 0.12) !important;
+  background: #1A1D22 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 0 25px rgba(0, 122, 255, 0.10) !important;
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.075);
   border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-card:hover {
   background: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.42);
   transform: translateY(-2px);
   border-color: rgba(255, 255, 255, 0.2);
 }
@@ -843,7 +1001,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .input-hud {
-  background: rgba(0,0,0,0.4);
+  background: rgba(0, 0, 0, 0.22);
   border: 1px solid rgba(255,255,255,0.1) !important;
   border-radius: 8px !important;
   padding: 8px 12px;
@@ -932,6 +1090,24 @@ h1, h2, h3, h4, h5, h6 {
 /* ==========================================================================
    CLERK AUTHENTICATION OVERRIDES (GLASSMORPHISM & HIGHER CONTRAST)
    ========================================================================== */
+
+/* ── Google-only sign-in ──────────────────────────────────────────────
+   The instance still has email/password enabled, so Clerk renders an
+   identifier field, a password field, an "OR" divider and a sign-up link
+   next to the Google button. Hide that whole path.
+
+   Tailwind's `hidden` utility is not enough here: Clerk injects its own
+   unlayered styles, which beat anything in @layer utilities. These rules are
+   unlayered AND important, so they win.
+
+   This is presentation only. The roster gate in `authz.ts` is what actually
+   blocks non-college accounts, and switching the methods off in the Clerk
+   Dashboard is what removes them from Clerk's own hosted pages. */
+.cl-dividerRow,
+.cl-form,
+.cl-footerAction {
+  display: none !important;
+}
 .cl-rootBox:not(.cl-userButton-root) {
   width: 100% !important;
 }

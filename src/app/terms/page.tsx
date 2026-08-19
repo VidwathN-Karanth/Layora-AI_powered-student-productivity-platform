@@ -7,7 +7,7 @@ export default function TermsAndConditionsPage() {
   const router = useRouter();
 
   return (
-    <main className="min-h-screen bg-[#070709] text-white flex flex-col items-center justify-start relative overflow-y-auto p-6 md:p-12">
+    <main className="min-h-screen bg-[#16181C] text-white flex flex-col items-center justify-start relative overflow-y-auto p-6 md:p-12">
       <div className="w-full max-w-3xl z-10 space-y-8 mt-6">
         {/* Back Button */}
         <button
@@ -34,7 +34,7 @@ export default function TermsAndConditionsPage() {
         </div>
 
         {/* Content Body */}
-        <div className="border border-white/10 rounded-xl p-6 md:p-8 space-y-8 bg-[#0d111c]/40 text-sm text-white/80 leading-relaxed">
+        <div className="border border-white/10 rounded-xl p-6 md:p-8 space-y-8 bg-[#1A1D22]/40 text-sm text-white/80 leading-relaxed">
           
           <p className="text-white/70 italic">
             These Terms and Conditions ("Terms") govern your access to and use of Layora (the "Service"), including its daily coding activity tracker and leaderboard. By creating an account or using Layora, you agree to be bound by these Terms.

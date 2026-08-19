@@ -7,7 +7,7 @@ export default function PrivacyPolicyPage() {
   const router = useRouter();
 
   return (
-    <main className="min-h-screen bg-[#070709] text-white flex flex-col items-center justify-start relative overflow-y-auto p-6 md:p-12">
+    <main className="min-h-screen bg-[#16181C] text-white flex flex-col items-center justify-start relative overflow-y-auto p-6 md:p-12">
       <div className="w-full max-w-3xl z-10 space-y-8 mt-6">
         {/* Back Button */}
         <button
@@ -34,7 +34,7 @@ export default function PrivacyPolicyPage() {
         </div>
 
         {/* Content Body */}
-        <div className="border border-white/10 rounded-xl p-6 md:p-8 space-y-8 bg-[#0d111c]/40 text-sm text-white/80 leading-relaxed">
+        <div className="border border-white/10 rounded-xl p-6 md:p-8 space-y-8 bg-[#1A1D22]/40 text-sm text-white/80 leading-relaxed">
           <section className="space-y-3">
             <div className="flex items-center gap-2 text-white font-bold text-sm border-b border-white/5 pb-1">
               <ShieldCheck className="w-4 h-4 text-primary" />

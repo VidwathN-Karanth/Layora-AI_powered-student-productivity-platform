@@ -3,13 +3,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useStore, ChatMessage } from '@/store/useStore';
-import { sendAIChatMessage, resolveScheduleOverlaps } from '@/lib/aiService';
+import { useStore } from '@/store/useStore';
+import { resolveScheduleOverlaps } from '@/lib/scheduler';
+import { apiFetch } from '@/lib/apiClient';
 import { 
-  LayoutDashboard, CalendarRange, BookMarked, CheckSquare, Calendar, 
-  FolderLock, BarChart3, Settings, UserCheck, LogOut, ChevronLeft, 
-  ChevronRight, Send, Sparkles, MessageCircle, Clock, 
-  Pause, Check, Menu, X, ArrowUpRight, ShieldAlert, Trophy, Award,
+  LayoutDashboard, CalendarRange, BookMarked, CheckSquare, 
+  FolderLock, BarChart3, Settings, LogOut, ChevronLeft, 
+  ChevronRight, Clock, 
+  Check, Menu, X, Trophy, Award,
   Globe, Sun, Moon
 } from 'lucide-react';
 import { UserButton, useUser, useAuth } from '@clerk/nextjs';
@@ -23,7 +24,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const store = useStore();
 
   const mockAuth = false; // Set to true to bypass Clerk login for local testing
-  const isAiActive = store.globalAiChatEnabled !== false && store.userAiChatEnabled !== false;
 
   const { isLoaded, isSignedIn, user: clerkUser } = useUser();
   const { signOut } = useAuth();
@@ -61,38 +61,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [store.isAuthenticated]);
 
+  // The student workspace and the admin console are separate surfaces.
+  // Admins belong to the console only — bounce them out of every /dashboard route.
+  const isAdmin = isAdminEmail(store.user?.email) || isAdminEmail(clerkUser?.primaryEmailAddress?.emailAddress);
+
+  useEffect(() => {
+    if (mockAuth) return;
+    if (isLoaded && isAdmin) {
+      router.replace('/admin');
+    }
+  }, [isLoaded, isAdmin, mockAuth, router]);
+
   // Routing protection is handled by Clerk Middleware
 
   // Sidebar collapsible state
   const [sidebarOpen, setSidebarOpen] = useState(true);
   
-  // Right chatbot panel visibility
-  const [chatOpen, setChatOpen] = useState(true);
-  
   // Mobile responsive overrides
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const handleResize = () => {
-        const mobile = window.innerWidth < 1280;
-        setIsMobile(mobile);
-        if (mobile) {
-          setChatOpen(false);
-        }
-      };
-      handleResize();
-      window.addEventListener('resize', handleResize);
-      return () => window.removeEventListener('resize', handleResize);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!isAiActive) {
-      setChatOpen(false);
-    }
-  }, [isAiActive]);
 
   // Digital clock state
   const [timeStr, setTimeStr] = useState('');
@@ -149,146 +135,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [store.isAuthenticated, store.isCloudLoaded, store.timetable.length]);
 
-  // Chat message input and scrolling
-  const [messageText, setMessageText] = useState('');
-  const [chatLoading, setChatLoading] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
-    }
-    messagesEndRef.current?.scrollIntoView({ block: 'end', behavior: 'auto' });
-  };
-  
-  useEffect(() => {
-    if (chatOpen) {
-      scrollToBottom();
-      const t1 = setTimeout(scrollToBottom, 50);
-      const t2 = setTimeout(scrollToBottom, 150);
-      const t3 = setTimeout(scrollToBottom, 350);
-      const t4 = setTimeout(scrollToBottom, 600);
-      const t5 = setTimeout(scrollToBottom, 1000); // Backstop for slower connections/hydration
-      return () => {
-        clearTimeout(t1);
-        clearTimeout(t2);
-        clearTimeout(t3);
-        clearTimeout(t4);
-        clearTimeout(t5);
-      };
-    }
-  }, [store.chatHistory, chatLoading, chatOpen]);
-
-  // Keep chat container scrolled to bottom during width transitions and on initial page mount/reload
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    scrollToBottom();
-
-    const resizeObserver = new ResizeObserver(() => {
-      scrollToBottom();
-    });
-
-    resizeObserver.observe(container);
-
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, [chatOpen]);
-
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!messageText.trim()) return;
-
-    const query = messageText;
-    setMessageText('');
-    store.addChatMessage('user', query);
-    setChatLoading(true);
-
-    // Compile history - slice last 6 messages to stay under Groq free tier's 6,000 TPM (Tokens Per Minute) limit
-    const history = store.chatHistory.slice(-6).map((h) => ({
-      role: h.role,
-      content: h.content,
-    }));
-
-    // Compile student context - prune UI properties (ids, colors, extra metadata) to minimize token footprint
-    const context = {
-      currentSchedule: store.timetable.map((block) => ({
-        id: block.id,
-        day: block.day,
-        start: block.start,
-        end: block.end,
-        title: block.title,
-        type: block.type,
-        subjectCode: block.subjectCode
-      })),
-      currentTasks: store.tasks
-        .filter((t) => t.status !== 'completed')
-        .map((task) => ({
-          taskId: task.id,
-          title: task.title,
-          deadline: task.deadline,
-          estimatedMinutes: task.estimatedMinutes
-        })),
-      currentSubjects: store.subjects.map((sub) => ({
-        name: sub.name,
-        code: sub.code,
-        credits: sub.credits,
-        difficulty: sub.difficulty,
-        priority: sub.priority
-      })),
-      currentRoutine: {
-        wakeTime: store.user?.wakeTime,
-        sleepTime: store.user?.sleepTime,
-        collegeTimings: {
-          start: store.user?.collegeStart,
-          end: store.user?.collegeEnd,
-        },
-        freeBlocks: store.user?.freeBlocks?.map((fb) => ({
-          start: fb.start,
-          end: fb.end,
-          label: fb.label
-        })),
-      },
-      todayDayOfWeek: new Date().getDay(), // 0 = Sunday, 1 = Monday, etc.
-      currentTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
-      todayDateString: new Date().toISOString().split('T')[0]
-    };
-
-    const rawResponse = await sendAIChatMessage(
-      query,
-      history,
-      store.selectedModel,
-      store.apiKeys,
-      context
-    );
-
-    let cleanResponse = rawResponse;
-    
-    try {
-      const parsedData = JSON.parse(rawResponse);
-      
-      if (parsedData.reply) {
-        cleanResponse = parsedData.reply;
-      }
-      
-      if (parsedData.actions && Array.isArray(parsedData.actions)) {
-        const { executeAIActions } = await import('@/lib/actionExecutor');
-        executeAIActions(parsedData.actions);
-      }
-    } catch (err) {
-      console.error('Failed to parse AI JSON response:', err);
-    }
-
-    store.addChatMessage('assistant', cleanResponse);
-    setChatLoading(false);
-
-  };
-
-
-
   const handleLogout = async () => {
     store.logout();
     await signOut();
@@ -306,7 +152,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return `${hours > 0 ? hours + ':' : ''}${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const isAdmin = isAdminEmail(store.user?.email) || isAdminEmail(clerkUser?.primaryEmailAddress?.emailAddress);
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Weekly Planner', path: '/dashboard/planner', icon: CalendarRange },
@@ -317,12 +162,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: 'Analytics', path: '/dashboard/analytics', icon: BarChart3 },
     { name: 'Leaderboard', path: '/dashboard/leaderboard', icon: Trophy },
     { name: 'Global Resources', path: '/dashboard/global-resources', icon: Globe },
-    { name: 'Settings', path: '/dashboard/settings', icon: Settings },
-    ...(isAdmin ? [{ name: 'Admin Portal', path: '/admin', icon: ShieldAlert }] : [])
+    { name: 'Settings', path: '/dashboard/settings', icon: Settings }
   ];
 
   if (typeof window !== 'undefined') {
-    fetch('/api/debug-log/', {
+    apiFetch('/api/debug-log/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: `DashboardLayout render - isLoaded=${isLoaded}, isAuthenticated=${store.isAuthenticated}, hasUser=${!!store.user}, userEmail=${store.user?.email}, isOnboarded=${store.user?.isOnboarded}` })
@@ -330,6 +174,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   if (!mockAuth && (!isLoaded || !store.isAuthenticated)) return null;
+  if (!mockAuth && isAdmin) return null;
 
   return (
     <div className="min-h-screen bg-cyber-dark text-white flex relative overflow-hidden font-mono">
@@ -343,13 +188,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <Menu className="w-5 h-5" strokeWidth={1.5} />
         </button>
         <span className="font-bold text-white text-sm">LAYORA</span>
-        {isAiActive ? (
-          <button onClick={() => setChatOpen(!chatOpen)} className="p-2 hover:bg-white/5 rounded-lg text-white">
-            <MessageCircle className="w-5 h-5" strokeWidth={1.5} />
-          </button>
-        ) : (
-          <div className="w-9" />
-        )}
+        <div className="w-9" />
       </div>
 
       {/* --- MOBILE SIDEBAR DRAWER --- */}
@@ -441,18 +280,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   initial={{ opacity: 0 }} 
                   animate={{ opacity: 1 }} 
                   exit={{ opacity: 0 }}
-                  className={`flex flex-col items-center justify-center w-full gap-2 ${isAiActive ? 'cursor-pointer' : ''}`}
-                  onClick={() => isAiActive && setChatOpen(!chatOpen)}
-                  title={isAiActive ? "Open Chatbot" : "Layora"}
+                  className="flex flex-col items-center justify-center w-full gap-2"
+                  title="Layora"
                 >
                   <span className="font-mono font-black text-base text-primary w-full text-center">
                     L
                   </span>
-                  {isAiActive && (
-                    <span className="text-[8px] font-mono font-bold text-cyber-blue uppercase text-center bg-cyber-blue/10 px-1 py-0.5 rounded border border-cyber-blue/30 w-full whitespace-nowrap overflow-hidden">
-                      Chatbot
-                    </span>
-                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -543,7 +376,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               className={`relative flex h-5 w-9 items-center rounded-full transition-colors duration-200 cursor-pointer outline-none border border-white/10 shrink-0 ml-1.5 ${
                 store.themeMode === 'light' ? 'bg-zinc-300' : 'bg-zinc-800'
               }`}
-              title="Toggle Theme Mode"
+              title={store.themeMode === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+              aria-label={store.themeMode === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
             >
               <span
                 className={`flex h-4 w-4 items-center justify-center rounded-full transition-transform duration-200 ${
@@ -579,25 +413,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
             )}
 
-            {/* Chatbot trigger */}
-            {isAiActive && (
-              <button 
-                onClick={() => setChatOpen(!chatOpen)}
-                className={`flex items-center justify-center rounded-full border transition cursor-pointer ${
-                  chatOpen ? 'bg-cyber-blue/20 border-cyber-blue text-cyber-blue w-8 h-8 p-0' : 'gap-2 px-3 py-1.5 bg-white/5 border-white/10 text-white/50 hover:text-white'
-                }`}
-                title={chatOpen ? "Close Panel" : "Open Chatbot"}
-              >
-                {chatOpen ? (
-                  <ChevronRight className="w-4 h-4" strokeWidth={2} />
-                ) : (
-                  <>
-                    <MessageCircle className="w-4 h-4" strokeWidth={1.5} />
-                    <span className="font-mono text-[11px] font-bold uppercase tracking-wider">Chatbot</span>
-                  </>
-                )}
-              </button>
-            )}
           </div>
         </header>
 
@@ -620,100 +435,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </main>
 
-      {/* --- RIGHT PERSISTENT AI CHAT PANEL --- */}
-      <AnimatePresence>
-        {isAiActive && chatOpen && isMobile && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setChatOpen(false)}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 xl:hidden"
-          />
-        )}
-        {isAiActive && chatOpen && (
-          <motion.aside
-            initial={isMobile ? { x: '100%', opacity: 0 } : { width: 0, opacity: 0 }}
-            animate={isMobile ? { x: 0, opacity: 1 } : { width: 340, opacity: 1 }}
-            exit={isMobile ? { x: '100%', opacity: 0 } : { width: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed top-0 right-0 z-50 xl:sticky xl:top-0 w-[85%] sm:w-[340px] xl:w-[340px] flex flex-col border-l border-white/10 bg-[#0B0F19]/95 xl:bg-black/40 backdrop-blur-xl shrink-0 h-[100dvh] overflow-hidden shadow-2xl xl:shadow-none"
-          >
-            {/* Chat header */}
-            <div className="p-4 border-b border-white/10 flex items-center justify-between bg-white/5">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-cyber-purple animate-pulse" />
-                <span className="font-mono text-xs font-bold">Co-pilot Chat</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[9px] font-mono text-cyber-blue border border-cyber-blue/30 px-2 py-0.5 rounded uppercase">Groq AI</span>
-                <button onClick={() => setChatOpen(false)} className="text-white/40 hover:text-white p-0.5">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-            </div>
-
-            {/* Chat logs scroll area */}
-            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
-              {store.chatHistory.map((msg) => (
-                <div 
-                  key={msg.id} 
-                  className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
-                >
-                  <div className={`text-[9px] font-mono text-white/30 mb-1`}>
-                    {msg.role === 'user' ? 'User' : 'Co-pilot'} • {msg.timestamp}
-                  </div>
-                  <div className={`p-3 rounded-2xl text-xs leading-relaxed max-w-[85%] font-sans ${
-                    msg.role === 'user' 
-                      ? 'bg-cyber-purple/20 text-white rounded-tr-none border border-cyber-purple/30' 
-                      : 'glass-panel text-white/90 rounded-tl-none border border-white/10'
-                  }`}>
-                    {/* Basic custom markdown implementation */}
-                    {msg.content.split('\n').map((line, lIdx) => {
-                      if (line.startsWith('**') || line.startsWith('1.') || line.startsWith('-')) {
-                        return <p key={lIdx} className="font-semibold text-cyber-blue mt-1">{line}</p>;
-                      }
-                      return <p key={lIdx} className="mt-0.5">{line}</p>;
-                    })}
-                  </div>
-                </div>
-              ))}
-
-              {chatLoading && (
-                <div className="flex flex-col items-start">
-                  <div className="text-[9px] font-mono text-white/30 mb-1">Co-pilot is typing...</div>
-                  <div className="glass-panel p-3 rounded-2xl rounded-tl-none flex gap-1.5 items-center border border-white/10">
-                    <span className="w-1.5 h-1.5 bg-cyber-blue rounded-full animate-bounce"></span>
-                    <span className="w-1.5 h-1.5 bg-cyber-blue rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                    <span className="w-1.5 h-1.5 bg-cyber-blue rounded-full animate-bounce [animation-delay:0.4s]"></span>
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Chat footer input */}
-            <form onSubmit={handleSendMessage} className="p-3 pb-5 md:pb-3 border-t border-white/10 bg-white/5">
-              <div className="flex gap-2 bg-black/40 border border-white/10 rounded-xl px-2.5 py-1.5 items-center">
-                <input
-                  type="text"
-                  value={messageText}
-                  onChange={(e) => setMessageText(e.target.value)}
-                  placeholder="Ask AI to schedule your tasks..."
-                  className="bg-transparent border-0 focus:outline-none text-xs flex-1 text-white placeholder-white/30"
-                />
-                <button 
-                  type="submit" 
-                  className="bg-cyber-blue/20 hover:bg-cyber-blue/40 text-cyber-blue rounded-lg p-1 transition cursor-pointer"
-                >
-                  <Send className="w-3 h-3" />
-                </button>
-              </div>
-            </form>
-          </motion.aside>
-        )}
-      </AnimatePresence>
       <OnboardingModal />
     </div>
   );

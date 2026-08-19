@@ -4,13 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useUser } from '@clerk/nextjs';
 import { 
-  ShieldAlert, UserCheck, LogOut, ArrowRight, Sparkles, 
+  ShieldAlert, ArrowRight, Sparkles, 
   CalendarRange, CheckSquare, Globe, Trophy, Shield, 
-  Layers, ChevronDown, CheckCircle, Code, Terminal, Crown
+  Layers, ChevronDown, CheckCircle, Code, Terminal
 } from 'lucide-react';
-import { useStore } from '@/store/useStore';
 import { isAdminEmail } from '@/lib/admin';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 // Spring-based Entrance Wrapper
 const SpringReveal = ({ 
@@ -45,117 +44,30 @@ const SpringReveal = ({
 
 export default function RootPage() {
   const router = useRouter();
-  const { isLoaded: isAuthLoaded, isSignedIn, signOut } = useAuth();
+  const { isLoaded: isAuthLoaded, isSignedIn } = useAuth();
   const { isLoaded: isUserLoaded, user } = useUser();
-  const store = useStore();
-  const [showPortal, setShowPortal] = useState(false);
   const [showLanding, setShowLanding] = useState(false);
-
-  const handleLogout = async () => {
-    store.logout();
-    await signOut();
-    router.replace('/login');
-  };
 
   useEffect(() => {
     if (!isAuthLoaded || !isUserLoaded) return;
 
     if (isSignedIn) {
+      // Admins never see the student workspace — send them straight to the admin console.
       const email = user?.primaryEmailAddress?.emailAddress || '';
-      if (isAdminEmail(email)) {
-        setShowPortal(true);
-      } else {
-        const timeout = setTimeout(() => {
-          router.replace('/dashboard');
-        }, 500);
-        return () => clearTimeout(timeout);
-      }
+      const destination = isAdminEmail(email) ? '/admin' : '/dashboard';
+      const timeout = setTimeout(() => {
+        router.replace(destination);
+      }, 500);
+      return () => clearTimeout(timeout);
     } else {
       setShowLanding(true);
     }
   }, [isAuthLoaded, isUserLoaded, isSignedIn, user, router]);
 
-  // Render Admin/User Portal selection screen (if admin user is signed in)
-  if (showPortal) {
-    return (
-      <main className="min-h-screen bg-[#070709] text-white flex flex-col items-center justify-center relative overflow-hidden p-6">
-        {/* Subtle noise background */}
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}></div>
-        
-        <div className="z-10 w-full max-w-lg flex flex-col items-center text-center gap-8">
-          <motion.div 
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 200, damping: 20 }}
-            className="relative w-20 h-20 rounded-2xl bg-primary/10 border border-primary/20 shadow-[0_0_40px_rgba(0,122,255,0.2)] flex items-center justify-center"
-          >
-            <Crown className="w-8 h-8 text-primary drop-shadow-[0_0_10px_rgba(0,122,255,0.8)]" />
-          </motion.div>
-
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-white font-geist">
-              Welcome back
-            </h1>
-            <p className="text-xs text-white/50 mt-2 font-jetbrains uppercase tracking-widest">
-              Select your access portal
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full mt-4">
-            <motion.button
-              whileHover={{ scale: 1.02, y: -2 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => router.push('/admin')}
-              className="group border border-white/10 p-6 rounded-2xl flex flex-col items-center gap-4 transition-colors duration-300 bg-[#121214]/60 hover:bg-[#1C1C1E]/80 backdrop-blur-xl cursor-pointer"
-            >
-              <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-300">
-                <ShieldAlert className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-bold text-sm text-white font-geist tracking-wide">
-                  ADMIN PORTAL
-                </h3>
-                <p className="text-xs text-white/40 mt-1 leading-relaxed">
-                  Monitor telemetry, user database state, and operational analytics.
-                </p>
-              </div>
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.02, y: -2 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => router.push('/dashboard')}
-              className="group border border-white/10 p-6 rounded-2xl flex flex-col items-center gap-4 transition-colors duration-300 bg-[#121214]/60 hover:bg-[#1C1C1E]/80 backdrop-blur-xl cursor-pointer"
-            >
-              <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-300">
-                <UserCheck className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-bold text-sm text-white font-geist tracking-wide">
-                  USER PORTAL
-                </h3>
-                <p className="text-xs text-white/40 mt-1 leading-relaxed">
-                  Launch the standard student workspace planner, logs, and calendar.
-                </p>
-              </div>
-            </motion.button>
-          </div>
-
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white px-5 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer mt-4"
-          >
-            <LogOut className="w-4 h-4" /> Logout
-          </button>
-        </div>
-      </main>
-    );
-  }
-
   // Render Public Landing/Introduction page
   if (showLanding) {
     return (
-      <main className="min-h-screen bg-[#070709] text-white flex flex-col items-center relative overflow-x-hidden scroll-smooth font-geist">
+      <main className="min-h-screen bg-[#16181C] text-white flex flex-col items-center relative overflow-x-hidden scroll-smooth font-geist">
         {/* Subtle noise background for depth */}
         <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}></div>
         
@@ -163,7 +75,7 @@ export default function RootPage() {
         <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/20 blur-[120px] rounded-full pointer-events-none"></div>
 
         {/* --- GLOBAL STICKY HEADER --- */}
-        <header className="w-full max-w-6xl z-40 sticky top-4 px-6 py-3.5 bg-[#070709]/70 backdrop-blur-2xl border border-white/10 rounded-2xl flex items-center justify-between mt-4 mx-4 shadow-2xl">
+        <header className="w-full max-w-6xl z-40 sticky top-4 px-6 py-3.5 bg-[#16181C]/70 backdrop-blur-2xl border border-white/10 rounded-2xl flex items-center justify-between mt-4 mx-4 shadow-2xl">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shadow-[0_0_15px_rgba(0,122,255,0.4)]">
               <span className="text-white font-bold text-xs">L</span>
@@ -265,7 +177,7 @@ export default function RootPage() {
             <div className="grid grid-cols-1 md:grid-cols-12 auto-rows-[360px] gap-6">
               
               {/* Feature 1: Unified Dashboard (Large Span) */}
-              <SpringReveal delay={0.1} className="md:col-span-8 group relative overflow-hidden rounded-3xl border border-white/10 bg-[#121214]/60 backdrop-blur-xl p-8 flex flex-col justify-between">
+              <SpringReveal delay={0.1} className="md:col-span-8 group relative overflow-hidden rounded-3xl border border-white/10 bg-[#16181C]/60 backdrop-blur-xl p-8 flex flex-col justify-between">
                 <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-primary/10 blur-[80px] rounded-full pointer-events-none group-hover:bg-primary/20 transition-colors duration-700"></div>
                 <div className="z-10 max-w-md">
                   <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center text-primary mb-4 border border-primary/30">
@@ -282,7 +194,7 @@ export default function RootPage() {
               </SpringReveal>
 
               {/* Feature 2: Vault (Small Span) */}
-              <SpringReveal delay={0.2} className="md:col-span-4 group relative overflow-hidden rounded-3xl border border-white/10 bg-[#121214]/60 backdrop-blur-xl p-8 flex flex-col justify-between">
+              <SpringReveal delay={0.2} className="md:col-span-4 group relative overflow-hidden rounded-3xl border border-white/10 bg-[#16181C]/60 backdrop-blur-xl p-8 flex flex-col justify-between">
                 <div className="z-10">
                   <div className="w-10 h-10 rounded-lg bg-[#AF52DE]/20 flex items-center justify-center text-[#AF52DE] mb-4 border border-[#AF52DE]/30">
                     <Shield className="w-5 h-5" />
@@ -298,7 +210,7 @@ export default function RootPage() {
               </SpringReveal>
 
               {/* Feature 3: Global Library (Small Span) */}
-              <SpringReveal delay={0.3} className="md:col-span-4 group relative overflow-hidden rounded-3xl border border-white/10 bg-[#121214]/60 backdrop-blur-xl p-8 flex flex-col justify-between">
+              <SpringReveal delay={0.3} className="md:col-span-4 group relative overflow-hidden rounded-3xl border border-white/10 bg-[#16181C]/60 backdrop-blur-xl p-8 flex flex-col justify-between">
                 <div className="z-10">
                   <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center text-green-400 mb-4 border border-green-500/30">
                     <Globe className="w-5 h-5" />
@@ -314,7 +226,7 @@ export default function RootPage() {
               </SpringReveal>
 
               {/* Feature 4: Leaderboard & Courses (Large Span) */}
-              <SpringReveal delay={0.4} className="md:col-span-8 group relative overflow-hidden rounded-3xl border border-white/10 bg-[#121214]/60 backdrop-blur-xl p-8 flex flex-col justify-between">
+              <SpringReveal delay={0.4} className="md:col-span-8 group relative overflow-hidden rounded-3xl border border-white/10 bg-[#16181C]/60 backdrop-blur-xl p-8 flex flex-col justify-between">
                 <div className="absolute bottom-0 right-0 w-[400px] h-[300px] bg-primary/10 blur-[80px] rounded-full pointer-events-none group-hover:bg-primary/20 transition-colors duration-700"></div>
                 <div className="z-10 flex flex-col sm:flex-row gap-8 justify-between h-full">
                   <div className="flex-1 max-w-sm">
@@ -342,10 +254,10 @@ export default function RootPage() {
 
 
         {/* ================= GOOGLE API DETAILS CARD ================= */}
-        <section className="w-full py-24 border-t border-white/5 flex justify-center bg-[#0A0A0C] px-6 relative z-10">
+        <section className="w-full py-24 border-t border-white/5 flex justify-center bg-[#16181C] px-6 relative z-10">
           <div className="w-full max-w-5xl">
             <SpringReveal direction="up">
-              <div className="rounded-3xl border border-white/10 bg-[#121214] p-8 md:p-10 shadow-2xl">
+              <div className="rounded-3xl border border-white/10 bg-[#16181C] p-8 md:p-10 shadow-2xl">
                 <div className="flex items-center gap-3 border-b border-white/10 pb-4 mb-6">
                   <div className="p-2 bg-primary/10 rounded-lg border border-primary/20 text-primary">
                     <ShieldAlert className="w-5 h-5" />
@@ -384,7 +296,7 @@ export default function RootPage() {
 
 
         {/* ================= DEVELOPER & ARCHITECT SECTION ================= */}
-        <section id="dev" className="w-full py-24 flex justify-center bg-[#121214] px-6 border-t border-white/5 relative z-10">
+        <section id="dev" className="w-full py-24 flex justify-center bg-[#16181C] px-6 border-t border-white/5 relative z-10">
           <div className="w-full max-w-3xl text-center space-y-8">
             <SpringReveal direction="up">
               <h2 className="text-3xl font-extrabold tracking-tight font-geist text-white">
@@ -394,7 +306,7 @@ export default function RootPage() {
 
             <SpringReveal direction="up" delay={0.15}>
               <div className="max-w-lg mx-auto">
-                <div className="bg-[#1C1C1E] border border-white/10 rounded-3xl p-8 flex flex-col sm:flex-row items-center gap-8 text-left shadow-xl hover:border-white/20 transition-colors">
+                <div className="bg-[#1E2126] border border-white/10 rounded-3xl p-8 flex flex-col sm:flex-row items-center gap-8 text-left shadow-xl hover:border-white/20 transition-colors">
                   <div className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 shrink-0 bg-black flex items-center justify-center relative shadow-[0_0_20px_rgba(255,255,255,0.05)]">
                     <img 
                       src="https://img.icons8.com/color/96/kali-linux.png" 
@@ -426,7 +338,7 @@ export default function RootPage() {
 
 
         {/* ================= GLOBAL FOOTER ================= */}
-        <footer className="w-full z-10 border-t border-white/10 py-10 px-6 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-white/40 bg-[#070709]">
+        <footer className="w-full z-10 border-t border-white/10 py-10 px-6 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-white/40 bg-[#16181C]">
           <div className="w-full max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">
               <div className="w-5 h-5 rounded flex items-center justify-center bg-primary/20 text-primary font-bold text-[10px]">L</div>
@@ -445,7 +357,7 @@ export default function RootPage() {
 
   // Loading screen
   return (
-    <main className="min-h-screen bg-[#070709] text-white flex flex-col items-center justify-center relative overflow-hidden p-6">
+    <main className="min-h-screen bg-[#16181C] text-white flex flex-col items-center justify-center relative overflow-hidden p-6">
       <div className="z-10 flex flex-col items-center gap-8">
         <motion.div 
           animate={{ scale: [1, 1.05, 1], rotate: [0, 5, -5, 0] }}
