@@ -1,24 +1,34 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
 import { User } from '@/lib/models/User';
+import { getRequester } from '@/lib/authz';
 
-export async function POST(request: Request) {
+/**
+ * Creates the caller's own profile row.
+ *
+ * Identity is taken from the session, not the request body. The body used to
+ * supply id, name and email; `users.email` is what cohort filtering matches on,
+ * so trusting it would let a student register themselves into another year.
+ */
+export async function POST() {
   try {
-    const { id, name, email } = await request.json();
+    const requester = await getRequester();
 
-    const { userId: authedUserId } = await auth();
-    if (!authedUserId || authedUserId !== id) {
+    if (!requester) {
       return NextResponse.json({ error: 'Unauthorized user access' }, { status: 401 });
     }
-
-    if (!name || !email) {
+    if (!requester.allowed) {
       return NextResponse.json(
-        { error: 'Name and email are required fields.' },
-        { status: 400 }
+        { error: 'Access denied', reason: requester.denialReason },
+        { status: 403 }
       );
     }
 
-    const user = await User.create({ id, name, email });
+    const user = await User.create({
+      id: requester.userId,
+      name: requester.name,
+      email: requester.email,
+    });
+
     return NextResponse.json(user, { status: 201 });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);

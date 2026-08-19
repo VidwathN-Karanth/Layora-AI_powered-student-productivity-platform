@@ -12,6 +12,8 @@ export type AccessDenialReason = 'signed_out' | 'wrong_domain' | 'not_on_roster'
 export interface Requester {
   userId: string;
   email: string;
+  /** Display name from the Google account. Never taken from client input. */
+  name: string;
   isAdmin: boolean;
   /** Null for admins (who are not students) and for anyone off the roster. */
   cohort: Cohort | null;
@@ -31,21 +33,22 @@ export async function getRequester(): Promise<Requester | null> {
 
   const user = await currentUser();
   const email = user?.primaryEmailAddress?.emailAddress || '';
+  const name = user?.fullName || user?.firstName || email.split('@')[0] || 'Student';
 
   if (isAdminEmail(email)) {
-    return { userId, email, isAdmin: true, cohort: null, allowed: true, denialReason: null };
+    return { userId, email, name, isAdmin: true, cohort: null, allowed: true, denialReason: null };
   }
 
   if (!isCollegeEmail(email)) {
-    return { userId, email, isAdmin: false, cohort: null, allowed: false, denialReason: 'wrong_domain' };
+    return { userId, email, name, isAdmin: false, cohort: null, allowed: false, denialReason: 'wrong_domain' };
   }
 
   const cohort = getCohortForEmail(email);
   if (!cohort) {
-    return { userId, email, isAdmin: false, cohort: null, allowed: false, denialReason: 'not_on_roster' };
+    return { userId, email, name, isAdmin: false, cohort: null, allowed: false, denialReason: 'not_on_roster' };
   }
 
-  return { userId, email, isAdmin: false, cohort, allowed: true, denialReason: null };
+  return { userId, email, name, isAdmin: false, cohort, allowed: true, denialReason: null };
 }
 
 type Guard<T> = { ok: true; requester: T } | { ok: false; response: NextResponse };

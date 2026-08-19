@@ -12,6 +12,9 @@ export interface UserRow {
   leetcodeMediumTotal: number;
   leetcodeHardTotal: number;
   codechefSolvedTotal: number;
+  resumeUrl: string | null;
+  resumeName: string | null;
+  resumeUploadedAt: string | null;
   createdAt: string;
 }
 
@@ -27,6 +30,9 @@ interface DatabaseUserRow {
   leetcode_medium_total: number;
   leetcode_hard_total: number;
   codechef_solved_total: number;
+  resume_url: string | null;
+  resume_name: string | null;
+  resume_uploaded_at: string | null;
   created_at: string;
 }
 
@@ -47,6 +53,9 @@ function mapUserRow(row: DatabaseUserRow | null | undefined): UserRow | null {
     leetcodeMediumTotal: row.leetcode_medium_total || 0,
     leetcodeHardTotal: row.leetcode_hard_total || 0,
     codechefSolvedTotal: row.codechef_solved_total || 0,
+    resumeUrl: row.resume_url ?? null,
+    resumeName: row.resume_name ?? null,
+    resumeUploadedAt: row.resume_uploaded_at ?? null,
     createdAt: row.created_at
   };
 }
@@ -140,6 +149,9 @@ export class User {
       leetcodeMediumTotal?: number;
       leetcodeHardTotal?: number;
       codechefSolvedTotal?: number;
+      resumeUrl?: string | null;
+      resumeName?: string | null;
+      resumeUploadedAt?: string | null;
     }
   ): Promise<UserRow | null> {
     const dbUpdates: {
@@ -153,6 +165,9 @@ export class User {
       leetcode_medium_total?: number;
       leetcode_hard_total?: number;
       codechef_solved_total?: number;
+      resume_url?: string | null;
+      resume_name?: string | null;
+      resume_uploaded_at?: string | null;
     } = {};
     if (updates.name !== undefined) dbUpdates.name = updates.name;
     if (updates.email !== undefined) dbUpdates.email = updates.email;
@@ -164,6 +179,9 @@ export class User {
     if (updates.leetcodeMediumTotal !== undefined) dbUpdates.leetcode_medium_total = updates.leetcodeMediumTotal;
     if (updates.leetcodeHardTotal !== undefined) dbUpdates.leetcode_hard_total = updates.leetcodeHardTotal;
     if (updates.codechefSolvedTotal !== undefined) dbUpdates.codechef_solved_total = updates.codechefSolvedTotal;
+    if (updates.resumeUrl !== undefined) dbUpdates.resume_url = updates.resumeUrl;
+    if (updates.resumeName !== undefined) dbUpdates.resume_name = updates.resumeName;
+    if (updates.resumeUploadedAt !== undefined) dbUpdates.resume_uploaded_at = updates.resumeUploadedAt;
 
     const { data, error } = await supabaseAdmin
       .from('users')
