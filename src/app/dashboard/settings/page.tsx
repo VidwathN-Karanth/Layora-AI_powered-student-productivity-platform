@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useStore } from '@/store/useStore';
 import { apiFetch, readJson, errorMessage } from '@/lib/apiClient';
+import ResumePanel from '@/components/ResumePanel';
 import { 
   Settings, Key, Eye, EyeOff, Check, Sparkles, 
   User, Bell, Calendar, ShieldCheck, RefreshCw,
-  Loader2, Info
+  Loader2, Info, Lock
 } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -15,7 +16,8 @@ export default function SettingsPage() {
   const { user: clerkUser } = useUser();
 
   // Local profile states
-  const [name, setName] = useState(store.user?.name || '');
+  // The display name is read-only — Clerk (Google) is the source of truth.
+  const displayName = clerkUser?.fullName || store.user?.name || 'Student';
   const [wakeTime, setWakeTime] = useState(store.user?.wakeTime || '06:00');
   const [sleepTime, setSleepTime] = useState(store.user?.sleepTime || '22:00');
   const [collegeStart, setCollegeStart] = useState(store.user?.collegeStart || '09:00');
@@ -36,7 +38,6 @@ export default function SettingsPage() {
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
     const errors: Record<string, string> = {};
-    if (!name.trim()) errors.name = "This field cannot be empty";
     if (!wakeTime) errors.wakeTime = "This field cannot be empty";
     if (!sleepTime) errors.sleepTime = "This field cannot be empty";
     if (!collegeStart) errors.collegeStart = "This field cannot be empty";
@@ -48,7 +49,6 @@ export default function SettingsPage() {
     }
 
     store.updateRoutine({
-      name,
       wakeTime,
       sleepTime,
       collegeStart,
@@ -79,15 +79,8 @@ export default function SettingsPage() {
 
     try {
       // 1. Register/Ensure User exists in the backend first
-      const registerRes = await apiFetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: targetUserId,
-          name: name || clerkUser?.fullName || 'Anonymous User',
-          email: store.user?.email || clerkUser?.primaryEmailAddress?.emailAddress || 'email@example.com'
-        })
-      });
+      // Identity comes from the session server-side; nothing to send.
+      const registerRes = await apiFetch('/api/users', { method: 'POST' });
 
       // 409 just means the profile already exists, which is the normal case.
       if (!registerRes.ok && registerRes.status !== 409) {
@@ -150,18 +143,17 @@ export default function SettingsPage() {
             </div>
 
             <form onSubmit={handleSaveProfile} noValidate className="space-y-4">
+              {/* Name is not editable: it comes from the college Google account so
+                  the leaderboard and the admin console always show real people. */}
               <div>
-                <label className="block text-[10px] font-mono text-outline mb-1">Username / Alias</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                    setProfileErrors(prev => ({ ...prev, name: undefined }));
-                  }}
-                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
-                />
-                {profileErrors.name && <p className="text-red-500 text-[10px] font-mono mt-1">{profileErrors.name}</p>}
+                <label className="block text-[10px] font-mono text-outline mb-1">Name</label>
+                <div className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface-variant flex items-center justify-between gap-2">
+                  <span className="truncate">{displayName}</span>
+                  <Lock className="w-3 h-3 text-outline shrink-0" />
+                </div>
+                <p className="text-[9px] font-mono text-outline mt-1">
+                  Taken from your college Google account.
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -387,7 +379,10 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* --- PANEL 3: VISUAL THEMING --- */}
+          {/* --- PANEL 3: RESUME / CV --- */}
+          <ResumePanel />
+
+          {/* --- PANEL 4: VISUAL THEMING --- */}
           <div className="glass-card rounded-2xl p-5 space-y-4">
             <div className="flex items-center gap-2.5 border-b border-outline-variant pb-2">
               <Sparkles className="w-4 h-4 text-primary" />
@@ -456,7 +451,7 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* --- PANEL 4: CALENDAR INTEGRATIONS --- */}
+          {/* --- PANEL 5: CALENDAR INTEGRATIONS --- */}
           <div className="glass-card rounded-2xl p-5 space-y-4">
             <div className="flex items-center justify-between border-b border-outline-variant pb-2 relative">
               <div className="flex items-center gap-2.5">

@@ -138,15 +138,21 @@ export async function POST(request: Request) {
 
     if (stateError) throw stateError;
 
-    // 2. Automatically register / sync the user metadata to the users table
+    // 2. Automatically register / sync the user metadata to the users table.
+    //
+    // Name and email come from Clerk, never from the posted state. `users.email`
+    // is what cohort filtering matches on, so accepting it from the client would
+    // let a student place themselves in another year's leaderboard — or vanish
+    // from their own. The linked coding handles are genuinely user-owned, so
+    // those still come from the request body.
     if (state?.user) {
       try {
         await supabaseAdmin
           .from('users')
           .upsert({
             id: userId,
-            name: state.user.name || 'Student',
-            email: state.user.email || '',
+            name: requester.name,
+            email: requester.email,
             leetcode_username: state.user.leetcodeUsername || null,
             github_username: state.user.githubUsername || null,
             codechef_username: state.user.codechefUsername || null,

@@ -51,6 +51,15 @@ interface GlobalResource {
   createdAt?: string;
 }
 
+interface ResumeEntry {
+  userId: string;
+  name: string;
+  email: string;
+  url: string;
+  fileName: string | null;
+  uploadedAt: string | null;
+}
+
 interface CertificateUploader {
   userId: string;
   name: string;
@@ -217,6 +226,28 @@ export default function AdminPage() {
     }
   };
 
+  // Resumes roll call — who in this year has uploaded a CV
+  const [resumes, setResumes] = useState<ResumeEntry[]>([]);
+  const [loadingResumes, setLoadingResumes] = useState(false);
+  const [resumesError, setResumesError] = useState('');
+  const [activeResume, setActiveResume] = useState<ResumeEntry | null>(null);
+
+  const fetchResumes = async () => {
+    setLoadingResumes(true);
+    setResumesError('');
+    try {
+      const data = await readJson<{ resumes?: ResumeEntry[] }>(
+        await apiFetch(`/api/admin/resumes?cohort=${encodeURIComponent(selectedCohort)}`)
+      );
+      setResumes(data.resumes || []);
+    } catch (err) {
+      console.error(err);
+      setResumesError(errorMessage(err, 'Could not load resumes.'));
+    } finally {
+      setLoadingResumes(false);
+    }
+  };
+
   // Certificates roll call — who in this year has uploaded, and how many
   const [certUploaders, setCertUploaders] = useState<CertificateUploader[]>([]);
   const [loadingCertUploaders, setLoadingCertUploaders] = useState(false);
@@ -240,7 +271,7 @@ export default function AdminPage() {
   };
 
   // Leaderboard States & Handlers
-  const [adminView, setAdminView] = useState<'nodes' | 'leaderboard' | 'library' | 'certificates'>('nodes');
+  const [adminView, setAdminView] = useState<'nodes' | 'leaderboard' | 'library' | 'certificates' | 'resumes'>('nodes');
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [leaderboardRange, setLeaderboardRange] = useState<'today' | 'week' | 'all'>('all');
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
@@ -398,6 +429,12 @@ export default function AdminPage() {
     }
   }, [authorized, adminView, selectedCohort]);
 
+  useEffect(() => {
+    if (authorized && adminView === 'resumes') {
+      fetchResumes();
+    }
+  }, [authorized, adminView, selectedCohort]);
+
   /**
    * Switching year clears everything drilled into under the previous one.
    * Without this, a student's detail panel could stay open over a list that no
@@ -408,6 +445,8 @@ export default function AdminPage() {
     setSelectedUser(null);
     setSelectedLeaderboardUser(null);
     setSelectedCertUser(null);
+    setActiveResume(null);
+    setResumes([]);
     setInspectedCerts([]);
     setActiveCertPreview(null);
     setShowDeleteConfirm(null);
@@ -950,6 +989,16 @@ export default function AdminPage() {
               >
                 🎓 Certificates
               </button>
+              <button
+                onClick={() => setAdminView('resumes')}
+                className={`text-xs font-mono font-bold tracking-wider uppercase px-3 py-1.5 rounded-lg border transition cursor-pointer ${
+                  adminView === 'resumes'
+                    ? 'border-sky-400 bg-sky-500/10 text-sky-400'
+                    : 'border-transparent text-white/50 hover:text-white'
+                }`}
+              >
+                📄 Resumes
+              </button>
             </div>
 
             {adminView === 'nodes' ? (
@@ -962,6 +1011,19 @@ export default function AdminPage() {
                   placeholder="Query name, email or UUID..."
                   className="w-full bg-black/40 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-cyber-blue"
                 />
+              </div>
+            ) : adminView === 'resumes' ? (
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-white/40">
+                  {resumes.length} CV{resumes.length === 1 ? '' : 's'} uploaded
+                </span>
+                <button
+                  onClick={fetchResumes}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:border-sky-400 text-white/70 hover:text-white transition cursor-pointer text-[10px] uppercase font-bold tracking-wider"
+                >
+                  <RefreshCw className={`w-3 h-3 ${loadingResumes ? 'animate-spin' : ''}`} />
+                  Reload
+                </button>
               </div>
             ) : adminView === 'certificates' ? (
               <div className="flex items-center gap-3">
@@ -1432,6 +1494,97 @@ export default function AdminPage() {
             </div>
           )}
 
+          {adminView === 'resumes' && (
+            <div>
+              {loadingResumes ? (
+                <div className="p-12 text-center text-white/40 text-xs flex flex-col items-center gap-3">
+                  <RefreshCw className="w-6 h-6 animate-spin text-sky-400" />
+                  Loading resumes...
+                </div>
+              ) : resumesError ? (
+                <div className="p-12 text-center text-rose-300 text-xs flex flex-col items-center gap-2">
+                  <AlertTriangle className="w-6 h-6 text-rose-400" />
+                  <span>{resumesError}</span>
+                  <button
+                    onClick={fetchResumes}
+                    className="mt-3 px-3 py-1.5 bg-rose-950/30 border border-rose-500/25 hover:bg-rose-950/50 text-rose-300 rounded-lg text-[10px] font-bold transition cursor-pointer"
+                  >
+                    TRY AGAIN
+                  </button>
+                </div>
+              ) : resumes.length === 0 ? (
+                <div className="p-12 text-center text-white/30 text-xs">
+                  No {selectedCohort} student has uploaded a CV yet.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-white/10 bg-white/2 text-white/40 font-bold uppercase tracking-wider">
+                        <th className="p-4 font-normal">Student</th>
+                        <th className="p-4 font-normal">Email</th>
+                        <th className="p-4 font-normal">File</th>
+                        <th className="p-4 font-normal">Uploaded</th>
+                        <th className="p-4 font-normal text-center w-36">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {resumes.map((r) => (
+                        <tr
+                          key={r.userId}
+                          onClick={() => setActiveResume(r)}
+                          className="hover:bg-white/3 transition group cursor-pointer"
+                        >
+                          <td className="p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-sky-400">
+                                <FileText className="w-3.5 h-3.5" />
+                              </div>
+                              <span className="font-bold text-white group-hover:text-sky-400 transition">
+                                {r.name}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="p-4 text-white/50 font-mono text-[10px] truncate max-w-[220px]">
+                            {r.email}
+                          </td>
+                          <td className="p-4 text-white/60 truncate max-w-[200px]">
+                            {r.fileName || 'Resume'}
+                          </td>
+                          <td className="p-4 text-white/50 font-mono text-[10px]">
+                            {r.uploadedAt ? new Date(r.uploadedAt).toLocaleString() : '—'}
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setActiveResume(r); }}
+                                className="p-1.5 rounded-lg border border-white/10 hover:border-sky-400 text-white/60 hover:text-sky-400 transition cursor-pointer"
+                                title={`View ${r.name}'s CV`}
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
+                              <a
+                                href={r.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-white/10 hover:border-emerald-400 text-white/60 hover:text-emerald-400 transition cursor-pointer text-[10px] font-bold uppercase tracking-wider"
+                                title="Open or download"
+                              >
+                                <Download className="w-3 h-3" />
+                                Download
+                              </a>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
           {adminView === 'certificates' && (
             <div>
               {loadingCertUploaders ? (
@@ -1564,6 +1717,79 @@ export default function AdminPage() {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Resume viewer: the CV inline, with a download beside it */}
+      <AnimatePresence>
+        {activeResume && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setActiveResume(null)}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40"
+            />
+            <motion.aside
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 240 }}
+              className="fixed top-0 right-0 bottom-0 w-full max-w-3xl bg-[#16181C] border-l border-white/10 z-50 flex flex-col"
+            >
+              <header className="p-5 border-b border-white/10 flex items-start justify-between gap-4 shrink-0">
+                <div className="min-w-0">
+                  <h2 className="text-lg font-bold text-white truncate">{activeResume.name}</h2>
+                  <p className="text-[10px] font-mono text-white/40 truncate mt-0.5">
+                    {activeResume.email} &middot; {selectedCohort}
+                    {activeResume.uploadedAt
+                      ? ` · uploaded ${new Date(activeResume.uploadedAt).toLocaleDateString()}`
+                      : ''}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <a
+                    href={activeResume.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 hover:border-emerald-400 text-emerald-400 transition cursor-pointer text-[10px] font-bold uppercase tracking-wider"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Download
+                  </a>
+                  <button
+                    onClick={() => setActiveResume(null)}
+                    className="p-2 rounded-lg border border-white/10 hover:border-white/25 text-white/50 hover:text-white transition cursor-pointer"
+                    aria-label="Close"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </header>
+
+              <div className="flex-1 min-h-0 bg-black/30">
+                {/* Drive share links render in an iframe via /preview; anything
+                    else is embedded as-is and falls back to the link below. */}
+                <iframe
+                  src={activeResume.url.replace('/view?usp=drivesdk', '/preview').replace('/view', '/preview')}
+                  title={`${activeResume.name} CV`}
+                  className="w-full h-full border-0"
+                />
+              </div>
+
+              <footer className="p-3 border-t border-white/10 text-center shrink-0">
+                <a
+                  href={activeResume.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] font-mono text-white/40 hover:text-sky-400 transition inline-flex items-center gap-1.5"
+                >
+                  Preview not loading? Open it directly <ExternalLink className="w-3 h-3" />
+                </a>
+              </footer>
+            </motion.aside>
+          </>
         )}
       </AnimatePresence>
 
