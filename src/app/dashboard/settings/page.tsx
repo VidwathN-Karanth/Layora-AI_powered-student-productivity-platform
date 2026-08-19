@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useStore } from '@/store/useStore';
+import { apiFetch, readJson, errorMessage } from '@/lib/apiClient';
 import { 
   Settings, Key, Eye, EyeOff, Check, Sparkles, 
   User, Bell, Calendar, ShieldCheck, RefreshCw,
@@ -31,7 +32,6 @@ export default function SettingsPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [profileErrors, setProfileErrors] = useState<Record<string, string | undefined>>({});
   const [showCalendarTooltip, setShowCalendarTooltip] = useState(false);
-  const [showAiTooltip, setShowAiTooltip] = useState(false);
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,7 +79,7 @@ export default function SettingsPage() {
 
     try {
       // 1. Register/Ensure User exists in the backend first
-      const registerRes = await fetch('/api/users', {
+      const registerRes = await apiFetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -89,9 +89,9 @@ export default function SettingsPage() {
         })
       });
 
+      // 409 just means the profile already exists, which is the normal case.
       if (!registerRes.ok && registerRes.status !== 409) {
-        const errorData = await registerRes.json();
-        throw new Error(errorData.error || 'Failed to initialize user in backend');
+        await readJson(registerRes); // throws an ApiError carrying the real reason
       }
 
       // 2. Perform Account Link with Username verification
@@ -101,25 +101,23 @@ export default function SettingsPage() {
       if (field === 'github') payload.githubUsername = githubUsername || null;
       if (field === 'linkedin') payload.linkedinUrl = linkedinUrl || null;
 
-      const linkRes = await fetch(`/api/users/${targetUserId}/link-accounts`, {
+      const linkRes = await apiFetch(`/api/users/${targetUserId}/link-accounts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
       if (!linkRes.ok) {
-        const errorData = await linkRes.json();
-        throw new Error(errorData.error || 'Verification failed');
+        await readJson(linkRes); // throws an ApiError carrying the real reason
       }
 
       // 3. Update Zustand Store
       store.updateRoutine(payload);
 
       setLinkSuccesses(prev => ({ ...prev, [field]: true }));
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(`${field} link failed:`, err);
-      const errMsg = err.message || 'An unexpected error occurred.';
-      setLinkErrors(prev => ({ ...prev, [field]: errMsg }));
+      setLinkErrors(prev => ({ ...prev, [field]: errorMessage(err, 'An unexpected error occurred.') }));
     } finally {
       setLinkingField(null);
     }
@@ -476,7 +474,7 @@ export default function SettingsPage() {
                   <Info className="w-3.5 h-3.5" />
                 </button>
                 {showCalendarTooltip && (
-                  <div className="absolute right-0 bottom-full mb-2 bg-[#0B0F19] border border-primary/30 text-[9px] text-primary font-mono px-2 py-1 rounded shadow-md shadow-primary/10 whitespace-nowrap z-30">
+                  <div className="absolute right-0 bottom-full mb-2 bg-[#1A1D22] border border-primary/30 text-[9px] text-primary font-mono px-2 py-1 rounded shadow-md shadow-primary/10 whitespace-nowrap z-30">
                     This feature will come soon
                   </div>
                 )}
@@ -510,71 +508,6 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* --- PANEL 5: AI CHAT ASSISTANT --- */}
-          <div className={`glass-card rounded-2xl p-5 space-y-4 transition-all duration-300 ${!store.globalAiChatEnabled ? 'opacity-50 grayscale select-none' : ''}`}>
-            <div className="flex items-center justify-between border-b border-outline-variant pb-2 relative">
-              <div className="flex items-center gap-2.5">
-                <Sparkles className="w-4 h-4 text-primary" />
-                <h3 className="text-xs font-mono font-bold tracking-wider text-primary">AI Chat Assistant</h3>
-              </div>
-              <div className="relative flex items-center justify-center">
-                <button
-                  type="button"
-                  onClick={() => setShowAiTooltip(!showAiTooltip)}
-                  onMouseEnter={() => setShowAiTooltip(true)}
-                  onMouseLeave={() => setShowAiTooltip(false)}
-                  className="text-outline hover:text-primary transition p-0.5 focus:outline-none"
-                >
-                  <Info className="w-3.5 h-3.5" />
-                </button>
-                {showAiTooltip && (
-                  <div className="absolute right-0 bottom-full mb-2 bg-[#0B0F19] border border-primary/30 text-[9px] text-primary font-mono px-2 py-1 rounded shadow-md shadow-primary/10 whitespace-nowrap z-30">
-                    This feature will come soon
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <p className="text-[10px] text-outline font-mono leading-relaxed">
-                {!store.globalAiChatEnabled 
-                  ? "The system administrator has globally disabled the AI Chat Assistant. You cannot change this setting at this time." 
-                  : "Enable or disable your personal student co-pilot assistant. When enabled, you will get access to the AI Chat panel for schedule insights, study tips, and quick actions."}
-              </p>
-
-              <div className="bg-surface-container border border-outline-variant rounded-xl p-4 flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-mono font-bold text-on-surface block">Personal Co-pilot Chat</span>
-                  <span className="text-[9px] font-mono text-outline">
-                    {!store.globalAiChatEnabled 
-                      ? "Status: Globally Disabled" 
-                      : store.userAiChatEnabled 
-                        ? "Status: Enabled" 
-                        : "Status: Disabled"}
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  disabled={!store.globalAiChatEnabled}
-                  onClick={() => {
-                    store.setUserAiChatEnabled(!store.userAiChatEnabled);
-                    setSaveSuccess(true);
-                    setTimeout(() => setSaveSuccess(false), 2000);
-                  }}
-                  className={`px-4 py-2 rounded-lg text-xs font-mono font-bold border transition cursor-pointer active:scale-95 ${
-                    !store.globalAiChatEnabled
-                      ? 'bg-white/5 border-white/5 text-white/20 pointer-events-none'
-                      : store.userAiChatEnabled
-                        ? 'bg-primary-fixed border-primary text-on-surface hover:bg-primary-fixed/80'
-                        : 'bg-white/2 border-outline-variant text-on-surface-variant hover:bg-surface-container'
-                  }`}
-                >
-                  {store.userAiChatEnabled ? 'ENABLED' : 'DISABLED'}
-                </button>
-              </div>
-            </div>
-          </div>
 
       </div>
     </div>

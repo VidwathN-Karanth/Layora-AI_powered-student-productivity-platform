@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useUser } from '@clerk/nextjs';
+import { usePathname, useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
+import { apiFetch } from '@/lib/apiClient';
 
 // Module-level flag to suppress ALL database writes during a purge.
 let suppressSync = false;
@@ -26,10 +28,67 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const pendingWriteRef = useRef<{ stateToSave: any; serialized: string } | null>(null);
   const lastLocalWriteTimestampRef = useRef<number>(0);
 
+  const pathname = usePathname();
+  const router = useRouter();
   const themeAccent = useStore((state) => state.themeAccent);
   const themeMode = useStore((state) => state.themeMode);
+
+  // The light/dark choice now lives in the admin console's own header, so the
+  // stored preference applies everywhere rather than being forced dark there.
   const hasHydrated = useStore((state) => state.hasHydrated);
   const isCloudLoaded = useStore((state) => state.isCloudLoaded);
+
+  /**
+   * Roster access gate.
+   *
+   * Only college accounts that appear in the CSE roster may use Layora. The
+   * check is authoritative on the server (`/api/me`), and every API route
+   * enforces it independently — this is the client half, which keeps a blocked
+   * account from ever writing a `user_states` row on its way to being told no.
+   */
+  const [accessState, setAccessState] = useState<'checking' | 'allowed' | 'denied'>('checking');
+  const isAccessDeniedRoute = pathname === '/access-denied';
+
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    // Signed out: nothing to gate. Public pages must stay public.
+    if (!user) {
+      setAccessState('allowed');
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await apiFetch('/api/me');
+        const data = await res.json();
+        if (cancelled) return;
+
+        if (data.allowed) {
+          useStore.getState().setCohort(data.cohort ?? null);
+          setAccessState('allowed');
+          return;
+        }
+
+        useStore.getState().setCohort(null);
+        setAccessState('denied');
+        if (!isAccessDeniedRoute) {
+          router.replace('/access-denied');
+        }
+      } catch (err) {
+        // A network blip must not lock a legitimate student out of their own
+        // data, so fall through to the server-side checks on each API call.
+        console.warn('[Access] Could not verify roster access, continuing:', err);
+        if (!cancelled) setAccessState('allowed');
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [isLoaded, user?.id, isAccessDeniedRoute, router]);
+
+  const accessAllowed = accessState === 'allowed';
 
   const serverLog = (msg: string, isError = false) => {
     if (isError) {
@@ -38,7 +97,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       console.log(msg);
     }
     if (typeof window !== 'undefined') {
-      fetch('/api/debug-log/', {
+      apiFetch('/api/debug-log/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: msg })
@@ -62,9 +121,10 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof document !== 'undefined') {
       const root = document.documentElement;
+      const effectiveMode = themeMode || 'dark';
       root.setAttribute('data-theme', themeAccent || 'purple');
-      root.setAttribute('data-theme-mode', themeMode || 'dark');
-      if (themeMode === 'light') {
+      root.setAttribute('data-theme-mode', effectiveMode);
+      if (effectiveMode === 'light') {
         root.classList.add('light-mode');
         root.classList.remove('dark-mode');
       } else {
@@ -149,13 +209,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         timetable: localState.timetable,
         themeAccent: localState.themeAccent || 'purple',
         themeMode: localState.themeMode || 'dark',
-        apiKeys: localState.apiKeys,
-        selectedModel: localState.selectedModel || 'groq',
         calendarSynced: localState.calendarSynced || false,
         is24HourFormat: localState.is24HourFormat || false,
-        userAiChatEnabled: localState.userAiChatEnabled !== false,
-        chatHistory: localState.chatHistory,
-        proactiveRecommendations: localState.proactiveRecommendations
       };
 
       isHydrated.current = true;
@@ -165,7 +220,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         lastLocalWriteTimestampRef.current = migrationTimestamp;
         const stateWithTimestamp = { ...stateToSave, clientTimestamp: migrationTimestamp };
 
-        fetch('/api/user/state/', {
+        apiFetch('/api/user/state/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ state: sanitizeStateForFirestore(stateWithTimestamp) })
@@ -199,13 +254,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         // Settings: prefer cloud, fall back to device-local localStorage value
         themeAccent: cloudState.themeAccent || localState.themeAccent || 'purple',
         themeMode: cloudState.themeMode || localState.themeMode || 'dark',
-        selectedModel: cloudState.selectedModel || localState.selectedModel || 'groq',
         is24HourFormat: cloudState.is24HourFormat ?? localState.is24HourFormat ?? false,
         calendarSynced: cloudState.calendarSynced ?? localState.calendarSynced ?? false,
-        userAiChatEnabled: cloudState.userAiChatEnabled ?? localState.userAiChatEnabled ?? true,
-        apiKeys: { ...(localState.apiKeys || {}), ...(cloudState.apiKeys || {}) },
-        // chatHistory is device-local — don't overwrite with cloud version
-        chatHistory: localState.chatHistory,
       };
 
       useStore.getState().setFullState(cloudStateToApply);
@@ -226,6 +276,10 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       serverLog(`SyncProvider - skipping, conditions not met: hasHydrated=${hasHydrated}, isLoaded=${isLoaded}, hasUser=${!!user}`);
       return;
     }
+    if (!accessAllowed) {
+      serverLog(`SyncProvider - skipping, roster access not granted (${accessState})`);
+      return;
+    }
 
     let supabaseChannel: any = null;
     let globalSettingsChannel: any = null;
@@ -242,7 +296,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             setTimeout(() => reject(new Error('Server state fetch timed out after 8000ms')), 8000)
           );
 
-          const fetchPromise = fetch('/api/user/state/').then(async (res) => {
+          const fetchPromise = apiFetch('/api/user/state/').then(async (res) => {
             if (!res.ok) {
               const errData = await res.json().catch(() => ({}));
               throw new Error(errData.error || `HTTP error ${res.status}`);
@@ -256,15 +310,9 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             serverLog('SyncProvider - running in local-only demo mode (Supabase not configured)');
           } else if (result.state) {
             serverLog(`SyncProvider - ✓ Loaded existing state from Server Proxy: isOnboarded=${result.state.user?.isOnboarded}, subjects=${result.state.subjects?.length || 0}`);
-            if (result.globalAiChatEnabled !== undefined) {
-              useStore.getState().setGlobalAiChatEnabled(result.globalAiChatEnabled);
-            }
             await processIncomingCloudState(result.state, 'supabase');
           } else {
             serverLog('SyncProvider - no existing cloud data (first login), creating new state');
-            if (result.globalAiChatEnabled !== undefined) {
-              useStore.getState().setGlobalAiChatEnabled(result.globalAiChatEnabled);
-            }
             await processIncomingCloudState({}, 'supabase');
           }
         } catch (err: any) {
@@ -312,9 +360,6 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           (payload) => {
             serverLog('SyncProvider - real-time global settings update received');
             const newState = (payload.new as any)?.state;
-            if (newState && newState.globalAiChatEnabled !== undefined) {
-              useStore.getState().setGlobalAiChatEnabled(newState.globalAiChatEnabled);
-            }
           }
         )
         .subscribe();
@@ -328,11 +373,11 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       if (supabaseChannel && supabase) supabase.removeChannel(supabaseChannel);
       if (globalSettingsChannel && supabase) supabase.removeChannel(globalSettingsChannel);
     };
-  }, [isLoaded, user?.id, hasHydrated]);
+  }, [isLoaded, user?.id, hasHydrated, accessAllowed]);
 
   // 2. Subscribe to local Store Changes and sync using a sequential write queue
   useEffect(() => {
-    if (!hasHydrated || !isLoaded || !user) return;
+    if (!hasHydrated || !isLoaded || !user || !accessAllowed) return;
 
     // Helper that executes database upserts sequentially
     const performSync = async (stateToSave: any, serialized: string) => {
@@ -342,7 +387,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         inFlightWrites.current++;
 
         if (isSupabaseConfigured) {
-          const res = await fetch('/api/user/state/', {
+          const res = await apiFetch('/api/user/state/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ state: sanitizeStateForFirestore(stateToSave) })
@@ -399,9 +444,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
       const {
         user: storeUser, subjects, resources, activities, websites, courses, tasks,
-        timetable, themeAccent, themeMode, apiKeys, selectedModel,
-        calendarSynced, is24HourFormat, chatHistory, proactiveRecommendations,
-        userAiChatEnabled
+        timetable, themeAccent, themeMode, calendarSynced, is24HourFormat
       } = state;
 
       const writeTimestamp = Date.now();
@@ -410,10 +453,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       const stateToSave = {
         user: storeUser,
         subjects, resources, activities, websites, courses, tasks,
-        timetable, themeAccent, themeMode, apiKeys, selectedModel,
-        calendarSynced, is24HourFormat, chatHistory, proactiveRecommendations,
-        userAiChatEnabled,
-        clientTimestamp: writeTimestamp
+        timetable, themeAccent, themeMode, calendarSynced, is24HourFormat, clientTimestamp: writeTimestamp
       };
 
       const serialized = JSON.stringify(stateToSave);
@@ -434,7 +474,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     return () => {
       unsubscribe();
     };
-  }, [isLoaded, user?.id, hasHydrated]);
+  }, [isLoaded, user?.id, hasHydrated, accessAllowed]);
 
   // 3. Force Flush Pending State/Queue on Unload/Visibility Change
   useEffect(() => {
@@ -466,7 +506,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           const updateTime = new Date().toISOString();
 
           if (isSupabaseConfigured) {
-            const res = await fetch('/api/user/state/', {
+            const res = await apiFetch('/api/user/state/', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ state: sanitizeStateForFirestore(toWrite.stateToSave) })
@@ -510,7 +550,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
   if (isLoaded && user && !isCloudLoaded) {
     return (
-      <main className="min-h-screen bg-[#070709] text-white flex flex-col items-center justify-center relative overflow-hidden">
+      <main className="min-h-screen bg-[#16181C] text-white flex flex-col items-center justify-center relative overflow-hidden">
         <div className="z-10 flex flex-col items-center gap-6">
           <div className="relative w-16 h-16">
             <div className="absolute inset-0 rounded-full border border-primary/30 animate-pulse"></div>

@@ -1,19 +1,19 @@
 import { NextResponse } from 'next/server';
 import { DailyActivity } from '@/lib/models/DailyActivity';
-import { requireAdminCohort } from '@/lib/authz';
+import { requireStudent } from '@/lib/authz';
 import { emailsForCohort } from '@/lib/roster';
 
 const VALID_RANGES = ['today', 'week', 'all'] as const;
 type Range = (typeof VALID_RANGES)[number];
 
 /**
- * The admin leaderboard for one academic year.
+ * The student-facing leaderboard, scoped to the caller's own academic year.
  *
- * `?cohort=` is required: the console shows one year at a time, so a request
- * that does not say which year is a bug rather than a request for everything.
+ * The cohort comes from the session, never from a query parameter — a 2nd year
+ * has no way to ask for the 3rd year board.
  */
 export async function GET(request: Request) {
-  const guard = await requireAdminCohort(request.url);
+  const guard = await requireStudent();
   if (!guard.ok) return guard.response;
 
   const { cohort } = guard.requester;
@@ -33,9 +33,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ cohort, range, leaderboard });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);
-    console.error(`Admin leaderboard fetch failed for ${cohort} / "${range}":`, errMsg);
+    console.error(`Leaderboard fetch failed for ${cohort} / "${range}":`, errMsg);
     return NextResponse.json({ error: errMsg }, { status: 500 });
   }
 }
 
-export const dynamic = 'force-dynamic'; // Prevent Next.js from caching GET at build-time
+export const dynamic = 'force-dynamic';

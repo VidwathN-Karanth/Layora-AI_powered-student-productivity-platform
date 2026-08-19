@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/store/useStore';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
+import { apiFetch } from '@/lib/apiClient';
 import { 
   Clock, BookOpen, UploadCloud, Dumbbell, Globe, Award, CheckCircle, 
   Plus, Trash, ChevronRight, ChevronLeft, File, X, Info, ExternalLink
@@ -215,7 +216,7 @@ export default function OnboardingModal() {
   };
 
   if (typeof window !== 'undefined') {
-    fetch('/api/debug-log/', {
+    apiFetch('/api/debug-log/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: `OnboardingModal render - hasUser=${!!store.user}, isOnboarded=${store.user?.isOnboarded}, email=${store.user?.email}` })
@@ -230,7 +231,7 @@ export default function OnboardingModal() {
       <div className="absolute inset-0 bg-black/30 backdrop-blur-md"></div>
 
       {/* Modal Container */}
-      <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col border border-white/10 bg-[#0d111c]/95 rounded-2xl overflow-hidden shadow-2xl z-10">
+      <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col border border-white/10 bg-[#1A1D22]/95 rounded-2xl overflow-hidden shadow-2xl z-10">
         
         {/* Dynamic Glowing Border Line */}
         <div className="absolute top-0 left-0 right-0 h-[3px] bg-primary"></div>

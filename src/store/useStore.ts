@@ -1,15 +1,14 @@
 import { create } from 'zustand';
+import type { Cohort } from '@/lib/cohorts';
 import { 
   Subject, 
   Activity, 
   Course, 
   Routine, 
   TimetableBlock, 
-  AIKeys,
   generateLocalWeeklySchedule,
-  generateAISchedule,
   resolveScheduleOverlaps
-} from '@/lib/aiService';
+} from '@/lib/scheduler';
 
 export interface Task {
   id: string;
@@ -21,13 +20,6 @@ export interface Task {
   actualMinutesSpent: number;
   status: 'pending' | 'in_progress' | 'completed';
   completedAt?: string;
-}
-
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: string;
 }
 
 export interface Website {
@@ -138,54 +130,38 @@ interface AppState {
   timetable: TimetableBlock[];
   setTimetable: (blocks: TimetableBlock[]) => void;
   updateTimetableBlock: (id: string, updatedFields: Partial<TimetableBlock>) => void;
-  generateSchedule: (useAI?: boolean) => Promise<void>;
+  generateSchedule: () => Promise<void>;
 
   // Settings
   themeAccent: 'purple' | 'blue' | 'pink' | 'emerald';
   setThemeAccent: (theme: 'purple' | 'blue' | 'pink' | 'emerald') => void;
   themeMode: 'dark' | 'light';
   setThemeMode: (mode: 'dark' | 'light') => void;
-  apiKeys: AIKeys;
-  setApiKeys: (keys: Partial<AIKeys>) => void;
-  selectedModel: 'groq' | 'openai' | 'claude' | 'grok';
-  setSelectedModel: (model: 'groq' | 'openai' | 'claude' | 'grok') => void;
   calendarSynced: boolean;
   setCalendarSynced: (synced: boolean) => void;
   is24HourFormat: boolean;
   setIs24HourFormat: (val: boolean) => void;
-  globalAiChatEnabled: boolean;
-  setGlobalAiChatEnabled: (val: boolean) => void;
-  userAiChatEnabled: boolean;
-  setUserAiChatEnabled: (val: boolean) => void;
   globalResources: { id: string; name: string; url: string; type: string; uploadedBy: string; uploaderName: string; createdAt: string }[];
   setGlobalResources: (resources: any[]) => void;
   addGlobalResource: (res: any) => void;
   removeGlobalResource: (id: string) => void;
 
-  // Proactive recommendations
-  proactiveRecommendations: {
-    nextBestTask: string;
-    urgentSubject: string;
-    recommendedDuration: number;
-    workloadWarning?: string;
-    mentorAdvice?: string;
-  } | null;
-  setProactiveRecommendations: (recs: any) => void;
-
   // Dynamic planning guide insights
   planningGuideInsights: string[];
   setPlanningGuideInsights: (insights: string[]) => void;
-
-  // Chat
-  chatHistory: ChatMessage[];
-  addChatMessage: (role: 'user' | 'assistant', content: string) => void;
-  clearChat: () => void;
   resetStore: () => void;
   setFullState: (state: Partial<AppState>) => void;
   hasHydrated: boolean;
   setHasHydrated: (val: boolean) => void;
   isCloudLoaded: boolean;
   setIsCloudLoaded: (val: boolean) => void;
+  /**
+   * The signed-in student's academic year, resolved server-side from the CSE
+   * roster. Null for admins and before /api/me has answered. Transient — never
+   * persisted, because the roster is the only source of truth for it.
+   */
+  cohort: Cohort | null;
+  setCohort: (cohort: Cohort | null) => void;
 }
 
 const DEFAULT_SUBJECTS: Subject[] = [];
@@ -212,6 +188,8 @@ export const useStore = create<AppState>()(
       setHasHydrated: (val) => set({ hasHydrated: val }),
       isCloudLoaded: false,
       setIsCloudLoaded: (val) => set({ isCloudLoaded: val }),
+      cohort: null,
+      setCohort: (cohort) => set({ cohort }),
 
       login: (email, name) => {
         const { registeredUsers, user: currentUser } = get();
@@ -446,7 +424,6 @@ export const useStore = create<AppState>()(
           isAuthenticated: false,
           isCloudLoaded: false,
           user: null,
-          chatHistory: [],
           activeTaskId: null,
           activeTimerStart: null,
           activeTimerElapsed: 0,
@@ -687,7 +664,6 @@ export const useStore = create<AppState>()(
           tasks: [...state.tasks, { ...task, id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`, actualMinutesSpent: 0, status: 'pending' }]
         }));
         get().generateSchedule();
-        get().addChatMessage('assistant', 'Your schedule has been updated based on recent activity.');
       },
       removeTask: (id) => {
         set((state) => {
@@ -707,14 +683,12 @@ export const useStore = create<AppState>()(
           };
         });
         get().generateSchedule();
-        get().addChatMessage('assistant', 'Your schedule has been updated based on recent activity.');
       },
       updateTask: (id, updatedFields) => {
         set((state) => ({
           tasks: state.tasks.map((t) => t.id === id ? { ...t, ...updatedFields } : t)
         }));
         get().generateSchedule();
-        get().addChatMessage('assistant', 'Your schedule has been updated based on recent activity.');
       },
       toggleTaskStatus: (id) => {
         set((state) => {
@@ -790,7 +764,6 @@ export const useStore = create<AppState>()(
           };
         });
         get().generateSchedule();
-        get().addChatMessage('assistant', 'Your schedule has been updated based on recent activity.');
       },
 
       // Timer variables
@@ -894,7 +867,6 @@ export const useStore = create<AppState>()(
           } : null
         });
         get().generateSchedule();
-        get().addChatMessage('assistant', 'Your schedule has been updated based on recent activity.');
       },
 
       updateTimerSecond: () => {
@@ -910,9 +882,9 @@ export const useStore = create<AppState>()(
       updateTimetableBlock: (id, updatedFields) => set((state) => ({
         timetable: state.timetable.map((b) => b.id === id ? { ...b, ...updatedFields } : b)
       })),
-      generateSchedule: async (useAI = false) => {
+      generateSchedule: async () => {
         try {
-          const { user, subjects, activities, courses, timetable, apiKeys, tasks } = get();
+          const { user, subjects, activities, courses, timetable, tasks } = get();
           if (!user) return;
           
           const routine: Routine = {
@@ -925,18 +897,13 @@ export const useStore = create<AppState>()(
             freeBlocks: user.freeBlocks || []
           };
 
-          // Preserve all manual custom blocks and AI-added blocks
+          // Preserve manually placed blocks (and any left over from the
+          // removed AI planner) across a regeneration.
           const customBlocks = timetable.filter(
             (b) => b.id && (b.id.startsWith('custom-block-') || b.id.startsWith('ai-block-'))
           );
 
-          // Call remote AI schedule or local smart scheduler
-          let result;
-          if (useAI) {
-            result = await generateAISchedule(apiKeys, routine, subjects, activities, courses, tasks);
-          } else {
-            result = generateLocalWeeklySchedule(routine, subjects, activities, courses, tasks);
-          }
+          const result = generateLocalWeeklySchedule(routine, subjects, activities, courses, tasks);
           
           // Merge base schedule with custom/AI blocks and resolve overlaps
           const combined = [...customBlocks, ...result.schedule];
@@ -954,28 +921,16 @@ export const useStore = create<AppState>()(
       setThemeAccent: (theme) => set({ themeAccent: theme }),
       themeMode: 'dark',
       setThemeMode: (mode) => set({ themeMode: mode }),
-      apiKeys: {},
-      setApiKeys: (keys) => set((state) => ({
-        apiKeys: { ...state.apiKeys, ...keys }
-      })),
-      selectedModel: 'groq',
-      setSelectedModel: (model) => set({ selectedModel: model }),
       calendarSynced: false,
       setCalendarSynced: (synced) => set({ calendarSynced: synced }),
       is24HourFormat: false,
       setIs24HourFormat: (val) => set({ is24HourFormat: val }),
-      globalAiChatEnabled: true,
-      setGlobalAiChatEnabled: (val) => set({ globalAiChatEnabled: val }),
-      userAiChatEnabled: true,
-      setUserAiChatEnabled: (val) => set({ userAiChatEnabled: val }),
       globalResources: [],
       setGlobalResources: (resources) => set({ globalResources: resources }),
       addGlobalResource: (res) => set((state) => ({ globalResources: [...state.globalResources, res] })),
       removeGlobalResource: (id) => set((state) => ({ globalResources: state.globalResources.filter(r => r.id !== id) })),
 
       // Proactive recommendations
-      proactiveRecommendations: null,
-      setProactiveRecommendations: (recs) => set({ proactiveRecommendations: recs }),
 
       // Dynamic planning guide insights
       planningGuideInsights: [
@@ -985,26 +940,6 @@ export const useStore = create<AppState>()(
       ],
       setPlanningGuideInsights: (insights) => set({ planningGuideInsights: insights }),
 
-      // Chat history
-      chatHistory: [
-        { id: 'msg-welcome', role: 'assistant', content: 'Welcome to your AI Academic Dashboard! I am your student co-pilot. I can help analyze your weekly load, suggest breaks, or resolve complex study questions. Let me know how I can assist you today.', timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
-      ],
-      addChatMessage: (role, content) => set((state) => ({
-        chatHistory: [
-          ...state.chatHistory,
-          {
-            id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-            role,
-            content,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          }
-        ]
-      })),
-      clearChat: () => set({
-        chatHistory: [
-          { id: 'msg-welcome', role: 'assistant', content: 'Chat history cleared. What study goals do we have now?', timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
-        ]
-      }),
       resetStore: () => {
         const { user, registeredUsers } = get();
 
@@ -1031,15 +966,8 @@ export const useStore = create<AppState>()(
           activeTimerElapsed: 0,
           themeAccent: 'purple',
           themeMode: 'dark',
-          apiKeys: {},
-          selectedModel: 'groq',
           calendarSynced: false,
-          is24HourFormat: false,
-          userAiChatEnabled: true,
-          proactiveRecommendations: null,
-          chatHistory: [
-            { id: 'msg-welcome', role: 'assistant', content: 'Welcome to your AI Academic Dashboard! I am your student co-pilot. I can help analyze your weekly load, suggest breaks, or resolve complex study questions. Let me know how I can assist you today.', timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
-          ]
+          is24HourFormat: false
         });
 
         // After set() persists the cleaned state, overwrite the key entirely to remove any leftovers

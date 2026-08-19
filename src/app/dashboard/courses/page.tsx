@@ -223,7 +223,7 @@ export default function CoursesPage() {
           </div>
         ) : (
           store.courses.map((course) => (
-            <div key={course.id} className="border border-white/10 bg-[#0d111c]/40 rounded-xl p-5 space-y-4 flex flex-col justify-between">
+            <div key={course.id} className="border border-white/10 bg-[#1A1D22]/40 rounded-xl p-5 space-y-4 flex flex-col justify-between">
               <div className="space-y-4">
                 <div className="flex justify-between items-start gap-4">
                   <div className="flex items-center gap-3">
@@ -455,7 +455,7 @@ export default function CoursesPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm p-6 rounded-xl z-50 border border-white/10 bg-[#0d111c]/95 shadow-2xl overflow-y-auto max-h-[90vh]"
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm p-6 rounded-xl z-50 border border-white/10 bg-[#1A1D22]/95 shadow-2xl overflow-y-auto max-h-[90vh]"
             >
               <h3 className="text-sm font-bold text-white border-b border-outline-variant pb-2 mb-4">Edit Course Settings</h3>
               

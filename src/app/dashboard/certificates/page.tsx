@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useStore } from '@/store/useStore';
+import { apiFetch } from '@/lib/apiClient';
 import { 
   Award, UploadCloud, Trash2, Eye, X, 
   ExternalLink, Calendar, Plus, Loader2, Sparkles, AlertTriangle, Check
@@ -59,7 +60,7 @@ export default function CertificatesPage() {
     setError('');
     setDbMissing(false);
     try {
-      const res = await fetch('/api/user/certificates');
+      const res = await apiFetch('/api/user/certificates');
       if (!res.ok) {
         const errData = await res.json();
         if (errData.code === 'MISSING_TABLE') {
@@ -214,7 +215,7 @@ export default function CertificatesPage() {
       payload.append('name', name.trim());
       payload.append('platform', finalPlatform);
 
-      const res = await fetch('/api/user/certificates', {
+      const res = await apiFetch('/api/user/certificates', {
         method: 'POST',
         body: payload
       });
@@ -249,7 +250,7 @@ export default function CertificatesPage() {
     }
 
     try {
-      const res = await fetch(`/api/user/certificates?id=${id}`, {
+      const res = await apiFetch(`/api/user/certificates?id=${id}`, {
         method: 'DELETE'
       });
 
@@ -528,7 +529,7 @@ export default function CertificatesPage() {
             className="absolute inset-0 bg-black/80 backdrop-blur-md"
           />
 
-          <div className="relative max-w-4xl w-full max-h-[85vh] bg-[#0c0d12]/95 border border-outline-variant/50 rounded-2xl overflow-hidden z-10 flex flex-col shadow-2xl">
+          <div className="relative max-w-4xl w-full max-h-[85vh] bg-[#16181C]/95 border border-outline-variant/50 rounded-2xl overflow-hidden z-10 flex flex-col shadow-2xl">
             {/* Header controls */}
             <div className="p-4 border-b border-outline-variant/40 bg-white/2 flex items-center justify-between">
               <div>

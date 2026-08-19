@@ -121,11 +121,29 @@ export class DailyActivity {
 
   /**
    * Computes rank list for a range (today, week, all).
+   *
+   * `restrictToEmails` scopes the board to one academic year. Students only
+   * ever compete within their own year, so callers pass that year's roster
+   * addresses; omitting it ranks everybody, which is what the CSV export and
+   * cron jobs want.
    */
-  static async getLeaderboard(range: 'today' | 'week' | 'all'): Promise<LeaderboardUser[]> {
+  static async getLeaderboard(
+    range: 'today' | 'week' | 'all',
+    opts: { restrictToEmails?: string[] } = {}
+  ): Promise<LeaderboardUser[]> {
     // 1. Fetch all users and filter out those who haven't entered LeetCode, GitHub, or CodeChef usernames
     const allUsers = await User.findAll();
+
+    // Scope to a cohort before any points are summed, so no other year's
+    // numbers can reach the caller even by accident.
+    const allowedEmails = opts.restrictToEmails
+      ? new Set(opts.restrictToEmails.map((e) => e.trim().toLowerCase()))
+      : null;
+
     const users = allUsers.filter(u => {
+      if (allowedEmails && !allowedEmails.has((u.email || '').trim().toLowerCase())) {
+        return false;
+      }
       const hasLeetcode = u.leetcodeUsername && u.leetcodeUsername.trim() !== '';
       const hasGithub = u.githubUsername && u.githubUsername.trim() !== '';
       const hasCodechef = u.codechefUsername && u.codechefUsername.trim() !== '';

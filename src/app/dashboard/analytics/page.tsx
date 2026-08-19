@@ -1,10 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
 import { 
-  Clock, CheckSquare, Sparkles, 
-  AlertCircle, Award, BookOpen
+  Clock, CheckSquare, Award, BookOpen
 } from 'lucide-react';
 
 export default function AnalyticsPage() {
@@ -13,44 +11,6 @@ export default function AnalyticsPage() {
   const user = store.user;
   const tasks = store.tasks;
   const subjects = store.subjects;
-
-  const aiRecs = store.proactiveRecommendations;
-  const setAiRecs = store.setProactiveRecommendations;
-  const [loadingRecs, setLoadingRecs] = useState(!aiRecs);
-
-  useEffect(() => {
-    async function fetchProactive() {
-      try {
-        const res = await fetch('/api/ai/proactive', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            currentTasks: tasks,
-            currentSubjects: subjects,
-            currentRoutine: user ? {
-              wakeTime: user.wakeTime,
-              sleepTime: user.sleepTime,
-              collegeTimings: { start: user.collegeStart, end: user.collegeEnd },
-            } : {}
-          })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setAiRecs(data);
-        }
-      } catch (err) {
-        console.error('Failed to fetch AI recommendations', err);
-      } finally {
-        setLoadingRecs(false);
-      }
-    }
-    
-    if (subjects.length > 0) {
-      fetchProactive();
-    } else {
-      setLoadingRecs(false);
-    }
-  }, [tasks.length, subjects.length]);
 
   const pendingTasks = tasks.filter((t) => t.status !== 'completed').length;
   const completedTasks = tasks.filter((t) => t.status === 'completed').length;
@@ -118,9 +78,9 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* --- LEFT COLUMNS: DAILY HOURS GRAPH --- */}
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 gap-6">
+        {/* --- DAILY HOURS GRAPH --- */}
+        <div className="space-y-6">
           <div className="glass-card rounded-2xl p-5 space-y-6">
             <div className="flex justify-between items-center border-b border-outline-variant pb-2">
               <h3 className="text-xs font-mono font-bold text-primary tracking-wider">Weekly Focus Density</h3>
@@ -150,61 +110,6 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* --- RIGHT COLUMN: AI STUDY MENTOR --- */}
-        <div className="space-y-6">
-          <div className="glass-panel-neon rounded-2xl p-5 border border-primary space-y-4">
-            <div className="flex items-center gap-2 border-b border-outline-variant pb-2">
-              <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-              <h4 className="text-xs font-mono font-bold text-primary uppercase">AI Study Mentor</h4>
-            </div>
-
-            <div className="space-y-4 text-xs font-mono leading-relaxed">
-              {loadingRecs ? (
-                <div className="flex items-center gap-2 text-white/45 font-mono text-xs py-4 justify-center">
-                  <span className="w-1.5 h-1.5 bg-primary rounded-full animate-ping"></span>
-                  Analyzing weekly load...
-                </div>
-              ) : aiRecs ? (
-                (() => {
-                  const warningText = aiRecs.workloadWarning
-                    ? (typeof aiRecs.workloadWarning === 'object' ? Object.keys(aiRecs.workloadWarning).join(', ') : String(aiRecs.workloadWarning))
-                    : '';
-                  const adviceText = aiRecs.mentorAdvice
-                    ? (typeof aiRecs.mentorAdvice === 'object' ? Object.keys(aiRecs.mentorAdvice).join(', ') : String(aiRecs.mentorAdvice))
-                    : '';
-
-                  return (
-                    <div className="space-y-3">
-                      {warningText && (
-                        <div className="flex items-start gap-2 text-amber-300 text-xs font-mono bg-amber-950/20 border border-amber-500/20 p-3 rounded-xl">
-                          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
-                          <div>
-                            <span className="font-bold uppercase tracking-wider text-[8px] block text-amber-400/85 mb-0.5">Backlog Alert</span>
-                            {warningText}
-                          </div>
-                        </div>
-                      )}
-                      {adviceText && (
-                        <div className="flex items-start gap-2.5 text-cyber-blue text-xs bg-cyber-blue/5 border border-cyber-blue/20 p-3.5 rounded-xl">
-                          <Sparkles className="w-4 h-4 shrink-0 mt-0.5 text-cyber-blue animate-pulse" />
-                          <div>
-                            <span className="font-bold uppercase tracking-wider text-[8px] block text-cyber-blue/85 mb-0.5">Mentor Advice</span>
-                            <p className="font-sans leading-relaxed text-white/90">{adviceText}</p>
-                          </div>
-                        </div>
-                      )}
-                      {!warningText && !adviceText && (
-                        <p className="text-xs font-mono text-white/50 text-center py-4">No recommendations currently available.</p>
-                      )}
-                    </div>
-                  );
-                })()
-              ) : (
-                <p className="text-xs font-mono text-white/50 text-center py-4">Load subjects and tasks to generate AI mentoring advice.</p>
-              )}
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

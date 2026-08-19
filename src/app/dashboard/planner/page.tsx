@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
-import { generateAISchedule, TimetableBlock } from '@/lib/aiService';
+import { TimetableBlock } from '@/lib/scheduler';
+import { apiFetch } from '@/lib/apiClient';
 import { 
   CalendarRange, Sparkles, CalendarDays, Plus, Trash, 
   RefreshCw, Check, ArrowRight, Play, AlertCircle
@@ -58,7 +59,7 @@ export default function PlannerPage() {
   const handleDeleteDaySchedule = async () => {
     try {
       setDeletingDay(true);
-      const res = await fetch('/api/calendar/delete', {
+      const res = await apiFetch('/api/calendar/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scope: 'day', day: activeDay })
@@ -83,7 +84,7 @@ export default function PlannerPage() {
   const handleDeleteWeekSchedule = async () => {
     try {
       setDeletingWeek(true);
-      const res = await fetch('/api/calendar/delete', {
+      const res = await apiFetch('/api/calendar/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scope: 'week' })
@@ -110,7 +111,7 @@ export default function PlannerPage() {
       setSyncingCalendar(true);
       setSyncSuccess(false);
 
-      const res = await fetch('/api/calendar/sync', {
+      const res = await apiFetch('/api/calendar/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ timetable: store.timetable })
@@ -397,7 +398,7 @@ export default function PlannerPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm p-6 rounded-xl z-50 border border-white/10 bg-[#0d111c]/95 shadow-2xl"
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm p-6 rounded-xl z-50 border border-white/10 bg-[#1A1D22]/95 shadow-2xl"
             >
               <h3 className="text-sm font-bold text-white border-b border-outline-variant pb-2 mb-4">Add Custom Timetable Block</h3>
               
@@ -477,7 +478,7 @@ export default function PlannerPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm p-6 rounded-xl z-50 border border-red-500/50 bg-[#0d111c]/95 shadow-2xl"
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm p-6 rounded-xl z-50 border border-red-500/50 bg-[#1A1D22]/95 shadow-2xl"
             >
               <h3 className="text-sm font-bold text-red-400 border-b border-red-500/20 pb-2 mb-4 uppercase tracking-wide flex items-center gap-2">
                 <Trash className="w-4 h-4" /> Wipe Day Schedule
@@ -530,7 +531,7 @@ export default function PlannerPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm p-6 rounded-xl z-50 border border-red-500/50 bg-[#0d111c]/95 shadow-2xl"
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm p-6 rounded-xl z-50 border border-red-500/50 bg-[#1A1D22]/95 shadow-2xl"
             >
               <h3 className="text-sm font-bold text-red-400 border-b border-red-500/20 pb-2 mb-4 uppercase tracking-wide flex items-center gap-2">
                 <Trash className="w-4 h-4" /> Wipe Week Sync

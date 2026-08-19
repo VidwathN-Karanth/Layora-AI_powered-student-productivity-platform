@@ -49,3 +49,6 @@ next-env.d.ts
 # agent files
 /.agents/
 /skills-lock.json
+
+# Local recovery snapshots — contain user emails, never commit
+backups/

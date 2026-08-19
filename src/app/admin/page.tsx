@@ -5,14 +5,16 @@ import { useRouter } from 'next/navigation';
 import { useUser, useAuth } from '@clerk/nextjs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
+import { apiFetch, readJson, errorMessage } from '@/lib/apiClient';
 import { useStore } from '@/store/useStore';
 import { 
-  Users, Clock, Flame, BookOpen, Search, ArrowLeft, 
-  Trash2, Settings, Activity, Calendar, ListTodo, 
-  CheckCircle2, Building2, LogOut, X, FileText, Globe, RefreshCw, Eye, Sparkles, AlertTriangle, ExternalLink, Download
+  Users, Clock, Flame, Search, 
+  Trash2, Settings, Activity, Calendar, 
+  Building2, LogOut, X, FileText, RefreshCw, Eye, AlertTriangle, ExternalLink, Download, Plus, Sun, Moon
 } from 'lucide-react';
 import { getPlatformDisplay } from '@/lib/courseUtils';
 import { isAdminEmail } from '@/lib/admin';
+import { COHORTS, SHARED_RESOURCE_TAG, shortCohortLabel, type Cohort } from '@/lib/cohorts';
 
 interface TelemetryUser {
   id: string;
@@ -35,14 +37,63 @@ interface TelemetryUser {
     timetable?: { id: string; day: number; start: string; end: string; title: string; type: string; subjectCode?: string; completed?: boolean }[];
     courses?: { id: string; name: string; platform: string; progress: number; weeklyGoal: number; deadline: string }[];
     websites?: { id: string; name: string; url: string; timeSpentGoal: number }[];
-    chatHistory?: { id: string; role: 'user' | 'assistant'; content: string; timestamp: string }[];
   };
 }
+
+interface GlobalResource {
+  id: string;
+  name: string;
+  url: string;
+  type?: string;
+  year?: string;
+  uploadedBy: string;
+  uploaderName?: string;
+  createdAt?: string;
+}
+
+interface CertificateUploader {
+  userId: string;
+  name: string;
+  email: string;
+  count: number;
+  latestAt: string | null;
+}
+
+const sortByNewest = (list: GlobalResource[]): GlobalResource[] =>
+  list.slice().sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 
 export default function AdminPage() {
   const router = useRouter();
   const { isLoaded: isUserLoaded, user } = useUser();
-  const { isLoaded: isAuthLoaded, isSignedIn } = useAuth();
+  const { isLoaded: isAuthLoaded, isSignedIn, signOut } = useAuth();
+
+  // Signing out is destructive enough to be worth a confirmation step.
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [avatarFailed, setAvatarFailed] = useState(false);
+  const [showSyncTip, setShowSyncTip] = useState(false);
+
+  // The console keeps its own light/dark preference, separate from a student's.
+  const consoleTheme = useStore((state) => state.themeMode);
+  const setConsoleTheme = useStore((state) => state.setThemeMode);
+
+  const adminName = user?.fullName || user?.firstName || 'Administrator';
+  const adminEmail = user?.primaryEmailAddress?.emailAddress || '';
+  const adminAvatar = user?.imageUrl || '';
+  const adminInitial = (adminName || adminEmail || 'A').charAt(0).toUpperCase();
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    try {
+      useStore.getState().logout();
+      await signOut();
+      router.replace('/login');
+    } catch (err) {
+      console.error('Sign out failed:', err);
+      setIsSigningOut(false);
+      setShowSignOutConfirm(false);
+    }
+  };
   
   const [authorized, setAuthorized] = useState(false);
   const [usersList, setUsersList] = useState<TelemetryUser[]>([]);
@@ -52,7 +103,7 @@ export default function AdminPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [isLocalMode, setIsLocalMode] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'subjects' | 'tasks' | 'courses' | 'timetable' | 'certificates' | 'chat'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'subjects' | 'tasks' | 'courses' | 'timetable' | 'certificates'>('profile');
   const [inspectedCerts, setInspectedCerts] = useState<any[]>([]);
   const [loadingInspectedCerts, setLoadingInspectedCerts] = useState(false);
   const [activeCertPreview, setActiveCertPreview] = useState<any | null>(null);
@@ -61,11 +112,135 @@ export default function AdminPage() {
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isSyncingSystem, setIsSyncingSystem] = useState(false);
   const [isDownloadingCsv, setIsDownloadingCsv] = useState(false);
-  const [globalAiChatEnabled, setGlobalAiChatEnabled] = useState(true);
-  const [togglingAiChat, setTogglingAiChat] = useState(false);
+
+  /**
+   * The console shows exactly one academic year at a time. Every panel below
+   * reads this, and every request carries it, so a 2nd-year view can never
+   * contain a 3rd-year row.
+   */
+  const [selectedCohort, setSelectedCohort] = useState<Cohort>('2nd Year');
+
+  // Shared Library (global resources) moderation
+  const [globalResources, setGlobalResources] = useState<GlobalResource[]>([]);
+  const [loadingLibrary, setLoadingLibrary] = useState(false);
+  const [libraryError, setLibraryError] = useState('');
+  const [removingResourceId, setRemovingResourceId] = useState<string | null>(null);
+
+  const fetchGlobalResources = async () => {
+    setLoadingLibrary(true);
+    setLibraryError('');
+    try {
+      const data = await readJson<{ resources?: GlobalResource[] }>(
+        await apiFetch(`/api/resources/global?cohort=${encodeURIComponent(selectedCohort)}`)
+      );
+      setGlobalResources(sortByNewest(data.resources || []));
+    } catch (err) {
+      console.error(err);
+      setLibraryError(errorMessage(err, 'Could not load the shared library.'));
+    } finally {
+      setLoadingLibrary(false);
+    }
+  };
+
+  // Admins are locked out of the student workspace, so this is the only way a
+  // department-wide ("Others") resource can be published.
+  const [showShareForm, setShowShareForm] = useState(false);
+  const [shareName, setShareName] = useState('');
+  const [shareUrl, setShareUrl] = useState('');
+  const [shareAudience, setShareAudience] = useState<'cohort' | 'everyone'>('cohort');
+  const [isSharing, setIsSharing] = useState(false);
+
+  const resetShareForm = () => {
+    setShareName('');
+    setShareUrl('');
+    setShareAudience('cohort');
+    setShowShareForm(false);
+  };
+
+  const handleShareResource = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!shareName.trim() || !shareUrl.trim()) return;
+
+    setIsSharing(true);
+    setLibraryError('');
+    try {
+      const detected = shareUrl.split('?')[0].split('/').pop()?.split('.').pop()?.toLowerCase() || 'link';
+      const type = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt'].includes(detected) ? detected : 'link';
+
+      const res = await apiFetch(`/api/resources/global?cohort=${encodeURIComponent(selectedCohort)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: shareName.trim(),
+          url: shareUrl.trim(),
+          type,
+          year: shareAudience === 'everyone' ? SHARED_RESOURCE_TAG : selectedCohort,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to share the resource.');
+      }
+
+      const data = await res.json();
+      setGlobalResources(sortByNewest(data.resources || []));
+      resetShareForm();
+    } catch (err) {
+      console.error(err);
+      setLibraryError(err instanceof Error ? err.message : 'Failed to share the resource.');
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleRemoveResource = async (id: string, name: string) => {
+    if (!confirm(`Remove "${name}" from the shared library? Students will no longer see it.`)) return;
+    setRemovingResourceId(id);
+    setLibraryError('');
+    try {
+      const res = await apiFetch(
+        `/api/resources/global?id=${encodeURIComponent(id)}&cohort=${encodeURIComponent(selectedCohort)}`,
+        { method: 'DELETE' }
+      );
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to remove the resource.');
+      }
+      const data = await res.json();
+      setGlobalResources(sortByNewest(data.resources || []));
+    } catch (err) {
+      console.error(err);
+      setLibraryError(err instanceof Error ? err.message : 'Failed to remove the resource.');
+    } finally {
+      setRemovingResourceId(null);
+    }
+  };
+
+  // Certificates roll call — who in this year has uploaded, and how many
+  const [certUploaders, setCertUploaders] = useState<CertificateUploader[]>([]);
+  const [loadingCertUploaders, setLoadingCertUploaders] = useState(false);
+  const [certUploadersError, setCertUploadersError] = useState('');
+  const [selectedCertUser, setSelectedCertUser] = useState<CertificateUploader | null>(null);
+
+  const fetchCertUploaders = async () => {
+    setLoadingCertUploaders(true);
+    setCertUploadersError('');
+    try {
+      const data = await readJson<{ uploaders?: CertificateUploader[] }>(
+        await apiFetch(`/api/admin/certificates/overview?cohort=${encodeURIComponent(selectedCohort)}`)
+      );
+      setCertUploaders(data.uploaders || []);
+    } catch (err) {
+      console.error(err);
+      setCertUploadersError(errorMessage(err, 'Could not load certificate uploads.'));
+    } finally {
+      setLoadingCertUploaders(false);
+    }
+  };
 
   // Leaderboard States & Handlers
-  const [adminView, setAdminView] = useState<'nodes' | 'leaderboard'>('nodes');
+  const [adminView, setAdminView] = useState<'nodes' | 'leaderboard' | 'library' | 'certificates'>('nodes');
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [leaderboardRange, setLeaderboardRange] = useState<'today' | 'week' | 'all'>('all');
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
@@ -76,15 +251,14 @@ export default function AdminPage() {
     setLoadingLeaderboard(true);
     setLeaderboardError('');
     try {
-      const res = await fetch(`/api/admin/leaderboard?range=${range}`);
-      if (!res.ok) {
-        throw new Error('Failed to fetch leaderboard data.');
-      }
-      const data = await res.json();
-      setLeaderboard(data);
+      const res = await apiFetch(
+        `/api/admin/leaderboard?range=${range}&cohort=${encodeURIComponent(selectedCohort)}`
+      );
+      const data = await readJson<{ leaderboard?: any[] }>(res);
+      setLeaderboard(data.leaderboard || []);
     } catch (err: any) {
       console.error(err);
-      setLeaderboardError('Could not load leaderboard data. Please verify your database connection or if the endpoint is deployed.');
+      setLeaderboardError(errorMessage(err, 'Could not load leaderboard data.'));
     } finally {
       setLoadingLeaderboard(false);
     }
@@ -94,7 +268,7 @@ export default function AdminPage() {
     setIsSyncingSystem(true);
     setErrorMsg('');
     try {
-      const res = await fetch('/api/admin/sync-now', {
+      const res = await apiFetch('/api/admin/sync-now', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -123,7 +297,7 @@ export default function AdminPage() {
     setIsDownloadingCsv(true);
     setErrorMsg('');
     try {
-      const res = await fetch('/api/admin/export-users');
+      const res = await apiFetch(`/api/admin/export-users?cohort=${encodeURIComponent(selectedCohort)}`);
       if (!res.ok) {
         throw new Error('Failed to fetch export data');
       }
@@ -189,7 +363,11 @@ export default function AdminPage() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      link.setAttribute('download', `layora_users_stats_${new Date().toISOString().split('T')[0]}.csv`);
+      const cohortSlug = selectedCohort.toLowerCase().replace(/\s+/g, '_');
+      link.setAttribute(
+        'download',
+        `layora_${cohortSlug}_stats_${new Date().toISOString().split('T')[0]}.csv`
+      );
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
@@ -206,7 +384,39 @@ export default function AdminPage() {
     if (authorized && adminView === 'leaderboard') {
       fetchLeaderboard(leaderboardRange);
     }
-  }, [authorized, adminView, leaderboardRange]);
+  }, [authorized, adminView, leaderboardRange, selectedCohort]);
+
+  useEffect(() => {
+    if (authorized && adminView === 'library') {
+      fetchGlobalResources();
+    }
+  }, [authorized, adminView, selectedCohort]);
+
+  useEffect(() => {
+    if (authorized && adminView === 'certificates') {
+      fetchCertUploaders();
+    }
+  }, [authorized, adminView, selectedCohort]);
+
+  /**
+   * Switching year clears everything drilled into under the previous one.
+   * Without this, a student's detail panel could stay open over a list that no
+   * longer contains them.
+   */
+  useEffect(() => {
+    if (!authorized) return;
+    setSelectedUser(null);
+    setSelectedLeaderboardUser(null);
+    setSelectedCertUser(null);
+    setInspectedCerts([]);
+    setActiveCertPreview(null);
+    setShowDeleteConfirm(null);
+    setSearchQuery('');
+    setLeaderboard([]);
+    setGlobalResources([]);
+    setCertUploaders([]);
+    fetchTelemetry();
+  }, [selectedCohort, authorized]);
 
   useEffect(() => {
     if (selectedUser) {
@@ -220,7 +430,7 @@ export default function AdminPage() {
       const fetchUserCerts = async () => {
         setLoadingInspectedCerts(true);
         try {
-          const res = await fetch(`/api/admin/certificates?userId=${selectedUser.id}`);
+          const res = await apiFetch(`/api/admin/certificates?userId=${selectedUser.id}`);
           if (res.ok) {
             const data = await res.json();
             setInspectedCerts(data);
@@ -237,6 +447,25 @@ export default function AdminPage() {
       fetchUserCerts();
     }
   }, [selectedUser, activeTab]);
+
+  useEffect(() => {
+    if (!selectedCertUser) return;
+
+    const fetchCerts = async () => {
+      setLoadingInspectedCerts(true);
+      try {
+        const res = await apiFetch(`/api/admin/certificates?userId=${selectedCertUser.userId}`);
+        setInspectedCerts(res.ok ? await res.json() : []);
+      } catch (err) {
+        console.error('Failed to load certificates for admin:', err);
+        setInspectedCerts([]);
+      } finally {
+        setLoadingInspectedCerts(false);
+      }
+    };
+
+    fetchCerts();
+  }, [selectedCertUser]);
 
   // Verify Admin Access
   useEffect(() => {
@@ -263,7 +492,6 @@ export default function AdminPage() {
       setLoadingData(true);
       try {
         const storeState = useStore.getState();
-        setGlobalAiChatEnabled(storeState.globalAiChatEnabled !== false);
         const registeredUsers = storeState.registeredUsers || [];
         const fetched: TelemetryUser[] = registeredUsers.map((u: any) => ({
           id: u.email,
@@ -285,8 +513,7 @@ export default function AdminPage() {
             tasks: u.tasks || [],
             timetable: u.timetable || [],
             courses: u.courses || [],
-            websites: u.websites || [],
-            chatHistory: u.chatHistory || []
+            websites: u.websites || []
           }
         }));
 
@@ -307,19 +534,7 @@ export default function AdminPage() {
       setIsLocalMode(false);
       setErrorMsg('');
 
-      // Fetch global settings
-      try {
-        const settingsRes = await fetch('/api/admin/global-settings');
-        if (settingsRes.ok) {
-          const settingsData = await settingsRes.json();
-          setGlobalAiChatEnabled(settingsData.globalAiChatEnabled);
-          useStore.getState().setGlobalAiChatEnabled(settingsData.globalAiChatEnabled);
-        }
-      } catch (settingsErr) {
-        console.warn('Failed to load global settings:', settingsErr);
-      }
-
-      const res = await fetch('/api/admin/users');
+      const res = await apiFetch(`/api/admin/users?cohort=${encodeURIComponent(selectedCohort)}`);
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || `HTTP error ${res.status}`);
@@ -349,7 +564,7 @@ export default function AdminPage() {
     try {
       setLoadingData(true);
       if (isSupabaseConfigured) {
-        const res = await fetch(`/api/admin/users/${userId}`, {
+        const res = await apiFetch(`/api/admin/users/${userId}`, {
           method: 'DELETE'
         });
         if (!res.ok) {
@@ -395,7 +610,7 @@ export default function AdminPage() {
       };
 
       if (isSupabaseConfigured) {
-        const res = await fetch(`/api/admin/users/${selectedUser.id}`, {
+        const res = await apiFetch(`/api/admin/users/${selectedUser.id}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ state: updatedState })
@@ -442,39 +657,8 @@ export default function AdminPage() {
     }
   };
 
-  const toggleGlobalAiChat = async () => {
-    setTogglingAiChat(true);
-    const newValue = !globalAiChatEnabled;
-    try {
-      if (isSupabaseConfigured) {
-        const res = await fetch('/api/admin/global-settings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ globalAiChatEnabled: newValue })
-        });
-        if (!res.ok) {
-          throw new Error('Failed to update global settings');
-        }
-      }
-      useStore.getState().setGlobalAiChatEnabled(newValue);
-      setGlobalAiChatEnabled(newValue);
-    } catch (err: any) {
-      console.error(err);
-      alert('Error: ' + err.message);
-    } finally {
-      setTogglingAiChat(false);
-    }
-  };
-
   // Compute overall metrics
   const totalUsers = usersList.length;
-  const totalStudyHours = parseFloat(usersList.reduce((acc, u) => acc + (u.state.user?.totalStudyHours || 0), 0).toFixed(1));
-  const maxStreak = usersList.reduce((acc, u) => Math.max(acc, u.state.user?.streakCount || 0), 0);
-  const totalTasks = usersList.reduce((acc, u) => acc + (u.state.tasks?.length || 0), 0);
-  const totalCompletedTasks = usersList.reduce((acc, u) => acc + (u.state.tasks?.filter(t => t.status === 'completed').length || 0), 0);
-  const completionRate = totalTasks > 0 ? Math.round((totalCompletedTasks / totalTasks) * 100) : 0;
-  const totalAiQueries = usersList.reduce((acc, u) => acc + (u.state.chatHistory?.filter(m => m.role === 'user').length || 0), 0);
-  const totalAiTokens = usersList.reduce((acc, u) => acc + Math.round((u.state.chatHistory?.reduce((sum, m) => sum + (m.content?.length || 0), 0) || 0) / 4), 0);
 
   // Filter user list by search query
   const filteredUsers = usersList.filter((u) => {
@@ -539,22 +723,102 @@ export default function AdminPage() {
       <div className="max-w-7xl mx-auto space-y-8 relative z-10">
         
         {/* Header Terminal */}
+        {/* ── UTILITY BAR ────────────────────────────────────────────────
+            Who you are and how the console looks. Identity belongs at the
+            top-right edge of the chrome, kept clear of the action buttons so
+            "sign out" can never sit next to a destructive control. */}
+        <div className="flex items-center justify-end gap-3 pb-4 border-b border-white/5">
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-white/5 border border-white/10">
+            {([
+              { key: 'light' as const, label: 'Light', Icon: Sun },
+              { key: 'dark' as const, label: 'Dark', Icon: Moon },
+            ]).map(({ key, label, Icon }) => {
+              const active = consoleTheme === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setConsoleTheme(key)}
+                  aria-pressed={active}
+                  title={`${label} mode`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition cursor-pointer ${
+                    active ? 'bg-cyber-blue text-white' : 'text-white/45 hover:text-white'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-3 pl-2 pr-2 py-1.5 rounded-xl bg-white/5 border border-white/10">
+            {adminAvatar && !avatarFailed ? (
+              <img
+                src={adminAvatar}
+                alt=""
+                referrerPolicy="no-referrer"
+                onError={() => setAvatarFailed(true)}
+                className="w-8 h-8 rounded-lg object-cover border border-white/10 shrink-0"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-lg bg-cyber-blue/15 border border-cyber-blue/25 flex items-center justify-center text-cyber-blue font-black text-sm shrink-0">
+                {adminInitial}
+              </div>
+            )}
+            <div className="min-w-0 leading-tight hidden sm:block">
+              <div className="text-xs font-bold text-white truncate max-w-[180px]">{adminName}</div>
+              <div className="text-[9px] font-mono text-white/40 truncate max-w-[180px]">{adminEmail}</div>
+            </div>
+            <button
+              onClick={() => setShowSignOutConfirm(true)}
+              title="Sign out"
+              aria-label="Sign out"
+              className="p-2 rounded-lg border border-white/10 hover:border-red-400/50 hover:bg-red-950/30 text-white/50 hover:text-red-400 transition cursor-pointer shrink-0"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
           <div className="space-y-1">
             <h1 className="text-3xl font-black tracking-widest text-white">
               ADMIN CONTROL CENTER
             </h1>
+            <p className="text-[11px] font-mono uppercase tracking-widest text-white/40">
+              CSE Department &middot; viewing {selectedCohort}
+            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={handleSystemSync}
-              disabled={isSyncingSystem}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyber-purple/20 to-cyber-blue/20 hover:from-cyber-purple/30 hover:to-cyber-blue/30 border border-cyber-purple/30 hover:border-cyber-blue text-white/90 hover:text-cyber-blue transition cursor-pointer text-xs disabled:opacity-50"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isSyncingSystem ? 'animate-spin' : ''}`} />
-              TRIGGER GLOBAL SYNC
-            </button>
+            <div className="relative">
+              <button
+                onClick={handleSystemSync}
+                disabled={isSyncingSystem}
+                onMouseEnter={() => setShowSyncTip(true)}
+                onMouseLeave={() => setShowSyncTip(false)}
+                onFocus={() => setShowSyncTip(true)}
+                onBlur={() => setShowSyncTip(false)}
+                aria-describedby="sync-tip"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyber-purple/20 to-cyber-blue/20 hover:from-cyber-purple/30 hover:to-cyber-blue/30 border border-cyber-purple/30 hover:border-cyber-blue text-white/90 hover:text-cyber-blue transition cursor-pointer text-xs disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncingSystem ? 'animate-spin' : ''}`} />
+                TRIGGER GLOBAL SYNC
+              </button>
+              {showSyncTip && (
+                <div
+                  id="sync-tip"
+                  role="tooltip"
+                  className="absolute top-full left-0 mt-2 w-72 z-40 rounded-xl border border-cyber-blue/30 bg-[#1E2126] p-3 shadow-xl"
+                >
+                  <p className="text-[11px] leading-relaxed text-white/70">
+                    Pulls fresh LeetCode, CodeChef and GitHub activity for every
+                    student and recalculates the leaderboard from it. Takes a
+                    moment for large batches.
+                  </p>
+                </div>
+              )}
+            </div>
             <button
               onClick={handleDownloadCsv}
               disabled={isDownloadingCsv}
@@ -570,15 +834,45 @@ export default function AdminPage() {
               <RefreshCw className={`w-3.5 h-3.5 ${loadingData ? 'animate-spin' : ''}`} />
               RELOAD DATA
             </button>
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyber-purple/20 to-cyber-blue/20 hover:from-cyber-purple/30 hover:to-cyber-blue/30 border border-white/15 hover:border-cyber-blue text-white transition cursor-pointer text-xs shadow-md"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              BACK TO APP
-            </button>
           </div>
         </header>
+
+        {/* ── YEAR SELECTOR ──────────────────────────────────────────────
+            Everything below is scoped to exactly one academic year. There is
+            no combined view: a 2nd-year screen never contains 3rd-year data. */}
+        <section className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5">
+          <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-white/40 shrink-0">
+            Academic year
+          </span>
+          <div
+            role="tablist"
+            aria-label="Academic year"
+            className="inline-flex items-center gap-1 p-1 rounded-xl bg-white/5 border border-white/10 w-max"
+          >
+            {COHORTS.map((c) => {
+              const active = selectedCohort === c;
+              return (
+                <button
+                  key={c}
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setSelectedCohort(c)}
+                  className={`px-4 py-2 rounded-lg text-xs font-mono font-bold uppercase tracking-wider transition cursor-pointer ${
+                    active
+                      ? 'bg-cyber-blue text-white shadow-md'
+                      : 'text-white/50 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  {shortCohortLabel(c)}
+                </button>
+              );
+            })}
+          </div>
+          <span className="text-[10px] font-mono text-white/25 leading-relaxed">
+            Students are assigned to a year by the roster in{' '}
+            <code className="text-white/40">src/lib/roster.ts</code>
+          </span>
+        </section>
 
         {isLocalMode && (
           <div className="p-4 rounded-xl border border-cyber-purple/35 bg-cyber-purple/5 text-cyber-purple text-xs flex items-center justify-between gap-3 shadow-lg shadow-cyber-purple/5 backdrop-blur-md">
@@ -599,103 +893,15 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Status Metrics Row */}
-        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        {/* Roll count for the selected year */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="glass-panel p-5 border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[110px]">
-            <div className="text-[10px] text-white/40 font-bold uppercase tracking-wider">Telemetry States</div>
-            <div className="text-3xl font-black text-cyber-purple mt-2 flex items-baseline gap-1 text-glow-purple">
-              {totalUsers} <span className="text-xs text-white/40 font-normal">nodes</span>
+            <div className="text-[10px] text-white/40 font-bold uppercase tracking-wider">Number of Students</div>
+            <div className="text-3xl font-black text-cyber-purple mt-2 flex items-baseline gap-1">
+              {totalUsers} <span className="text-xs text-white/40 font-normal">students</span>
             </div>
             <div className="text-[10px] text-white/50 mt-1 border-t border-white/5 pt-2 flex items-center gap-1.5">
-              <Users className="w-3 h-3 text-cyber-purple" /> Active synced student profiles
-            </div>
-          </div>
-
-          <div className="glass-panel p-5 border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[110px]">
-            <div className="text-[10px] text-white/40 font-bold uppercase tracking-wider">Total Focus Time</div>
-            <div className="text-3xl font-black text-cyber-blue mt-2 flex items-baseline gap-1 text-glow-cyan">
-              {totalStudyHours} <span className="text-xs text-white/40 font-normal">hrs</span>
-            </div>
-            <div className="text-[10px] text-white/50 mt-1 border-t border-white/5 pt-2 flex items-center gap-1.5">
-              <Clock className="w-3 h-3 text-cyber-blue" /> Cumulative academic hours
-            </div>
-          </div>
-
-          <div className="glass-panel p-5 border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[110px]">
-            <div className="text-[10px] text-white/40 font-bold uppercase tracking-wider">Apex User Streak</div>
-            <div className="text-3xl font-black text-amber-400 mt-2 flex items-baseline gap-1 text-shadow-glow">
-              {maxStreak} <span className="text-xs text-white/40 font-normal">days</span>
-            </div>
-            <div className="text-[10px] text-white/50 mt-1 border-t border-white/5 pt-2 flex items-center gap-1.5">
-              <Flame className="w-3 h-3 text-amber-500 animate-pulse" /> Peak system consistency
-            </div>
-          </div>
-
-          <div className="glass-panel p-5 border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[110px]">
-            <div className="text-[10px] text-white/40 font-bold uppercase tracking-wider">Task Completion</div>
-            <div className="text-3xl font-black text-emerald-400 mt-2 flex items-baseline gap-1">
-              {completionRate}% <span className="text-xs text-white/40 font-normal">rate</span>
-            </div>
-            <div className="text-[10px] text-white/50 mt-1 border-t border-white/5 pt-2 flex items-center gap-1.5">
-              <CheckCircle2 className="w-3 h-3 text-emerald-400" /> {totalCompletedTasks} / {totalTasks} global tasks done
-            </div>
-          </div>
-
-          <div className="glass-panel p-5 border border-white/10 relative overflow-hidden flex flex-col justify-between min-h-[110px] col-span-2 md:col-span-1">
-            <div className="text-[10px] text-white/40 font-bold uppercase tracking-wider">AI Copilot Load</div>
-            <div className="text-3xl font-black text-cyber-blue mt-2 flex items-baseline gap-1 text-glow-cyan">
-              {totalAiQueries} <span className="text-xs text-white/40 font-normal">prompts</span>
-            </div>
-            <div className="text-[10px] text-white/50 mt-1 border-t border-white/5 pt-2 flex items-center gap-1.5 truncate">
-              <Sparkles className="w-3 h-3 text-cyber-purple animate-pulse shrink-0" /> ~{(totalAiTokens).toLocaleString()} tokens consumed
-            </div>
-          </div>
-        </section>
-
-        {/* System Policies Panel */}
-        <section className="glass-panel border border-white/10 p-5 space-y-4">
-          <div className="flex items-center gap-2.5 border-b border-white/10 pb-2">
-            <Settings className="w-4 h-4 text-cyber-blue" strokeWidth={1.5} />
-            <h2 className="text-xs font-mono font-bold tracking-wider text-cyber-blue uppercase">Global System Policies</h2>
-          </div>
-          
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/2 border border-white/5 rounded-xl p-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-cyber-purple animate-pulse" strokeWidth={1.5} />
-                <span className="text-sm font-bold font-mono text-white">AI Copilot Chat Assistant</span>
-              </div>
-              <p className="text-[10px] text-white/50 max-w-2xl leading-relaxed">
-                Globally enable or disable the AI chat assistant interface for all students. When disabled, the chatbot panel and triggers will be hidden from the workspace layout, and individual settings toggles will be disabled and greyscaled.
-              </p>
-            </div>
-            
-            <div className="flex items-center gap-4 shrink-0">
-              <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded border ${
-                globalAiChatEnabled 
-                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.1)]' 
-                  : 'bg-red-500/10 text-red-400 border-red-500/20 shadow-[0_0_8px_rgba(239,68,68,0.1)]'
-              }`}>
-                {globalAiChatEnabled ? 'ACTIVE / ENABLED' : 'INACTIVE / DISABLED'}
-              </span>
-              
-              <button
-                onClick={toggleGlobalAiChat}
-                disabled={togglingAiChat}
-                className={`relative px-5 py-2.5 rounded-xl text-xs font-mono font-bold border transition cursor-pointer active:scale-95 flex items-center gap-2 ${
-                  globalAiChatEnabled
-                    ? 'bg-red-950/20 border-red-500/30 text-red-400 hover:bg-red-950/40 hover:border-red-400 shadow-[0_0_8px_rgba(239,68,68,0.05)]'
-                    : 'bg-emerald-950/20 border-emerald-500/30 text-emerald-400 hover:bg-emerald-950/40 hover:border-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.05)]'
-                }`}
-              >
-                {togglingAiChat ? (
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                ) : globalAiChatEnabled ? (
-                  'DISABLE AI CHAT'
-                ) : (
-                  'ENABLE AI CHAT'
-                )}
-              </button>
+              <Users className="w-3 h-3 text-cyber-purple" /> {selectedCohort} profiles synced
             </div>
           </div>
         </section>
@@ -724,6 +930,26 @@ export default function AdminPage() {
               >
                 🏆 Activity Leaderboard
               </button>
+              <button
+                onClick={() => setAdminView('library')}
+                className={`text-xs font-mono font-bold tracking-wider uppercase px-3 py-1.5 rounded-lg border transition cursor-pointer ${
+                  adminView === 'library'
+                    ? 'border-emerald-400 bg-emerald-500/10 text-emerald-400'
+                    : 'border-transparent text-white/50 hover:text-white'
+                }`}
+              >
+                📚 Shared Library
+              </button>
+              <button
+                onClick={() => setAdminView('certificates')}
+                className={`text-xs font-mono font-bold tracking-wider uppercase px-3 py-1.5 rounded-lg border transition cursor-pointer ${
+                  adminView === 'certificates'
+                    ? 'border-amber-400 bg-amber-500/10 text-amber-400'
+                    : 'border-transparent text-white/50 hover:text-white'
+                }`}
+              >
+                🎓 Certificates
+              </button>
             </div>
 
             {adminView === 'nodes' ? (
@@ -736,6 +962,39 @@ export default function AdminPage() {
                   placeholder="Query name, email or UUID..."
                   className="w-full bg-black/40 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-cyber-blue"
                 />
+              </div>
+            ) : adminView === 'certificates' ? (
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-white/40">
+                  {certUploaders.length} student{certUploaders.length === 1 ? '' : 's'} with uploads
+                </span>
+                <button
+                  onClick={fetchCertUploaders}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:border-amber-400 text-white/70 hover:text-white transition cursor-pointer text-[10px] uppercase font-bold tracking-wider"
+                >
+                  <RefreshCw className={`w-3 h-3 ${loadingCertUploaders ? 'animate-spin' : ''}`} />
+                  Reload
+                </button>
+              </div>
+            ) : adminView === 'library' ? (
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-white/40">
+                  {globalResources.length} shared file{globalResources.length === 1 ? '' : 's'}
+                </span>
+                <button
+                  onClick={() => setShowShareForm(!showShareForm)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 hover:border-emerald-400 text-emerald-400 transition cursor-pointer text-[10px] uppercase font-bold tracking-wider"
+                >
+                  <Plus className="w-3 h-3" />
+                  {showShareForm ? 'Cancel' : 'Share a link'}
+                </button>
+                <button
+                  onClick={fetchGlobalResources}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:border-emerald-400 text-white/70 hover:text-white transition cursor-pointer text-[10px] uppercase font-bold tracking-wider"
+                >
+                  <RefreshCw className={`w-3 h-3 ${loadingLibrary ? 'animate-spin' : ''}`} />
+                  Reload
+                </button>
               </div>
             ) : (
               <div className="flex items-center gap-2">
@@ -778,7 +1037,6 @@ export default function AdminPage() {
                         <th className="p-4 font-normal text-right">Study Time</th>
                         <th className="p-4 font-normal text-center">Subjects</th>
                         <th className="p-4 font-normal text-center">Tasks Done</th>
-                        <th className="p-4 font-normal text-center">AI Load</th>
                         <th className="p-4 font-normal">Last Active Sync</th>
                         <th className="p-4 font-normal text-center">Diagnostics</th>
                       </tr>
@@ -831,14 +1089,6 @@ export default function AdminPage() {
                               }`}>
                                 {completedTasks} / {tasksList.length}
                               </span>
-                            </td>
-                            <td className="p-4 text-center font-mono">
-                              <div className="font-bold text-white">
-                                {u.state.chatHistory?.filter(m => m.role === 'user').length || 0} <span className="text-[9px] text-white/40 font-normal">prompts</span>
-                              </div>
-                              <div className="text-[9px] text-cyber-purple">
-                                ~{Math.round((u.state.chatHistory?.reduce((sum, m) => sum + (m.content?.length || 0), 0) || 0) / 4).toLocaleString()} tok
-                              </div>
                             </td>
                             <td className="p-4">
                               <div className="font-medium text-white/70">{formatLastSync(u.updated_at)}</div>
@@ -1015,9 +1265,388 @@ export default function AdminPage() {
               )}
             </div>
           )}
+
+          {adminView === 'library' && (
+            <div>
+              {showShareForm && (
+                <form
+                  onSubmit={handleShareResource}
+                  className="p-5 border-b border-white/10 bg-white/2 space-y-4"
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label htmlFor="share-name" className="block text-[10px] font-mono uppercase tracking-wider text-white/40">
+                        Document name
+                      </label>
+                      <input
+                        id="share-name"
+                        value={shareName}
+                        onChange={(e) => setShareName(e.target.value)}
+                        placeholder="e.g. Semester 5 exam calendar"
+                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-white/25 focus:outline-none focus:border-emerald-400"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label htmlFor="share-url" className="block text-[10px] font-mono uppercase tracking-wider text-white/40">
+                        Link
+                      </label>
+                      <input
+                        id="share-url"
+                        value={shareUrl}
+                        onChange={(e) => setShareUrl(e.target.value)}
+                        placeholder="https://drive.google.com/..."
+                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-white/25 focus:outline-none focus:border-emerald-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <span className="block text-[10px] font-mono uppercase tracking-wider text-white/40">
+                      Who can see it
+                    </span>
+                    <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-white/5 border border-white/10">
+                      {([
+                        { key: 'cohort' as const, label: `${selectedCohort} only` },
+                        { key: 'everyone' as const, label: 'Every year' },
+                      ]).map((opt) => (
+                        <button
+                          key={opt.key}
+                          type="button"
+                          onClick={() => setShareAudience(opt.key)}
+                          className={`px-3 py-1.5 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition cursor-pointer ${
+                            shareAudience === opt.key
+                              ? 'bg-emerald-500 text-black'
+                              : 'text-white/50 hover:text-white'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="submit"
+                      disabled={isSharing || !shareName.trim() || !shareUrl.trim()}
+                      className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold uppercase tracking-wider transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {isSharing ? 'Sharing...' : 'Share'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={resetShareForm}
+                      className="px-4 py-2 rounded-lg border border-white/10 hover:border-white/25 text-white/60 hover:text-white text-xs font-bold uppercase tracking-wider transition cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {loadingLibrary ? (
+                <div className="p-12 text-center text-white/40 text-xs flex flex-col items-center gap-3">
+                  <RefreshCw className="w-6 h-6 animate-spin text-emerald-400" />
+                  Loading the shared library...
+                </div>
+              ) : libraryError ? (
+                <div className="p-12 text-center text-rose-300 text-xs flex flex-col items-center gap-2">
+                  <AlertTriangle className="w-6 h-6 text-rose-400" />
+                  <span>{libraryError}</span>
+                  <button
+                    onClick={fetchGlobalResources}
+                    className="mt-3 px-3 py-1.5 bg-rose-950/30 border border-rose-500/25 hover:bg-rose-950/50 text-rose-300 rounded-lg text-[10px] font-bold transition cursor-pointer"
+                  >
+                    TRY AGAIN
+                  </button>
+                </div>
+              ) : globalResources.length === 0 ? (
+                <div className="p-12 text-center text-white/30 text-xs">
+                  No files have been shared to the library yet.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-white/10 bg-white/2 text-white/40 font-bold uppercase tracking-wider">
+                        <th className="p-4 font-normal">File</th>
+                        <th className="p-4 font-normal">Shared by</th>
+                        <th className="p-4 font-normal">Year</th>
+                        <th className="p-4 font-normal">Shared on</th>
+                        <th className="p-4 font-normal text-center w-28">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {globalResources.map((res) => (
+                        <tr key={res.id} className="hover:bg-white/3 transition group">
+                          <td className="p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-emerald-400">
+                                <FileText className="w-3.5 h-3.5" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="font-bold text-white truncate max-w-[280px]">{res.name}</div>
+                                <div className="text-[9px] text-white/30 uppercase tracking-wider">{res.type || 'file'}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <div className="font-semibold text-white/80">{res.uploaderName || '—'}</div>
+                            <div className="text-[9px] text-white/30 truncate max-w-[180px]">{res.uploadedBy}</div>
+                          </td>
+                          <td className="p-4">
+                            <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-wider text-white/60">
+                              {res.year || 'Others'}
+                            </span>
+                          </td>
+                          <td className="p-4 text-white/50 font-mono text-[10px]">
+                            {res.createdAt ? new Date(res.createdAt).toLocaleString() : '—'}
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center justify-center gap-2">
+                              <a
+                                href={res.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1.5 rounded-lg border border-white/10 hover:border-cyber-blue text-white/60 hover:text-cyber-blue transition cursor-pointer"
+                                title="Open file"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                              <button
+                                onClick={() => handleRemoveResource(res.id, res.name)}
+                                disabled={removingResourceId === res.id}
+                                className="p-1.5 rounded-lg border border-white/10 hover:border-rose-400 text-white/60 hover:text-rose-400 transition cursor-pointer disabled:opacity-40"
+                                title="Remove from library"
+                              >
+                                <Trash2 className={`w-3.5 h-3.5 ${removingResourceId === res.id ? 'animate-pulse' : ''}`} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {adminView === 'certificates' && (
+            <div>
+              {loadingCertUploaders ? (
+                <div className="p-12 text-center text-white/40 text-xs flex flex-col items-center gap-3">
+                  <RefreshCw className="w-6 h-6 animate-spin text-amber-400" />
+                  Loading certificate uploads...
+                </div>
+              ) : certUploadersError ? (
+                <div className="p-12 text-center text-rose-300 text-xs flex flex-col items-center gap-2">
+                  <AlertTriangle className="w-6 h-6 text-rose-400" />
+                  <span>{certUploadersError}</span>
+                  <button
+                    onClick={fetchCertUploaders}
+                    className="mt-3 px-3 py-1.5 bg-rose-950/30 border border-rose-500/25 hover:bg-rose-950/50 text-rose-300 rounded-lg text-[10px] font-bold transition cursor-pointer"
+                  >
+                    TRY AGAIN
+                  </button>
+                </div>
+              ) : certUploaders.length === 0 ? (
+                <div className="p-12 text-center text-white/30 text-xs">
+                  No {selectedCohort} student has uploaded a certificate yet.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-white/10 bg-white/2 text-white/40 font-bold uppercase tracking-wider">
+                        <th className="p-4 font-normal">Student</th>
+                        <th className="p-4 font-normal">Email</th>
+                        <th className="p-4 font-normal text-right">Certificates</th>
+                        <th className="p-4 font-normal">Latest upload</th>
+                        <th className="p-4 font-normal text-center w-28">View</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {certUploaders.map((uploader) => (
+                        <tr
+                          key={uploader.userId}
+                          onClick={() => setSelectedCertUser(uploader)}
+                          className="hover:bg-white/3 transition group cursor-pointer"
+                        >
+                          <td className="p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center font-bold text-sm text-amber-400">
+                                {uploader.name?.charAt(0).toUpperCase() || 'S'}
+                              </div>
+                              <span className="font-bold text-white group-hover:text-amber-400 transition">
+                                {uploader.name}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="p-4 text-white/50 font-mono text-[10px] truncate max-w-[220px]">
+                            {uploader.email}
+                          </td>
+                          <td className="p-4 text-right">
+                            <span className="px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-lg font-black text-sm">
+                              {uploader.count}
+                            </span>
+                          </td>
+                          <td className="p-4 text-white/50 font-mono text-[10px]">
+                            {uploader.latestAt ? new Date(uploader.latestAt).toLocaleString() : '—'}
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center justify-center">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setSelectedCertUser(uploader); }}
+                                className="p-1.5 rounded-lg border border-white/10 hover:border-amber-400 text-white/60 hover:text-amber-400 transition cursor-pointer"
+                                title={`View ${uploader.name}'s certificates`}
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
         </section>
 
       </div>
+
+      {/* Sign-out confirmation */}
+      <AnimatePresence>
+        {showSignOutConfirm && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !isSigningOut && setShowSignOutConfirm(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="signout-title"
+              className="glass-panel border border-white/15 p-6 rounded-2xl max-w-sm w-full relative z-10 bg-[#1E2126]"
+            >
+              <div className="flex items-center gap-3 text-white">
+                <LogOut className="w-5 h-5 text-cyber-blue" />
+                <h3 id="signout-title" className="text-base font-black tracking-wider uppercase">Sign out</h3>
+              </div>
+              <p className="text-xs text-white/60 font-mono mt-3 leading-relaxed">
+                You will be signed out of the admin console as{' '}
+                <span className="text-cyber-blue font-semibold">{adminEmail || adminName}</span>.
+              </p>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  onClick={() => setShowSignOutConfirm(false)}
+                  disabled={isSigningOut}
+                  className="px-4 py-2 border border-white/10 hover:border-white/20 text-white/60 hover:text-white rounded-xl text-xs font-bold cursor-pointer transition disabled:opacity-40"
+                >
+                  STAY SIGNED IN
+                </button>
+                <button
+                  onClick={handleSignOut}
+                  disabled={isSigningOut}
+                  className="px-4 py-2 bg-red-950/45 hover:bg-red-900 border border-red-500/30 text-red-300 rounded-xl text-xs font-bold cursor-pointer transition disabled:opacity-60"
+                >
+                  {isSigningOut ? 'SIGNING OUT...' : 'CONFIRM SIGN OUT'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Certificates drill-down: one student's uploads, from the roll call */}
+      <AnimatePresence>
+        {selectedCertUser && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedCertUser(null)}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40"
+            />
+            <motion.aside
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 240 }}
+              className="fixed top-0 right-0 bottom-0 w-full max-w-2xl bg-[#1E2126] border-l border-white/10 z-50 flex flex-col"
+            >
+              <header className="p-5 border-b border-white/10 flex items-start justify-between gap-4 shrink-0">
+                <div className="min-w-0">
+                  <h2 className="text-lg font-bold text-white truncate">{selectedCertUser.name}</h2>
+                  <p className="text-[10px] font-mono text-white/40 truncate mt-0.5">
+                    {selectedCertUser.email} &middot; {selectedCohort}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedCertUser(null)}
+                  className="p-2 rounded-lg border border-white/10 hover:border-white/25 text-white/50 hover:text-white transition cursor-pointer shrink-0"
+                  aria-label="Close"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </header>
+
+              <div className="flex-1 overflow-y-auto p-5">
+                {loadingInspectedCerts ? (
+                  <div className="p-12 text-center text-white/40 text-xs flex flex-col items-center gap-3">
+                    <RefreshCw className="w-5 h-5 animate-spin text-amber-400" />
+                    Fetching certificates...
+                  </div>
+                ) : inspectedCerts.length === 0 ? (
+                  <div className="p-12 text-center text-white/30 text-xs">
+                    No certificates found for this student.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {inspectedCerts.map((cert) => (
+                      <div key={cert.id} className="bg-black/45 border border-white/5 rounded-xl overflow-hidden flex flex-col justify-between hover:border-amber-400/30 transition group">
+                        <div
+                          className="relative aspect-[4/3] bg-black flex items-center justify-center overflow-hidden border-b border-white/5 cursor-pointer"
+                          onClick={() => setActiveCertPreview(cert)}
+                        >
+                          <img src={cert.file_url} alt={cert.name} className="w-full h-full object-cover group-hover:scale-[1.02] transition" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
+                            <Eye className="w-4 h-4 text-white" />
+                          </div>
+                        </div>
+                        <div className="p-3 space-y-1.5">
+                          <div>
+                            <h4 className="text-xs font-bold text-white line-clamp-1">{cert.name}</h4>
+                            <span className="inline-block text-[8px] font-bold tracking-wider px-1.5 py-0.5 mt-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded uppercase">
+                              {cert.platform}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-[9px] text-white/40 pt-1.5 border-t border-white/5">
+                            <span>{new Date(cert.created_at).toLocaleDateString()}</span>
+                            <a href={cert.file_url} target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline flex items-center gap-0.5">
+                              Original <ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Delete Confirmation Overlay */}
       <AnimatePresence>
@@ -1035,7 +1664,7 @@ export default function AdminPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="glass-panel border border-red-500/30 p-6 rounded-2xl max-w-sm w-full relative z-10 bg-[#0F0F16]"
+              className="glass-panel border border-red-500/30 p-6 rounded-2xl max-w-sm w-full relative z-10 bg-[#1E2126]"
             >
               <div className="flex items-center gap-3 text-red-400">
                 <Trash2 className="w-6 h-6 animate-bounce" />
@@ -1080,7 +1709,7 @@ export default function AdminPage() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-2xl h-screen bg-[#0B0F19]/95 border-l border-white/10 flex flex-col z-10 shadow-2xl"
+              className="relative w-full max-w-2xl h-screen bg-[#1A1D22]/95 border-l border-white/10 flex flex-col z-10 shadow-2xl"
             >
               {/* Drawer Header */}
               <div className="p-6 border-b border-white/10 bg-white/2 flex items-center justify-between">
@@ -1104,7 +1733,7 @@ export default function AdminPage() {
 
               {/* Drawer Navigation Tabs */}
               <div className="flex border-b border-white/5 bg-black/40 overflow-x-auto shrink-0 scrollbar-none">
-                {(['profile', 'subjects', 'tasks', 'courses', 'timetable', 'certificates', 'chat'] as const).map((tab) => (
+                {(['profile', 'subjects', 'tasks', 'courses', 'timetable', 'certificates'] as const).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -1406,30 +2035,6 @@ export default function AdminPage() {
                   </div>
                 )}
 
-                {/* 6. Tab Chat History */}
-                {activeTab === 'chat' && (
-                  <div className="space-y-4">
-                    {selectedUser.state.chatHistory && selectedUser.state.chatHistory.length > 0 ? (
-                      <div className="space-y-3">
-                        {selectedUser.state.chatHistory.map((chat) => (
-                          <div key={chat.id} className={`flex flex-col ${chat.role === 'user' ? 'items-end' : 'items-start'}`}>
-                            <div className="text-[9px] text-white/35 mb-1 font-mono">{chat.role === 'user' ? 'User' : 'Assistant'} • {chat.timestamp}</div>
-                            <div className={`p-3 rounded-xl text-xs leading-relaxed max-w-[85%] font-sans ${
-                              chat.role === 'user'
-                                ? 'bg-cyber-purple/20 text-white rounded-tr-none border border-cyber-purple/25'
-                                : 'bg-white/5 text-white/80 rounded-tl-none border border-white/10'
-                            }`}>
-                              {chat.content}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 text-white/30 text-xs">No AI conversation log records found.</div>
-                    )}
-                  </div>
-                )}
-
               </div>
             </motion.div>
           </div>
@@ -1452,7 +2057,7 @@ export default function AdminPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="glass-panel border border-cyber-purple/30 p-6 rounded-2xl max-w-md w-full relative z-10 bg-[#0F0F16]"
+              className="glass-panel border border-cyber-purple/30 p-6 rounded-2xl max-w-md w-full relative z-10 bg-[#1E2126]"
             >
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <div className="flex items-center gap-3">
@@ -1608,7 +2213,7 @@ export default function AdminPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="glass-panel border border-white/10 p-4 rounded-2xl max-w-3xl w-full relative z-10 bg-[#0F0F16] flex flex-col"
+              className="glass-panel border border-white/10 p-4 rounded-2xl max-w-3xl w-full relative z-10 bg-[#1E2126] flex flex-col"
             >
               <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
                 <div>
