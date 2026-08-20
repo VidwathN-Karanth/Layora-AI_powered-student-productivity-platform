@@ -5,6 +5,7 @@ import { useUser } from '@clerk/nextjs';
 import { apiFetch, readJson, errorMessage } from '@/lib/apiClient';
 import { drivePreviewUrl } from '@/lib/driveLinks';
 import CertificateThumb from '@/components/CertificateThumb';
+import InfoPopover from '@/components/InfoPopover';
 import { formatDate } from '@/lib/dateFormat';
 import {
   CERTIFICATE_CATEGORIES, CATEGORY_HINTS, CATEGORY_ACCENT, countByCategory, resolveCategory,
@@ -12,7 +13,7 @@ import {
 } from '@/lib/certificateCategories';
 import {
   Award, UploadCloud, Trash2, Eye, X, Link2, FileText,
-  ExternalLink, Calendar, Plus, Loader2, AlertTriangle, Check, Lock, Info
+  ExternalLink, Calendar, Plus, Loader2, AlertTriangle, Check, Lock
 } from 'lucide-react';
 
 interface Certificate {
@@ -73,7 +74,6 @@ export default function CertificatesPage() {
 
   // Preview state
   const [activeCert, setActiveCert] = useState<Certificate | null>(null);
-  const [showStorageInfo, setShowStorageInfo] = useState(false);
 
   // Ref
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -268,27 +268,12 @@ export default function CertificatesPage() {
               <Plus className="w-4 h-4 text-primary" />
               <h3 className="text-xs font-mono font-bold tracking-wider text-primary">Upload New Certificate</h3>
             </div>
-            <div className="relative flex items-center justify-center">
-              <button
-                type="button"
-                onClick={() => setShowStorageInfo(!showStorageInfo)}
-                className={`transition p-0.5 focus:outline-none cursor-pointer ${
-                  showStorageInfo ? 'text-primary' : 'text-outline hover:text-primary'
-                }`}
-                aria-expanded={showStorageInfo}
-                aria-label="Where is my certificate stored?"
-              >
-                <Info className="w-3.5 h-3.5" />
-              </button>
-              {showStorageInfo && (
-                <div className="absolute right-0 top-full mt-2 bg-surface-container-high border border-outline-variant rounded-xl shadow-lg z-30 w-64 p-3.5">
-                  <p className="flex items-start gap-2 text-[10px] font-mono text-on-surface-variant leading-relaxed">
-                    <Lock className="w-3 h-3 mt-0.5 shrink-0 text-primary" />
-                    <span>The PDF is stored in your own Google Drive, not on Layora. Only you and the department staff see it here.</span>
-                  </p>
-                </div>
-              )}
-            </div>
+            <InfoPopover label="Where is my certificate stored?" widthClass="w-64">
+              <p className="flex items-start gap-2 text-[10px] font-mono text-on-surface-variant leading-relaxed">
+                <Lock className="w-3 h-3 mt-0.5 shrink-0 text-primary" />
+                <span>The PDF is stored in your own Google Drive, not on Layora. Only you and the department staff see it here.</span>
+              </p>
+            </InfoPopover>
           </div>
 
           <form onSubmit={handleUpload} noValidate className="space-y-4">

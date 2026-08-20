@@ -5,9 +5,10 @@ import { useUser } from '@clerk/nextjs';
 import { useStore } from '@/store/useStore';
 import { apiFetch, readJson, errorMessage } from '@/lib/apiClient';
 import ResumePanel from '@/components/ResumePanel';
+import InfoPopover from '@/components/InfoPopover';
 import { 
   Check, Sparkles, User, Bell, BellOff, Calendar,
-  ShieldCheck, Loader2, Info, Lock
+  ShieldCheck, Loader2, Lock
 } from 'lucide-react';
 import {
   alreadyNotified, announce, clearTodaysNotificationMarks, diagnoseCourseReminders,
@@ -32,7 +33,6 @@ export default function SettingsPage() {
 
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [profileErrors, setProfileErrors] = useState<Record<string, string | undefined>>({});
-  const [showCalendarTooltip, setShowCalendarTooltip] = useState(false);
 
   // The browser's own permission, which is separate from the student's
   // preference: they can want reminders while the browser blocks them.
@@ -171,49 +171,36 @@ export default function SettingsPage() {
                 <User className="w-4 h-4 text-primary" />
                 <h3 className="text-xs font-mono font-bold tracking-wider text-primary">Account</h3>
               </div>
-              <div className="relative flex items-center justify-center">
-                <button
-                  type="button"
-                  onClick={() => setShowCalendarTooltip(!showCalendarTooltip)}
-                  className={`transition p-0.5 focus:outline-none cursor-pointer ${
-                    showCalendarTooltip ? 'text-primary' : 'text-outline hover:text-primary'
-                  }`}
-                  aria-expanded={showCalendarTooltip}
-                  aria-label="What reminders does this cover?"
-                >
-                  <Info className="w-3.5 h-3.5" />
-                </button>
-                {showCalendarTooltip && (
-                  <div className="absolute right-0 top-full mt-2 bg-surface-container-high border border-outline-variant rounded-xl shadow-lg z-30 w-72 p-3.5 space-y-2.5">
-                    <p className="text-[10px] font-mono text-on-surface-variant leading-relaxed">
-                      One switch for every reminder Layora sends. Turning it off silences all of
-                      them. Turn it on separately on every device you use — reminders appear on
-                      whichever device has Layora open, and nothing is emailed.
+              <InfoPopover label="What reminders does this cover?">
+                <div className="space-y-2.5">
+                  <p className="text-[10px] font-mono text-on-surface-variant leading-relaxed">
+                    One switch for every reminder Layora sends. Turning it off silences all of
+                    them. Turn it on separately on every device you use — reminders appear on
+                    whichever device has Layora open, and nothing is emailed.
+                  </p>
+                  <ul className="space-y-1.5 text-[9px] font-mono text-outline leading-relaxed">
+                    <li className="flex items-start gap-2">
+                      <Bell className="w-3 h-3 mt-0.5 shrink-0 text-primary/60" />
+                      <span>Today&rsquo;s events, once, when you open the workspace.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Bell className="w-3 h-3 mt-0.5 shrink-0 text-primary/60" />
+                      <span>Timetable blocks, a few minutes before each starts — switch these on their own with &ldquo;Planner alerts&rdquo; on the Weekly Planner.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Bell className="w-3 h-3 mt-0.5 shrink-0 text-primary/60" />
+                      <span>Course reminders, at the time set on each course under &ldquo;Daily Notification&rdquo;.</span>
+                    </li>
+                  </ul>
+                  <div className="flex items-start gap-2 text-[9px] font-mono text-outline leading-relaxed pt-2 border-t border-outline-variant/40">
+                    <Calendar className="w-3 h-3 mt-0.5 shrink-0" />
+                    <p>
+                      Want them in the Google Calendar app instead? Use &ldquo;Sync to Google
+                      Calendar&rdquo; on the Events page, or on the Weekly Planner for study blocks.
                     </p>
-                    <ul className="space-y-1.5 text-[9px] font-mono text-outline leading-relaxed">
-                      <li className="flex items-start gap-2">
-                        <Bell className="w-3 h-3 mt-0.5 shrink-0 text-primary/60" />
-                        <span>Today&rsquo;s events, once, when you open the workspace.</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Bell className="w-3 h-3 mt-0.5 shrink-0 text-primary/60" />
-                        <span>Timetable blocks, a few minutes before each starts — switch these on their own with &ldquo;Planner alerts&rdquo; on the Weekly Planner.</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Bell className="w-3 h-3 mt-0.5 shrink-0 text-primary/60" />
-                        <span>Course reminders, at the time set on each course under &ldquo;Daily Notification&rdquo;.</span>
-                      </li>
-                    </ul>
-                    <div className="flex items-start gap-2 text-[9px] font-mono text-outline leading-relaxed pt-2 border-t border-outline-variant/40">
-                      <Calendar className="w-3 h-3 mt-0.5 shrink-0" />
-                      <p>
-                        Want them in the Google Calendar app instead? Use &ldquo;Sync to Google
-                        Calendar&rdquo; on the Events page, or on the Weekly Planner for study blocks.
-                      </p>
-                    </div>
                   </div>
-                )}
-              </div>
+                </div>
+              </InfoPopover>
             </div>
 
             {/* Name is not editable: it comes from the college Google account so
