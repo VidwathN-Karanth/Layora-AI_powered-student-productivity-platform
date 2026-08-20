@@ -53,6 +53,17 @@ export async function POST(request: Request) {
     // The profile row may not exist yet if the student has never linked a
     // coding account, so create it before updating.
     const existing = await User.findById(guard.requester.userId);
+
+    // One CV at a time. Replacing has to be deliberate: remove the old one
+    // first. Enforced here and not only in the UI, so the rule holds even if
+    // the request is made directly.
+    if (existing?.resumeUrl) {
+      return NextResponse.json(
+        { error: 'You already have a CV uploaded. Remove it first, then upload the new one.' },
+        { status: 409 }
+      );
+    }
+
     if (!existing) {
       await User.create({
         id: guard.requester.userId,
