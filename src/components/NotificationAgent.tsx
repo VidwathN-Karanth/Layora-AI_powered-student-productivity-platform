@@ -162,7 +162,15 @@ export default function NotificationAgent() {
 
       // The decision lives in dueCourseReminders so it can be tested directly.
       for (const reminder of dueCourseReminders(coursesRef.current || [], now, (key) => alreadyNotified(key, day))) {
-        announce({ title: reminder.title, body: reminder.body, tag: reminder.key, kind: 'course' });
+        announce({
+          title: reminder.title,
+          body: reminder.body,
+          tag: reminder.key,
+          kind: 'course',
+          // The course's own site when it has one; announce falls back to the
+          // Courses page when url is undefined.
+          url: reminder.url,
+        });
         markNotified(reminder.key, day);
       }
     }

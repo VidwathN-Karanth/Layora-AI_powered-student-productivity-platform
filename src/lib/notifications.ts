@@ -73,11 +73,15 @@ export function notify(title: string, options: NotifyOptions = {}): boolean {
     notification.onclick = () => {
       try {
         window.focus();
-        if (options.url && window.location.pathname !== options.url) {
+        if (isExternalUrl(options.url)) {
+          // A course's own site is somebody else's; it gets its own tab rather
+          // than replacing the workspace the student was in.
+          window.open(options.url, '_blank', 'noopener,noreferrer');
+        } else if (options.url && window.location.pathname !== options.url) {
           window.location.href = options.url;
         }
       } catch {
-        // Focus can be refused; the notification still closes below.
+        // Focus or popup can be refused; the notification still closes below.
       }
       notification.close();
     };
@@ -199,6 +203,11 @@ export interface Toast {
   url: string;
 }
 
+/** Whether a destination leaves Layora, and so wants its own tab. */
+export function isExternalUrl(url: string | null | undefined): boolean {
+  return !!url && /^https?:\/\//i.test(url);
+}
+
 /** The page each kind of reminder is about. */
 export const KIND_DESTINATION: Record<ToastKind, string> = {
   event: '/dashboard/events/',
@@ -291,6 +300,8 @@ export interface DueReminder {
   key: string;
   title: string;
   body: string;
+  /** The course's own site, when it has one — otherwise the Courses page. */
+  url?: string;
 }
 
 /**
@@ -327,6 +338,9 @@ export function dueCourseReminders(
       body: isReminderDue(time, now)
         ? `Time for your session${where} · ${progress}`
         : `Your ${time} session is still waiting${where} · ${progress}`,
+      // 'Self-Study' and the like are not links, so those fall back to the
+      // Courses page rather than trying to open a tab at nothing.
+      url: isExternalUrl(course.platform) ? course.platform : undefined,
     });
   }
 

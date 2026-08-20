@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CalendarDays, Clock, BookMarked, X } from 'lucide-react';
-import { onToast, type Toast, type ToastKind } from '@/lib/notifications';
+import { isExternalUrl, onToast, type Toast, type ToastKind } from '@/lib/notifications';
 
 /** How long a toast stays *once the student can actually see it*. */
 const LIFETIME_MS = 20_000;
@@ -38,6 +38,15 @@ export default function NotificationCenter() {
   /** Toasts still waiting for the tab to be looked at before their clock starts. */
   const pendingRef = useRef<Set<string>>(new Set());
   const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  /** A course's own site opens in its own tab; a Layora page routes in place. */
+  const open = useCallback((url: string) => {
+    if (isExternalUrl(url)) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      router.push(url);
+    }
+  }, [router]);
 
   const dismiss = useCallback((id: string) => {
     const timer = timersRef.current.get(id);
@@ -112,11 +121,11 @@ export default function NotificationCenter() {
               <div
                 role="link"
                 tabIndex={0}
-                onClick={() => { router.push(toast.url); dismiss(toast.id); }}
+                onClick={() => { open(toast.url); dismiss(toast.id); }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    router.push(toast.url);
+                    open(toast.url);
                     dismiss(toast.id);
                   }
                 }}
