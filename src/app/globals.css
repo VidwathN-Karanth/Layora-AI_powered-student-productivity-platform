@@ -1576,3 +1576,20 @@ html.light-mode .zen-overlay span,
 html.light-mode .zen-overlay button {
   font-family: var(--font-geist-mono), var(--font-geist), monospace !important;
 }
+
+/* ────────────────────────────────────────────────────────────────
+   Reminder toasts are opaque
+
+   These sit over a busy workspace. A glass panel let the page show through
+   and the text became unreadable, so the toast paints a solid surface in
+   both themes — no transparency, no backdrop blur.
+   ──────────────────────────────────────────────────────────────── */
+.layora-toast {
+  background-color: #1E2126 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.light-mode .layora-toast {
+  background-color: var(--l-card) !important;
+}

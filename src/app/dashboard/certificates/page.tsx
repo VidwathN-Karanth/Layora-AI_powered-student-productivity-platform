@@ -12,7 +12,7 @@ import {
 } from '@/lib/certificateCategories';
 import {
   Award, UploadCloud, Trash2, Eye, X, Link2, FileText,
-  ExternalLink, Calendar, Plus, Loader2, AlertTriangle, Check, Lock
+  ExternalLink, Calendar, Plus, Loader2, AlertTriangle, Check, Lock, Info
 } from 'lucide-react';
 
 interface Certificate {
@@ -73,6 +73,7 @@ export default function CertificatesPage() {
 
   // Preview state
   const [activeCert, setActiveCert] = useState<Certificate | null>(null);
+  const [showStorageInfo, setShowStorageInfo] = useState(false);
 
   // Ref
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -262,14 +263,32 @@ export default function CertificatesPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* --- LEFT SIDE: UPLOAD FORM PANEL --- */}
         <div className="lg:col-span-1 glass-card rounded-2xl p-5 border border-outline-variant space-y-4 h-fit">
-          <div className="flex items-center gap-2.5 border-b border-outline-variant/30 pb-2">
-            <Plus className="w-4 h-4 text-primary" />
-            <h3 className="text-xs font-mono font-bold tracking-wider text-primary">Upload New Certificate</h3>
-          </div>
-
-          <div className="flex items-start gap-2 text-[10px] font-mono text-outline leading-relaxed">
-            <Lock className="w-3 h-3 mt-0.5 shrink-0" />
-            <p>The PDF is stored in your own Google Drive, not on Layora. Only you and the department staff see it here.</p>
+          <div className="flex items-center justify-between border-b border-outline-variant/30 pb-2 relative">
+            <div className="flex items-center gap-2.5">
+              <Plus className="w-4 h-4 text-primary" />
+              <h3 className="text-xs font-mono font-bold tracking-wider text-primary">Upload New Certificate</h3>
+            </div>
+            <div className="relative flex items-center justify-center">
+              <button
+                type="button"
+                onClick={() => setShowStorageInfo(!showStorageInfo)}
+                className={`transition p-0.5 focus:outline-none cursor-pointer ${
+                  showStorageInfo ? 'text-primary' : 'text-outline hover:text-primary'
+                }`}
+                aria-expanded={showStorageInfo}
+                aria-label="Where is my certificate stored?"
+              >
+                <Info className="w-3.5 h-3.5" />
+              </button>
+              {showStorageInfo && (
+                <div className="absolute right-0 top-full mt-2 bg-surface-container-high border border-outline-variant rounded-xl shadow-lg z-30 w-64 p-3.5">
+                  <p className="flex items-start gap-2 text-[10px] font-mono text-on-surface-variant leading-relaxed">
+                    <Lock className="w-3 h-3 mt-0.5 shrink-0 text-primary" />
+                    <span>The PDF is stored in your own Google Drive, not on Layora. Only you and the department staff see it here.</span>
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
           <form onSubmit={handleUpload} noValidate className="space-y-4">

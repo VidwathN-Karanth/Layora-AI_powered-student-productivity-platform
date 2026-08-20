@@ -144,3 +144,61 @@ export function isReminderDue(time: string | null | undefined, now: Date, window
   const current = now.getHours() * 60 + now.getMinutes();
   return current >= target && current < target + windowMinutes;
 }
+
+/* ────────────────────────────────────────────────────────────────
+   In-app toasts
+
+   An OS notification only appears once the student has granted the browser
+   permission, and most never do. Everything announced here therefore goes to
+   two places: the operating system when it is allowed, and an in-app toast
+   which always works. `announce` is the single entry point, so no caller has
+   to remember to do both.
+   ──────────────────────────────────────────────────────────────── */
+
+export type ToastKind = 'event' | 'block' | 'course';
+
+export interface Toast {
+  id: string;
+  title: string;
+  body?: string;
+  kind: ToastKind;
+}
+
+type ToastListener = (toast: Toast) => void;
+
+const toastListeners = new Set<ToastListener>();
+
+/** Subscribes to toasts. Returns an unsubscribe function. */
+export function onToast(listener: ToastListener): () => void {
+  toastListeners.add(listener);
+  return () => {
+    toastListeners.delete(listener);
+  };
+}
+
+export interface Announcement {
+  title: string;
+  body?: string;
+  /** Collapses repeats in the OS notification centre. */
+  tag?: string;
+  kind?: ToastKind;
+}
+
+/**
+ * Announces one thing on every channel available.
+ *
+ * Always shows the in-app toast; additionally raises an OS notification when
+ * the browser has granted permission. Returns true if the OS one went out, so
+ * callers can tell the two apart when they care.
+ */
+export function announce({ title, body, tag, kind = 'event' }: Announcement): boolean {
+  const toast: Toast = {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    title,
+    body,
+    kind,
+  };
+  toastListeners.forEach((listener) => listener(toast));
+
+  return notify(title, { body, tag });
+}

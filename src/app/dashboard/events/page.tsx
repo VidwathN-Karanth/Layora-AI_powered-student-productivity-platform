@@ -413,6 +413,7 @@ export default function EventsPage() {
                     <span className="block text-[9px] font-mono text-outline mb-1">Until (optional)</span>
                     <input
                       type="date"
+                      lang="en-GB"
                       value={repeatUntil}
                       min={selected}
                       onChange={(ev) => setRepeatUntil(ev.target.value)}

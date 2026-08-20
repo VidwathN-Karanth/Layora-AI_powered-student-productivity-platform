@@ -6,7 +6,7 @@ import { apiFetch, readJson } from '@/lib/apiClient';
 import { occursOn, type RepeatRule } from '@/lib/recurrence';
 import { toDateKey } from '@/lib/dateFormat';
 import {
-  alreadyNotified, isReminderDue, markNotified, notify, pruneNotificationMarks, timeToMinutes,
+  alreadyNotified, announce, isReminderDue, markNotified, pruneNotificationMarks, timeToMinutes,
 } from '@/lib/notifications';
 
 interface CalendarEvent {
@@ -26,11 +26,12 @@ const TICK_MS = 60_000;
 const LEAD_MINUTES = 5;
 
 /**
- * Turns the day's schedule into device notifications.
+ * Turns the day's schedule into reminders.
  *
- * This replaces the email reminders Layora used to send from the server. It
- * runs wherever the student has the workspace open — laptop, phone, whichever —
- * and never talks to an outside service.
+ * This replaces the email reminders Layora used to send from the server. Each
+ * reminder goes out on two channels at once via `announce`: an in-app toast,
+ * which always works, and an OS notification when the browser has been given
+ * permission. Nothing talks to an outside service.
  *
  * Three things are announced:
  *   1. Today's events, once, when the workspace opens.
@@ -77,14 +78,18 @@ export default function NotificationAgent() {
         const todays = (data.events || []).filter((e) => occursOn(e, day));
         if (todays.length === 0) return;
 
-        const shown = notify(
-          todays.length === 1 ? 'Today: ' + todays[0].title : `${todays.length} events today`,
-          {
-            body: todays.map((e) => e.title).join(' · '),
+        // Let the workspace paint first, so the toast reads as an arrival
+        // rather than part of the page load.
+        setTimeout(() => {
+          if (cancelled) return;
+          announce({
+            title: todays.length === 1 ? 'You have an event today' : `${todays.length} events today`,
+            body: todays.map((e) => `${e.title}${e.isStaff ? ' (department)' : ''}`).join(' · '),
             tag: `layora-events-${day}`,
-          }
-        );
-        if (shown) markNotified('events', day);
+            kind: 'event',
+          });
+          markNotified('events', day);
+        }, 900);
       } catch {
         // A reminder is not worth surfacing an error for.
       }
@@ -117,13 +122,13 @@ export default function NotificationAgent() {
         const key = `block-${block.id}`;
         if (alreadyNotified(key, day)) continue;
 
-        const label = block.type === 'break' ? block.title : `Starting soon: ${block.title}`;
-        if (notify(label, {
+        announce({
+          title: block.type === 'break' ? block.title : `Starting soon: ${block.title}`,
           body: `${block.start} – ${block.end}${block.details ? ` · ${block.details}` : ''}`,
           tag: key,
-        })) {
-          markNotified(key, day);
-        }
+          kind: 'block',
+        });
+        markNotified(key, day);
       }
 
       for (const course of coursesRef.current || []) {
@@ -133,12 +138,13 @@ export default function NotificationAgent() {
         const key = `course-${course.id}`;
         if (alreadyNotified(key, day)) continue;
 
-        if (notify(`Course: ${course.name}`, {
-          body: `Time for your session on ${course.platform || 'this course'} · ${course.progress || 0}% done`,
+        announce({
+          title: `Course: ${course.name}`,
+          body: `Time for your session${course.platform ? ` on ${course.platform}` : ''} · ${course.progress || 0}% done`,
           tag: key,
-        })) {
-          markNotified(key, day);
-        }
+          kind: 'course',
+        });
+        markNotified(key, day);
       }
     };
 

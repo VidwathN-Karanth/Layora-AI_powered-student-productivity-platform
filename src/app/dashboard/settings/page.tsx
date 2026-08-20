@@ -135,9 +135,54 @@ export default function SettingsPage() {
             (DEFAULT_ROUTINE in src/lib/scheduler.ts).
           */}
           <div className="glass-card rounded-2xl p-5 space-y-4">
-            <div className="flex items-center gap-2.5 border-b border-outline-variant pb-2">
-              <User className="w-4 h-4 text-primary" />
-              <h3 className="text-xs font-mono font-bold tracking-wider text-primary">Account</h3>
+            <div className="flex items-center justify-between border-b border-outline-variant pb-2 relative">
+              <div className="flex items-center gap-2.5">
+                <User className="w-4 h-4 text-primary" />
+                <h3 className="text-xs font-mono font-bold tracking-wider text-primary">Account</h3>
+              </div>
+              <div className="relative flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={() => setShowCalendarTooltip(!showCalendarTooltip)}
+                  className={`transition p-0.5 focus:outline-none cursor-pointer ${
+                    showCalendarTooltip ? 'text-primary' : 'text-outline hover:text-primary'
+                  }`}
+                  aria-expanded={showCalendarTooltip}
+                  aria-label="What reminders does this cover?"
+                >
+                  <Info className="w-3.5 h-3.5" />
+                </button>
+                {showCalendarTooltip && (
+                  <div className="absolute right-0 top-full mt-2 bg-surface-container-high border border-outline-variant rounded-xl shadow-lg z-30 w-72 p-3.5 space-y-2.5">
+                    <p className="text-[10px] font-mono text-on-surface-variant leading-relaxed">
+                      One switch for every reminder Layora sends. Turning it off silences all of
+                      them. Turn it on separately on every device you use — reminders appear on
+                      whichever device has Layora open, and nothing is emailed.
+                    </p>
+                    <ul className="space-y-1.5 text-[9px] font-mono text-outline leading-relaxed">
+                      <li className="flex items-start gap-2">
+                        <Bell className="w-3 h-3 mt-0.5 shrink-0 text-primary/60" />
+                        <span>Today&rsquo;s events, once, when you open the workspace.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Bell className="w-3 h-3 mt-0.5 shrink-0 text-primary/60" />
+                        <span>Timetable blocks, a few minutes before each starts — switch these on their own with &ldquo;Planner alerts&rdquo; on the Weekly Planner.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Bell className="w-3 h-3 mt-0.5 shrink-0 text-primary/60" />
+                        <span>Course reminders, at the time set on each course under &ldquo;Daily Notification&rdquo;.</span>
+                      </li>
+                    </ul>
+                    <div className="flex items-start gap-2 text-[9px] font-mono text-outline leading-relaxed pt-2 border-t border-outline-variant/40">
+                      <Calendar className="w-3 h-3 mt-0.5 shrink-0" />
+                      <p>
+                        Want them in the Google Calendar app instead? Use &ldquo;Sync to Google
+                        Calendar&rdquo; on the Events page, or on the Weekly Planner for study blocks.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Name is not editable: it comes from the college Google account so
@@ -162,6 +207,55 @@ export default function SettingsPage() {
               <p className="text-[9px] font-mono text-outline mt-1">
                 Your year group is set from this address by the department roster.
               </p>
+            </div>
+
+            {/* Reminders live here rather than in a panel of their own — one
+                switch does not need a whole card. */}
+            <div className="pt-1 border-t border-outline-variant/40">
+              <div className="bg-surface-container border border-outline-variant rounded-xl p-3.5 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <span className="text-xs font-mono font-bold text-on-surface flex items-center gap-1.5">
+                    <Bell className="w-3.5 h-3.5 text-primary" /> Reminders
+                  </span>
+                  <span className="text-[9px] font-mono text-outline">
+                    {notifPermission === 'unsupported'
+                      ? 'This browser cannot show desktop notifications'
+                      : notifPermission === 'denied'
+                        ? 'Desktop alerts blocked — allow them in your browser settings'
+                        : notifPermission === 'granted'
+                          ? store.notificationsEnabled ? 'On, including desktop alerts' : 'Switched off'
+                          : store.notificationsEnabled
+                            ? 'On in the app — allow desktop alerts too'
+                            : 'Switched off'}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {store.notificationsEnabled && notifPermission !== 'granted' && notifPermission !== 'unsupported' && notifPermission !== 'denied' && (
+                    <button
+                      onClick={enableNotifications}
+                      className="bg-primary/10 border border-primary/30 text-primary text-[10px] font-mono font-bold px-2.5 py-1.5 rounded-lg hover:bg-primary/20 transition cursor-pointer"
+                    >
+                      Allow
+                    </button>
+                  )}
+                  <button
+                    onClick={() => store.setNotificationsEnabled(!store.notificationsEnabled)}
+                    role="switch"
+                    aria-checked={store.notificationsEnabled}
+                    aria-label="Reminders"
+                    className={`relative flex h-5 w-9 items-center rounded-full transition-colors duration-200 cursor-pointer border ${
+                      store.notificationsEnabled ? 'bg-primary border-primary' : 'bg-surface-container-high border-outline-variant'
+                    }`}
+                  >
+                    <span
+                      className={`h-3.5 w-3.5 rounded-full bg-white transition-transform duration-200 ${
+                        store.notificationsEnabled ? 'translate-x-[1.15rem]' : 'translate-x-0.5'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -390,110 +484,6 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* --- PANEL 5: DEVICE REMINDERS --- */}
-          {/*
-            This used to be a "Calendar OAuth Integration" card whose only
-            behaviour was flipping a local boolean and showing "this feature
-            will come soon" — it did nothing, which is why nobody could tell
-            what it was for. The real Google Calendar export lives on the
-            Events and Weekly Planner pages, where the thing being exported
-            actually is. What belongs here is the reminder setting.
-          */}
-          <div className="glass-card rounded-2xl p-5 space-y-4">
-            <div className="flex items-center justify-between border-b border-outline-variant pb-2 relative">
-              <div className="flex items-center gap-2.5">
-                <Bell className="w-4 h-4 text-primary" />
-                <h3 className="text-xs font-mono font-bold tracking-wider text-primary">Reminders on this device</h3>
-              </div>
-              <div className="relative flex items-center justify-center">
-                <button
-                  type="button"
-                  onClick={() => setShowCalendarTooltip(!showCalendarTooltip)}
-                  className={`transition p-0.5 focus:outline-none cursor-pointer ${
-                    showCalendarTooltip ? 'text-primary' : 'text-outline hover:text-primary'
-                  }`}
-                  aria-expanded={showCalendarTooltip}
-                  aria-label="What reminders does this cover?"
-                >
-                  <Info className="w-3.5 h-3.5" />
-                </button>
-                {showCalendarTooltip && (
-                  <div className="absolute right-0 top-full mt-2 bg-surface-container-high border border-outline-variant rounded-xl shadow-lg z-30 w-72 p-3.5 space-y-2.5">
-                    <p className="text-[10px] font-mono text-on-surface-variant leading-relaxed">
-                      One switch for every reminder Layora sends. Turning it off silences all of
-                      them. Turn it on separately on every device you use — reminders appear on
-                      whichever device has Layora open, and nothing is emailed.
-                    </p>
-                    <ul className="space-y-1.5 text-[9px] font-mono text-outline leading-relaxed">
-                      <li className="flex items-start gap-2">
-                        <Bell className="w-3 h-3 mt-0.5 shrink-0 text-primary/60" />
-                        <span>Today&rsquo;s events, once, when you open the workspace.</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Bell className="w-3 h-3 mt-0.5 shrink-0 text-primary/60" />
-                        <span>Timetable blocks, a few minutes before each starts — switch these on their own with &ldquo;Planner alerts&rdquo; on the Weekly Planner.</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Bell className="w-3 h-3 mt-0.5 shrink-0 text-primary/60" />
-                        <span>Course reminders, at the time set on each course under &ldquo;Daily Notification&rdquo;.</span>
-                      </li>
-                    </ul>
-                    <div className="flex items-start gap-2 text-[9px] font-mono text-outline leading-relaxed pt-2 border-t border-outline-variant/40">
-                      <Calendar className="w-3 h-3 mt-0.5 shrink-0" />
-                      <p>
-                        Want them in the Google Calendar app instead? Use &ldquo;Sync to Google
-                        Calendar&rdquo; on the Events page, or on the Weekly Planner for study blocks.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="bg-surface-container border border-outline-variant rounded-xl p-4 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <span className="text-xs font-mono font-bold text-on-surface block">Browser notifications</span>
-                  <span className="text-[9px] font-mono text-outline">
-                    {notifPermission === 'unsupported'
-                      ? 'This browser cannot show notifications'
-                      : notifPermission === 'denied'
-                        ? 'Blocked for this site — allow it in your browser settings'
-                        : notifPermission === 'granted'
-                          ? store.notificationsEnabled ? 'On for this device' : 'Allowed, but switched off'
-                          : 'Not yet allowed'}
-                  </span>
-                </div>
-
-                {notifPermission === 'granted' && store.notificationsEnabled ? (
-                  <button
-                    onClick={() => store.setNotificationsEnabled(false)}
-                    className="flex items-center gap-1.5 text-xs font-mono text-emerald-500 bg-emerald-500/10 border border-emerald-500/25 rounded-full px-3 py-1 cursor-pointer hover:bg-emerald-500/20 transition shrink-0"
-                    title="Turn reminders off on this device"
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5" /> ON
-                  </button>
-                ) : notifPermission === 'granted' ? (
-                  <button
-                    onClick={() => store.setNotificationsEnabled(true)}
-                    className="bg-primary/10 border border-primary/30 text-primary text-[10px] font-mono font-bold px-3 py-1.5 rounded-lg hover:bg-primary/20 transition cursor-pointer shrink-0"
-                  >
-                    Turn on
-                  </button>
-                ) : (
-                  <button
-                    onClick={enableNotifications}
-                    disabled={notifPermission === 'unsupported' || notifPermission === 'denied'}
-                    className="bg-primary/10 border border-primary/30 text-primary text-[10px] font-mono font-bold px-3 py-1.5 rounded-lg hover:bg-primary/20 transition cursor-pointer shrink-0 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
-                  >
-                    <BellOff className="w-3 h-3" /> Allow
-                  </button>
-                )}
-              </div>
-
             </div>
           </div>
 

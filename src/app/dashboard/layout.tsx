@@ -17,8 +17,8 @@ import { formatShortDate } from '@/lib/dateFormat';
 import { UserButton, useUser, useAuth } from '@clerk/nextjs';
 import OnboardingModal from '@/components/OnboardingModal';
 import ZenMode from '@/components/ZenMode';
-import TodayEvents from '@/components/TodayEvents';
 import NotificationAgent from '@/components/NotificationAgent';
+import NotificationCenter from '@/components/NotificationCenter';
 import { isAdminEmail } from '@/lib/admin';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -462,8 +462,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </main>
 
       <ZenMode open={zenOpen} onClose={() => setZenOpen(false)} />
-      <TodayEvents />
       <NotificationAgent />
+      <NotificationCenter />
       <OnboardingModal />
     </div>
   );

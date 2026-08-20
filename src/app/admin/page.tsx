@@ -1086,7 +1086,9 @@ export default function AdminPage() {
             </div>
 
             {adminView === 'nodes' ? (
-              <div className="relative w-full sm:max-w-xs">
+              /* Narrower than it was: at sm:max-w-xs the search crowded the tab
+                 row and pushed the Events tab out of view. */
+              <div className="relative w-full sm:w-56 shrink-0">
                 <Search className="absolute left-3 top-2.5 w-4 h-4 text-white/30" />
                 <input
                   type="text"
@@ -1616,10 +1618,16 @@ export default function AdminPage() {
                       <input
                         id="ev-date"
                         type="date"
+                        lang="en-GB"
                         value={eventDate}
                         onChange={(e) => setEventDate(e.target.value)}
                         className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-400"
                       />
+                      {/* Chrome renders the picker in the browser's own locale and
+                          ignores lang=, so echo the chosen date unambiguously. */}
+                      <p className="text-[10px] font-mono text-white/40">
+                        {eventDate ? formatDate(eventDate) : 'dd/mm/yyyy'}
+                      </p>
                     </div>
                   </div>
 
@@ -1663,6 +1671,7 @@ export default function AdminPage() {
                         <input
                           id="ev-repeat-until"
                           type="date"
+                          lang="en-GB"
                           value={eventRepeatUntil}
                           min={eventDate || undefined}
                           onChange={(e) => setEventRepeatUntil(e.target.value)}

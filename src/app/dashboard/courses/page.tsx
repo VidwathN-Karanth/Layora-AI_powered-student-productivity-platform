@@ -343,6 +343,7 @@ export default function CoursesPage() {
                   <label className="block text-[10px] font-mono text-outline mb-1">Deadline</label>
                   <input
                     type="date"
+                    lang="en-GB"
                     value={deadline}
                     onChange={(e) => setDeadline(e.target.value)}
                     className="w-full bg-surface-container border border-outline-variant rounded-lg px-2 py-1 text-xs text-on-surface"

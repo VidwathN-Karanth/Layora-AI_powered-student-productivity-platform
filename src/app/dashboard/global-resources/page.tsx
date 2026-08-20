@@ -583,7 +583,7 @@ export default function GlobalResourcesPage() {
           No global resources found. Be the first to share a study notes document!
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 font-mono text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 font-mono text-xs">
           {filteredResources.map((res) => {
             const isOwner = res.uploadedBy.toLowerCase() === currentUserEmail.toLowerCase();
 
@@ -597,7 +597,7 @@ export default function GlobalResourcesPage() {
                 }`}
               >
                 {/* Document Preview Area */}
-                <div className="aspect-[4/3] bg-black/40 relative overflow-hidden flex items-center justify-center border-b border-outline-variant/30">
+                <div className="aspect-[3/2] bg-black/40 relative overflow-hidden flex items-center justify-center border-b border-outline-variant/30">
                   {/* A Drive thumbnail when the file is shared link-visible, and a
                       labelled file tile when it is not. The old markup hid a failed
                       image and drew nothing in its place, leaving a black rectangle. */}

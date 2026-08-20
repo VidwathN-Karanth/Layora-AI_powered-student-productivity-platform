@@ -417,6 +417,7 @@ export default function TasksPage() {
                     <label className="block text-[10px] font-mono text-white/50 mb-1">Due Date</label>
                     <input
                       type="date"
+                      lang="en-GB"
                       value={newTaskDeadline}
                       onChange={(e) => {
                         setNewTaskDeadline(e.target.value);

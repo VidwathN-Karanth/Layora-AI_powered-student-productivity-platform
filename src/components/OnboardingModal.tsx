@@ -779,6 +779,7 @@ export default function OnboardingModal() {
                           <label className="block text-[9px] font-mono text-outline mb-0.5">Deadline</label>
                           <input 
                             type="date" 
+                            lang="en-GB"
                             value={newCourseDeadline} 
                             onChange={(e) => setNewCourseDeadline(e.target.value)}
                             className="bg-surface-container border border-outline-variant rounded-lg px-1.5 py-1 text-xs w-full text-on-surface"
