@@ -7,7 +7,7 @@ import { useStore } from '@/store/useStore';
 import { resolveScheduleOverlaps } from '@/lib/scheduler';
 import { apiFetch } from '@/lib/apiClient';
 import { 
-  LayoutDashboard, CalendarRange, BookMarked, CheckSquare, 
+  LayoutDashboard, CalendarRange, BookMarked, CheckSquare, CalendarDays, 
   FolderLock, BarChart3, Settings, LogOut, ChevronLeft, 
   ChevronRight, Clock, 
   Check, Menu, X, Trophy, Award,
@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { UserButton, useUser, useAuth } from '@clerk/nextjs';
 import OnboardingModal from '@/components/OnboardingModal';
+import ZenMode from '@/components/ZenMode';
+import TodayEvents from '@/components/TodayEvents';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
 import { isAdminEmail } from '@/lib/admin';
 
@@ -82,6 +84,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // Digital clock state
   const [timeStr, setTimeStr] = useState('');
+  const [dateStr, setDateStr] = useState('');
+
+  // Zen mode: one 20-minute focus block, everything else out of the way.
+  const [zenOpen, setZenOpen] = useState(false);
   const lastCheckedDateRef = useRef('');
 
   useEffect(() => {
@@ -94,6 +100,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const updateTime = () => {
       const d = new Date();
       setTimeStr(d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: !store.is24HourFormat }));
+      setDateStr(d.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' }));
       
       const currentDayStr = d.toLocaleDateString('en-CA');
       if (currentDayStr !== lastCheckedDateRef.current) {
@@ -156,6 +163,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Weekly Planner', path: '/dashboard/planner', icon: CalendarRange },
     { name: 'Tasks', path: '/dashboard/tasks', icon: CheckSquare },
+    { name: 'Events', path: '/dashboard/events', icon: CalendarDays },
     { name: 'Courses', path: '/dashboard/courses', icon: BookMarked },
     { name: 'Resources', path: '/dashboard/resources', icon: FolderLock },
     { name: 'Certificates', path: '/dashboard/certificates', icon: Award },
@@ -360,9 +368,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               title={isSupabaseConfigured ? "Synced to Supabase" : "Running in Local Demo Mode"}
             />
             <Clock className="w-4 h-4 text-primary" strokeWidth={1.5} />
-            <span className="text-white font-bold font-mono text-lg min-w-[100px] text-center">
-              {timeStr || '00:00:00'}
-            </span>
+            <div className="flex flex-col items-center leading-none">
+              <span className="text-white font-bold font-mono text-lg min-w-[100px] text-center">
+                {timeStr || '00:00:00'}
+              </span>
+              <span className="text-[9px] font-mono uppercase tracking-wider text-white/45 mt-0.5">
+                {dateStr}
+              </span>
+            </div>
             <button 
               onClick={() => store.setIs24HourFormat(!store.is24HourFormat)}
               className="ml-1 text-xs font-semibold uppercase bg-white/10 hover:bg-white/20 text-white/80 px-1.5 py-0.5 rounded cursor-pointer transition border border-white/10"
@@ -394,6 +407,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => setZenOpen(true)}
+              title="Zen mode — a 20 minute focus session"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 hover:border-primary hover:text-primary text-white/70 transition cursor-pointer"
+            >
+              <Moon className="w-3.5 h-3.5" strokeWidth={1.5} />
+              <span className="font-mono text-[11px] font-bold uppercase tracking-wider">Zen</span>
+            </button>
+
             {/* Live running task timer details */}
             {store.activeTaskId && activeTask && (
               <div className="flex items-center gap-2.5 bg-primary/10 border border-primary/20 rounded-full px-3.5 py-1 text-xs text-primary">
@@ -435,6 +457,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </main>
 
+      <ZenMode open={zenOpen} onClose={() => setZenOpen(false)} />
+      <TodayEvents />
       <OnboardingModal />
     </div>
   );

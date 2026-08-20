@@ -52,8 +52,26 @@ export default function AccessDeniedPage() {
   const handleSignOut = async () => {
     store.logout();
     await signOut();
-    router.replace('/login');
+    router.replace('/');
   };
+
+  const [secondsLeft, setSecondsLeft] = useState(10);
+
+  useEffect(() => {
+    if (checking) return;
+
+    const tick = setInterval(() => {
+      setSecondsLeft((n) => (n <= 1 ? 0 : n - 1));
+    }, 1000);
+    return () => clearInterval(tick);
+  }, [checking]);
+
+  useEffect(() => {
+    if (checking || secondsLeft > 0) return;
+    handleSignOut();
+    // handleSignOut is stable enough for this one-shot redirect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checking, secondsLeft]);
 
   const copy = {
     wrong_domain: {
@@ -111,6 +129,12 @@ export default function AccessDeniedPage() {
 
         <p className="text-[11px] text-white/30">
           Already been added? Sign out and back in to refresh your access.
+        </p>
+
+        <p className="text-[11px] text-white/25 font-mono">
+          {secondsLeft > 0
+            ? `Returning to the home page in ${secondsLeft}s`
+            : 'Returning to the home page...'}
         </p>
       </motion.div>
     </main>

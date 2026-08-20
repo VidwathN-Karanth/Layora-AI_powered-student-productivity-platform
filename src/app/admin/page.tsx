@@ -51,6 +51,16 @@ interface GlobalResource {
   createdAt?: string;
 }
 
+interface StaffEvent {
+  id: string;
+  title: string;
+  description: string | null;
+  eventDate: string;
+  audience: string;
+  creatorName: string | null;
+  isStaff: boolean;
+}
+
 interface ResumeEntry {
   userId: string;
   name: string;
@@ -226,6 +236,82 @@ export default function AdminPage() {
     }
   };
 
+  // Department calendar — events staff publish to a year or to everyone
+  const [staffEvents, setStaffEvents] = useState<StaffEvent[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(false);
+  const [eventsError, setEventsError] = useState('');
+  const [showEventForm, setShowEventForm] = useState(false);
+  const [eventTitle, setEventTitle] = useState('');
+  const [eventDesc, setEventDesc] = useState('');
+  const [eventDate, setEventDate] = useState('');
+  const [eventAudience, setEventAudience] = useState<'cohort' | 'everyone'>('cohort');
+  const [savingEvent, setSavingEvent] = useState(false);
+
+  const fetchStaffEvents = async () => {
+    setLoadingEvents(true);
+    setEventsError('');
+    try {
+      const data = await readJson<{ events?: StaffEvent[] }>(
+        await apiFetch(`/api/admin/events?cohort=${encodeURIComponent(selectedCohort)}`)
+      );
+      setStaffEvents(data.events || []);
+    } catch (err) {
+      console.error(err);
+      setEventsError(errorMessage(err, 'Could not load the department calendar.'));
+    } finally {
+      setLoadingEvents(false);
+    }
+  };
+
+  const resetEventForm = () => {
+    setEventTitle('');
+    setEventDesc('');
+    setEventDate('');
+    setEventAudience('cohort');
+    setShowEventForm(false);
+  };
+
+  const handleCreateEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!eventTitle.trim() || !eventDate) return;
+
+    setSavingEvent(true);
+    setEventsError('');
+    try {
+      await readJson(
+        await apiFetch('/api/admin/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: eventTitle,
+            description: eventDesc,
+            eventDate,
+            audience: eventAudience === 'everyone' ? 'Everyone' : selectedCohort,
+          }),
+        })
+      );
+      resetEventForm();
+      await fetchStaffEvents();
+    } catch (err) {
+      console.error(err);
+      setEventsError(errorMessage(err, 'Could not publish the event.'));
+    } finally {
+      setSavingEvent(false);
+    }
+  };
+
+  const handleDeleteEvent = async (id: string, title: string) => {
+    if (!confirm(`Remove "${title}" from the calendar? Students will no longer see it.`)) return;
+    setEventsError('');
+    try {
+      await readJson(await apiFetch(`/api/admin/events?id=${encodeURIComponent(id)}`, { method: 'DELETE' }));
+      setStaffEvents((prev) => prev.filter((e) => e.id !== id));
+    } catch (err) {
+      console.error(err);
+      setEventsError(errorMessage(err, 'Could not remove the event.'));
+    }
+  };
+
   // Resumes roll call — who in this year has uploaded a CV
   const [resumes, setResumes] = useState<ResumeEntry[]>([]);
   const [loadingResumes, setLoadingResumes] = useState(false);
@@ -271,7 +357,7 @@ export default function AdminPage() {
   };
 
   // Leaderboard States & Handlers
-  const [adminView, setAdminView] = useState<'nodes' | 'leaderboard' | 'library' | 'certificates' | 'resumes'>('nodes');
+  const [adminView, setAdminView] = useState<'nodes' | 'leaderboard' | 'library' | 'certificates' | 'resumes' | 'events'>('nodes');
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [leaderboardRange, setLeaderboardRange] = useState<'today' | 'week' | 'all'>('all');
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
@@ -435,6 +521,12 @@ export default function AdminPage() {
     }
   }, [authorized, adminView, selectedCohort]);
 
+  useEffect(() => {
+    if (authorized && adminView === 'events') {
+      fetchStaffEvents();
+    }
+  }, [authorized, adminView, selectedCohort]);
+
   /**
    * Switching year clears everything drilled into under the previous one.
    * Without this, a student's detail panel could stay open over a list that no
@@ -447,6 +539,8 @@ export default function AdminPage() {
     setSelectedCertUser(null);
     setActiveResume(null);
     setResumes([]);
+    setStaffEvents([]);
+    resetEventForm();
     setInspectedCerts([]);
     setActiveCertPreview(null);
     setShowDeleteConfirm(null);
@@ -999,6 +1093,16 @@ export default function AdminPage() {
               >
                 📄 Resumes
               </button>
+              <button
+                onClick={() => setAdminView('events')}
+                className={`text-xs font-mono font-bold tracking-wider uppercase px-3 py-1.5 rounded-lg border transition cursor-pointer ${
+                  adminView === 'events'
+                    ? 'border-violet-400 bg-violet-500/10 text-violet-400'
+                    : 'border-transparent text-white/50 hover:text-white'
+                }`}
+              >
+                🗓 Events
+              </button>
             </div>
 
             {adminView === 'nodes' ? (
@@ -1011,6 +1115,19 @@ export default function AdminPage() {
                   placeholder="Query name, email or UUID..."
                   className="w-full bg-black/40 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-cyber-blue"
                 />
+              </div>
+            ) : adminView === 'events' ? (
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-white/40">
+                  {staffEvents.length} scheduled
+                </span>
+                <button
+                  onClick={() => setShowEventForm((v) => !v)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-violet-500/10 border border-violet-500/30 hover:border-violet-400 text-violet-300 transition cursor-pointer text-[10px] uppercase font-bold tracking-wider"
+                >
+                  <Plus className="w-3 h-3" />
+                  {showEventForm ? 'Cancel' : 'New event'}
+                </button>
               </div>
             ) : adminView === 'resumes' ? (
               <div className="flex items-center gap-3">
@@ -1482,6 +1599,172 @@ export default function AdminPage() {
                                 title="Remove from library"
                               >
                                 <Trash2 className={`w-3.5 h-3.5 ${removingResourceId === res.id ? 'animate-pulse' : ''}`} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {adminView === 'events' && (
+            <div>
+              {showEventForm && (
+                <form onSubmit={handleCreateEvent} className="p-5 border-b border-white/10 bg-white/2 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="sm:col-span-2 space-y-1.5">
+                      <label htmlFor="ev-title" className="block text-[10px] font-mono uppercase tracking-wider text-white/40">
+                        Event
+                      </label>
+                      <input
+                        id="ev-title"
+                        value={eventTitle}
+                        onChange={(e) => setEventTitle(e.target.value)}
+                        maxLength={120}
+                        placeholder="e.g. Internal assessment 2"
+                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-white/25 focus:outline-none focus:border-violet-400"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label htmlFor="ev-date" className="block text-[10px] font-mono uppercase tracking-wider text-white/40">
+                        Date
+                      </label>
+                      <input
+                        id="ev-date"
+                        type="date"
+                        value={eventDate}
+                        onChange={(e) => setEventDate(e.target.value)}
+                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label htmlFor="ev-desc" className="block text-[10px] font-mono uppercase tracking-wider text-white/40">
+                      Details (optional)
+                    </label>
+                    <textarea
+                      id="ev-desc"
+                      value={eventDesc}
+                      onChange={(e) => setEventDesc(e.target.value)}
+                      rows={2}
+                      maxLength={500}
+                      className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-white/25 focus:outline-none focus:border-violet-400 resize-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <span className="block text-[10px] font-mono uppercase tracking-wider text-white/40">
+                      Who sees it
+                    </span>
+                    <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-white/5 border border-white/10">
+                      {([
+                        { key: 'cohort' as const, label: `${selectedCohort} only` },
+                        { key: 'everyone' as const, label: 'Every year' },
+                      ]).map((opt) => (
+                        <button
+                          key={opt.key}
+                          type="button"
+                          onClick={() => setEventAudience(opt.key)}
+                          className={`px-3 py-1.5 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition cursor-pointer ${
+                            eventAudience === opt.key
+                              ? 'bg-violet-500 text-white'
+                              : 'text-white/50 hover:text-white'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="submit"
+                      disabled={savingEvent || !eventTitle.trim() || !eventDate}
+                      className="px-4 py-2 rounded-lg bg-violet-500 hover:bg-violet-400 text-white text-xs font-bold uppercase tracking-wider transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {savingEvent ? 'Publishing...' : 'Publish'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={resetEventForm}
+                      className="px-4 py-2 rounded-lg border border-white/10 hover:border-white/25 text-white/60 hover:text-white text-xs font-bold uppercase tracking-wider transition cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {loadingEvents ? (
+                <div className="p-12 text-center text-white/40 text-xs flex flex-col items-center gap-3">
+                  <RefreshCw className="w-6 h-6 animate-spin text-violet-400" />
+                  Loading the calendar...
+                </div>
+              ) : eventsError ? (
+                <div className="p-12 text-center text-rose-300 text-xs flex flex-col items-center gap-2">
+                  <AlertTriangle className="w-6 h-6 text-rose-400" />
+                  <span>{eventsError}</span>
+                  <button
+                    onClick={fetchStaffEvents}
+                    className="mt-3 px-3 py-1.5 bg-rose-950/30 border border-rose-500/25 hover:bg-rose-950/50 text-rose-300 rounded-lg text-[10px] font-bold transition cursor-pointer"
+                  >
+                    TRY AGAIN
+                  </button>
+                </div>
+              ) : staffEvents.length === 0 ? (
+                <div className="p-12 text-center text-white/30 text-xs">
+                  Nothing scheduled for {selectedCohort} yet.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-white/10 bg-white/2 text-white/40 font-bold uppercase tracking-wider">
+                        <th className="p-4 font-normal">Date</th>
+                        <th className="p-4 font-normal">Event</th>
+                        <th className="p-4 font-normal">Audience</th>
+                        <th className="p-4 font-normal">Posted by</th>
+                        <th className="p-4 font-normal text-center w-24">Remove</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {staffEvents.map((ev) => (
+                        <tr key={ev.id} className="hover:bg-white/3 transition">
+                          <td className="p-4 font-mono text-white/70 whitespace-nowrap">
+                            {new Date(`${ev.eventDate}T00:00:00`).toLocaleDateString(undefined, {
+                              day: 'numeric', month: 'short', year: 'numeric',
+                            })}
+                          </td>
+                          <td className="p-4">
+                            <div className="font-bold text-white">{ev.title}</div>
+                            {ev.description && (
+                              <div className="text-[10px] text-white/40 mt-0.5 max-w-md">{ev.description}</div>
+                            )}
+                          </td>
+                          <td className="p-4">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${
+                              ev.audience === 'Everyone'
+                                ? 'bg-violet-500/10 border-violet-500/30 text-violet-300'
+                                : 'bg-white/5 border-white/10 text-white/60'
+                            }`}>
+                              {ev.audience}
+                            </span>
+                          </td>
+                          <td className="p-4 text-white/50">{ev.creatorName || 'Staff'}</td>
+                          <td className="p-4">
+                            <div className="flex items-center justify-center">
+                              <button
+                                onClick={() => handleDeleteEvent(ev.id, ev.title)}
+                                className="p-1.5 rounded-lg border border-white/10 hover:border-rose-400 text-white/60 hover:text-rose-400 transition cursor-pointer"
+                                title="Remove from the calendar"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           </td>
