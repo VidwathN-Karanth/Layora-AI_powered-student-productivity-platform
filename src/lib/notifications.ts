@@ -202,3 +202,27 @@ export function announce({ title, body, tag, kind = 'event' }: Announcement): bo
 
   return notify(title, { body, tag });
 }
+
+/** Just enough of an event for the agenda line. */
+export interface AgendaEntry {
+  title: string;
+  isStaff?: boolean;
+}
+
+/**
+ * The "what's on today" announcement, including the empty case.
+ *
+ * An empty day still gets an announcement: silence is ambiguous — it reads
+ * equally as "nothing scheduled" and "reminders are broken" — and the whole
+ * point of announcing on every open is that the student knows where they stand.
+ */
+export function agendaAnnouncement(entries: AgendaEntry[]): { title: string; body: string } {
+  if (entries.length === 0) {
+    return { title: 'Nothing on today', body: 'No events on your calendar for today.' };
+  }
+
+  return {
+    title: entries.length === 1 ? 'You have an event today' : `${entries.length} events today`,
+    body: entries.map((e) => `${e.title}${e.isStaff ? ' (department)' : ''}`).join(' · '),
+  };
+}

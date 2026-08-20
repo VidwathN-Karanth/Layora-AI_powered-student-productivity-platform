@@ -10,6 +10,9 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { getPlatformDisplay, formatCourseLink } from '@/lib/courseUtils';
 
+/** What the card shows when a course has no reminder time of its own. */
+const DEFAULT_REMINDER_TIME = '09:00';
+
 export default function CoursesPage() {
   const store = useStore();
 
@@ -235,7 +238,15 @@ export default function CoursesPage() {
                       <input
                         type="checkbox"
                         checked={course.reminderEnabled || false}
-                        onChange={(e) => store.updateCourse(course.id, { reminderEnabled: e.target.checked })}
+                        onChange={(e) =>
+                          store.updateCourse(course.id, {
+                            reminderEnabled: e.target.checked,
+                            // Without this the switch turned the reminder on but left
+                            // reminderTime undefined, so it never fired — while the row
+                            // below happily displayed the 09:00 fallback as if it were set.
+                            reminderTime: course.reminderTime || DEFAULT_REMINDER_TIME,
+                          })
+                        }
                         className="sr-only peer"
                       />
                       <div className="w-8 h-4.5 bg-surface-container-high rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-outline after:border-outline-variant after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-purple-600 peer-checked:to-blue-500 peer-checked:after:bg-on-primary"></div>
@@ -245,7 +256,7 @@ export default function CoursesPage() {
                     <div className="flex items-center justify-between gap-2 bg-surface-container-low/50 p-2 rounded-xl border border-outline-variant/20">
                       <span className="text-[9px] font-mono text-outline">Reminder Time:</span>
                       <span className="text-[10px] text-primary font-mono font-bold px-2.5 py-1 bg-surface-container border border-outline-variant/30 rounded-lg select-none">
-                        {formatTimeToAMPM(course.reminderTime || '09:00')}
+                        {formatTimeToAMPM(course.reminderTime || DEFAULT_REMINDER_TIME)}
                       </span>
                     </div>
                   )}

@@ -6,7 +6,8 @@ import { apiFetch, readJson } from '@/lib/apiClient';
 import { occursOn, type RepeatRule } from '@/lib/recurrence';
 import { toDateKey } from '@/lib/dateFormat';
 import {
-  alreadyNotified, announce, isReminderDue, markNotified, pruneNotificationMarks, timeToMinutes,
+  agendaAnnouncement, alreadyNotified, announce, isReminderDue, markNotified,
+  pruneNotificationMarks, timeToMinutes,
 } from '@/lib/notifications';
 
 interface CalendarEvent {
@@ -25,6 +26,9 @@ const TICK_MS = 60_000;
 /** A block announces itself this many minutes before it starts. */
 const LEAD_MINUTES = 5;
 
+/** Matches the fallback the course card shows when no time was ever saved. */
+const DEFAULT_COURSE_REMINDER_TIME = '09:00';
+
 /**
  * Turns the day's schedule into reminders.
  *
@@ -34,12 +38,13 @@ const LEAD_MINUTES = 5;
  * permission. Nothing talks to an outside service.
  *
  * Three things are announced:
- *   1. Today's events, once, when the workspace opens.
+ *   1. Today's agenda, every time the workspace is opened — including a plain
+ *      "nothing on today" so silence is never ambiguous.
  *   2. Each timetable block, shortly before it starts.
  *   3. Each course reminder, at the time the student set on it.
  *
- * Every one is marked as sent for the day, so reloading the page does not
- * re-announce anything. Renders nothing.
+ * Blocks and courses are marked as sent for the day, so a reload does not
+ * repeat them. Renders nothing.
  */
 export default function NotificationAgent() {
   // The master switch in Settings gates everything; the planner has its own
@@ -58,17 +63,21 @@ export default function NotificationAgent() {
   useEffect(() => { coursesRef.current = courses; }, [courses]);
   useEffect(() => { plannerRef.current = plannerEnabled; }, [plannerEnabled]);
 
-  // 1. Today's events, announced once when the workspace opens.
+  // 1. Today's agenda, announced every time the workspace is opened.
+  //
+  // Deliberately not once-per-day: a student opening the site at nine and again
+  // at four should be told both times. It is one announcement per page load,
+  // and the dashboard layout does not remount as you move between pages, so
+  // navigating around does not repeat it.
   useEffect(() => {
     if (!enabled) return;
     let cancelled = false;
     const day = toDateKey(new Date());
 
+    // Still prunes: block and course marks below are per-day.
     pruneNotificationMarks(day);
 
     (async () => {
-      if (alreadyNotified('events', day)) return;
-
       try {
         const data = await readJson<{ events: CalendarEvent[] }>(await apiFetch('/api/events'));
         if (cancelled) return;
@@ -76,19 +85,13 @@ export default function NotificationAgent() {
         // A repeating entry is stored once, so match occurrences rather than
         // the stored start date.
         const todays = (data.events || []).filter((e) => occursOn(e, day));
-        if (todays.length === 0) return;
 
         // Let the workspace paint first, so the toast reads as an arrival
         // rather than part of the page load.
         setTimeout(() => {
           if (cancelled) return;
-          announce({
-            title: todays.length === 1 ? 'You have an event today' : `${todays.length} events today`,
-            body: todays.map((e) => `${e.title}${e.isStaff ? ' (department)' : ''}`).join(' · '),
-            tag: `layora-events-${day}`,
-            kind: 'event',
-          });
-          markNotified('events', day);
+          // Handles the empty day too — see agendaAnnouncement.
+          announce({ ...agendaAnnouncement(todays), tag: `layora-events-${day}`, kind: 'event' });
         }, 900);
       } catch {
         // A reminder is not worth surfacing an error for.
@@ -133,7 +136,12 @@ export default function NotificationAgent() {
 
       for (const course of coursesRef.current || []) {
         if (!course.reminderEnabled) continue;
-        if (!isReminderDue(course.reminderTime, now)) continue;
+
+        // Courses saved before the card's switch started writing a time have
+        // reminderEnabled with no reminderTime. The card always displayed 09:00
+        // for those, so honour that rather than staying silent forever.
+        const reminderTime = course.reminderTime || DEFAULT_COURSE_REMINDER_TIME;
+        if (!isReminderDue(reminderTime, now)) continue;
 
         const key = `course-${course.id}`;
         if (alreadyNotified(key, day)) continue;
