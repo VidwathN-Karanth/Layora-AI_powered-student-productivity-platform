@@ -9,7 +9,10 @@ import {
   Check, Sparkles, User, Bell, BellOff, Calendar,
   ShieldCheck, Loader2, Info, Lock
 } from 'lucide-react';
-import { permissionState, requestPermission, notify, type NotificationPermissionState } from '@/lib/notifications';
+import {
+  announce, clearTodaysNotificationMarks, permissionState, requestPermission,
+  type NotificationPermissionState,
+} from '@/lib/notifications';
 
 export default function SettingsPage() {
   const store = useStore();
@@ -47,8 +50,26 @@ export default function SettingsPage() {
     setNotifPermission(state);
     if (state === 'granted') {
       store.setNotificationsEnabled(true);
-      notify('Reminders are on', { body: 'This is what a Layora reminder looks like.', tag: 'layora-test' });
+      announce({ title: 'Reminders are on', body: 'This is what a Layora reminder looks like.', tag: 'layora-test' });
     }
+  };
+
+  /**
+   * Proves the whole path in one click, with no timing involved.
+   *
+   * If the toast appears but no desktop alert does, the browser permission is
+   * the missing piece. If neither appears, reminders are switched off. Also
+   * clears today's "already announced" marks, so a real reminder that already
+   * fired can fire again while testing.
+   */
+  const sendTestReminder = () => {
+    clearTodaysNotificationMarks();
+    announce({
+      title: 'Course: test reminder',
+      body: 'If you can see this, reminders are working on this device.',
+      tag: 'layora-test-reminder',
+      kind: 'course',
+    });
   };
 
   const handleLinkAccount = async (field: 'leetcode' | 'github' | 'codechef' | 'linkedin') => {
@@ -239,6 +260,13 @@ export default function SettingsPage() {
                       Allow
                     </button>
                   )}
+                  <button
+                    onClick={sendTestReminder}
+                    title="Send a test reminder now"
+                    className="border border-outline-variant text-[10px] font-mono font-bold px-2.5 py-1.5 rounded-lg text-on-surface-variant hover:border-primary hover:text-primary transition cursor-pointer"
+                  >
+                    Test
+                  </button>
                   <button
                     onClick={() => store.setNotificationsEnabled(!store.notificationsEnabled)}
                     role="switch"

@@ -130,12 +130,11 @@ export function timeToMinutes(time: string | null | undefined): number | null {
 }
 
 /**
- * Whether a reminder set for `time` is due at `now`.
+ * Whether a reminder set for `time` is due at `now`, within a short window.
  *
- * The window matters: a reminder is checked on a timer, so an exact equality
- * test would miss it whenever a tick lands either side of the minute. Firing
- * for a few minutes after the time, combined with the once-per-day mark above,
- * means it arrives once and is not missed.
+ * Useful when a late reminder would be noise — a timetable block that already
+ * started, say. For anything that should still be delivered late, use
+ * `hasReminderTimePassed`.
  */
 export function isReminderDue(time: string | null | undefined, now: Date, windowMinutes = 5): boolean {
   const target = timeToMinutes(time);
@@ -143,6 +142,23 @@ export function isReminderDue(time: string | null | undefined, now: Date, window
 
   const current = now.getHours() * 60 + now.getMinutes();
   return current >= target && current < target + windowMinutes;
+}
+
+/**
+ * Whether a reminder set for `time` is due at any point later today.
+ *
+ * A browser can only announce something while the site is actually open, so a
+ * narrow window around the set time means a reminder is simply lost whenever
+ * the student happens not to be looking — which is exactly what happened with
+ * course reminders. Pairing this with the once-per-day mark means the reminder
+ * is delivered the first time the workspace is open at or after its time, and
+ * exactly once.
+ */
+export function hasReminderTimePassed(time: string | null | undefined, now: Date): boolean {
+  const target = timeToMinutes(time);
+  if (target === null) return false;
+
+  return now.getHours() * 60 + now.getMinutes() >= target;
 }
 
 /* ────────────────────────────────────────────────────────────────
@@ -225,4 +241,84 @@ export function agendaAnnouncement(entries: AgendaEntry[]): { title: string; bod
     title: entries.length === 1 ? 'You have an event today' : `${entries.length} events today`,
     body: entries.map((e) => `${e.title}${e.isStaff ? ' (department)' : ''}`).join(' · '),
   };
+}
+
+/** The shape the agent needs from a course to decide about its reminder. */
+export interface CourseReminderInput {
+  id: string;
+  name: string;
+  platform?: string;
+  progress?: number;
+  reminderEnabled?: boolean;
+  reminderTime?: string;
+}
+
+/** Matches the fallback the course card displays when no time was ever saved. */
+export const DEFAULT_COURSE_REMINDER_TIME = '09:00';
+
+export interface DueReminder {
+  key: string;
+  title: string;
+  body: string;
+}
+
+/**
+ * Which course reminders should be announced right now.
+ *
+ * Pulled out of the component so the decision can be tested directly — this
+ * logic has been wrong twice, and reasoning about it inside an effect was how
+ * both bugs survived.
+ *
+ * `isMarked` reports whether a key has already been announced today.
+ */
+export function dueCourseReminders(
+  courses: CourseReminderInput[],
+  now: Date,
+  isMarked: (key: string) => boolean
+): DueReminder[] {
+  const due: DueReminder[] = [];
+
+  for (const course of courses || []) {
+    if (!course.reminderEnabled) continue;
+
+    const time = course.reminderTime || DEFAULT_COURSE_REMINDER_TIME;
+    if (!hasReminderTimePassed(time, now)) continue;
+
+    const key = `course-${course.id}`;
+    if (isMarked(key)) continue;
+
+    const where = course.platform ? ` on ${course.platform}` : '';
+    const progress = `${course.progress || 0}% done`;
+
+    due.push({
+      key,
+      title: `Course: ${course.name}`,
+      body: isReminderDue(time, now)
+        ? `Time for your session${where} · ${progress}`
+        : `Your ${time} session is still waiting${where} · ${progress}`,
+    });
+  }
+
+  return due;
+}
+
+/**
+ * Forgets every "already announced" mark for today.
+ *
+ * Reminders fire once a day by design, which makes them awkward to test: once
+ * one has gone out there is no way to see it again until tomorrow. The test
+ * button in Settings calls this first so a real reminder can fire again.
+ */
+export function clearTodaysNotificationMarks(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (key && key.startsWith(SEEN_PREFIX)) keys.push(key);
+    }
+    keys.forEach((key) => window.localStorage.removeItem(key));
+  } catch {
+    // Nothing here is worth interrupting the page for.
+  }
 }

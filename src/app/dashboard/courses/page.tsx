@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import { useStore } from '@/store/useStore';
+import { apiFetch, readJson, errorMessage } from '@/lib/apiClient';
 import { 
   BookMarked, PlusCircle, Trash, Award, 
   BookOpen, Calendar, HelpCircle, GraduationCap, Clock, ExternalLink,
-  Bell, Pencil
+  Bell, Pencil, RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getPlatformDisplay, formatCourseLink } from '@/lib/courseUtils';
@@ -56,6 +57,45 @@ export default function CoursesPage() {
     return `${String(next.getHours()).padStart(2, '0')}:${String(next.getMinutes()).padStart(2, '0')}`;
   });
   const [formErrors, setFormErrors] = useState<Record<string, string | undefined>>({});
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<{ ok: boolean; text: string } | null>(null);
+
+  /** Pushes each reminder-enabled course into Google Calendar as a daily series. */
+  const syncCoursesToGoogle = async () => {
+    setSyncing(true);
+    setSyncMessage(null);
+    try {
+      const data = await readJson<{ syncedCount: number; skipped: number; skippedNames: string[] }>(
+        await apiFetch('/api/calendar/courses', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            courses: store.courses.map((c) => ({
+              id: c.id,
+              name: c.name,
+              platform: c.platform,
+              reminderEnabled: c.reminderEnabled,
+              reminderTime: c.reminderTime || DEFAULT_REMINDER_TIME,
+              deadline: c.deadline,
+            })),
+          }),
+        })
+      );
+
+      const skippedNote = data.skippedNames?.length ? ` Skipped: ${data.skippedNames.join(', ')}.` : '';
+      setSyncMessage({
+        ok: data.syncedCount > 0,
+        text: data.syncedCount > 0
+          ? `Added a daily reminder for ${data.syncedCount} course${data.syncedCount === 1 ? '' : 's'} to your Google Calendar.${skippedNote}`
+          : `Nothing was synced.${skippedNote || ' Turn on Daily Notification for a course first.'}`,
+      });
+      setTimeout(() => setSyncMessage(null), 9000);
+    } catch (err) {
+      setSyncMessage({ ok: false, text: errorMessage(err, 'Could not sync to Google Calendar.') });
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   // Edit course state
   const [showEditCourse, setShowEditCourse] = useState(false);
@@ -165,17 +205,43 @@ export default function CoursesPage() {
           <p className="text-xs text-outline mt-0.5">Manage external platforms, bootcamps, and certification milestones.</p>
         </div>
 
-        <button
-          onClick={() => {
-            setFormErrors({});
-            setShowAddCourse(true);
-          }}
-          className="bg-primary hover:brightness-110 text-black rounded-lg px-4 py-2.5 text-xs font-semibold flex items-center gap-2 active:scale-95 transition cursor-pointer shadow-lg"
-        >
-          <PlusCircle className="w-4 h-4" />
-          Add Online Course
-        </button>
+        <div className="flex items-center gap-2">
+          {/* A browser reminder only fires while Layora is open. Pushing the
+              same reminder into Google Calendar as a real daily recurrence
+              means the phone still buzzes with the site closed. */}
+          <button
+            onClick={syncCoursesToGoogle}
+            disabled={syncing || !store.courses.some((c) => c.reminderEnabled)}
+            title="Add a daily reminder for each course to your Google Calendar, repeating until its deadline"
+            className="rounded-lg px-4 py-2.5 text-xs font-semibold flex items-center gap-2 border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 transition active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {syncing
+              ? <><RefreshCw className="w-4 h-4 animate-spin" /> Syncing...</>
+              : <><Calendar className="w-4 h-4" /> Sync reminders to Google Calendar</>}
+          </button>
+
+          <button
+            onClick={() => {
+              setFormErrors({});
+              setShowAddCourse(true);
+            }}
+            className="bg-primary hover:brightness-110 text-black rounded-lg px-4 py-2.5 text-xs font-semibold flex items-center gap-2 active:scale-95 transition cursor-pointer shadow-lg"
+          >
+            <PlusCircle className="w-4 h-4" />
+            Add Online Course
+          </button>
+        </div>
       </div>
+
+      {syncMessage && (
+        <div className={`p-3.5 rounded-xl text-xs font-mono flex items-center gap-2 border ${
+          syncMessage.ok
+            ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400'
+            : 'bg-red-950/20 border-red-500/25 text-red-300'
+        }`}>
+          <Calendar className="w-3.5 h-3.5 shrink-0" /> {syncMessage.text}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {store.courses.length === 0 ? (

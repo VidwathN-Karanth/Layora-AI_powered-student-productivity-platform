@@ -6,8 +6,8 @@ import { apiFetch, readJson } from '@/lib/apiClient';
 import { occursOn, type RepeatRule } from '@/lib/recurrence';
 import { toDateKey } from '@/lib/dateFormat';
 import {
-  agendaAnnouncement, alreadyNotified, announce, isReminderDue, markNotified,
-  pruneNotificationMarks, timeToMinutes,
+  agendaAnnouncement, alreadyNotified, announce, dueCourseReminders,
+  markNotified, pruneNotificationMarks, timeToMinutes,
 } from '@/lib/notifications';
 
 interface CalendarEvent {
@@ -26,9 +26,6 @@ const TICK_MS = 60_000;
 /** A block announces itself this many minutes before it starts. */
 const LEAD_MINUTES = 5;
 
-/** Matches the fallback the course card shows when no time was ever saved. */
-const DEFAULT_COURSE_REMINDER_TIME = '09:00';
-
 /**
  * Turns the day's schedule into reminders.
  *
@@ -41,7 +38,8 @@ const DEFAULT_COURSE_REMINDER_TIME = '09:00';
  *   1. Today's agenda, every time the workspace is opened — including a plain
  *      "nothing on today" so silence is never ambiguous.
  *   2. Each timetable block, shortly before it starts.
- *   3. Each course reminder, at the time the student set on it.
+ *   3. Each course reminder — at its time, or on the next open after it if the
+ *      workspace was closed then.
  *
  * Blocks and courses are marked as sent for the day, so a reload does not
  * repeat them. Renders nothing.
@@ -134,25 +132,10 @@ export default function NotificationAgent() {
         markNotified(key, day);
       }
 
-      for (const course of coursesRef.current || []) {
-        if (!course.reminderEnabled) continue;
-
-        // Courses saved before the card's switch started writing a time have
-        // reminderEnabled with no reminderTime. The card always displayed 09:00
-        // for those, so honour that rather than staying silent forever.
-        const reminderTime = course.reminderTime || DEFAULT_COURSE_REMINDER_TIME;
-        if (!isReminderDue(reminderTime, now)) continue;
-
-        const key = `course-${course.id}`;
-        if (alreadyNotified(key, day)) continue;
-
-        announce({
-          title: `Course: ${course.name}`,
-          body: `Time for your session${course.platform ? ` on ${course.platform}` : ''} · ${course.progress || 0}% done`,
-          tag: key,
-          kind: 'course',
-        });
-        markNotified(key, day);
+      // The decision lives in dueCourseReminders so it can be tested directly.
+      for (const reminder of dueCourseReminders(coursesRef.current || [], now, (key) => alreadyNotified(key, day))) {
+        announce({ title: reminder.title, body: reminder.body, tag: reminder.key, kind: 'course' });
+        markNotified(reminder.key, day);
       }
     };
 
