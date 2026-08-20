@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CalendarDays, Clock, BookMarked, X } from 'lucide-react';
 import { onToast, type Toast, type ToastKind } from '@/lib/notifications';
@@ -26,6 +27,7 @@ const ICONS: Record<ToastKind, typeof CalendarDays> = {
  * unreadable, so this paints a solid surface rather than frosted glass.
  */
 export default function NotificationCenter() {
+  const router = useRouter();
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const dismiss = useCallback((id: string) => {
@@ -61,7 +63,21 @@ export default function NotificationCenter() {
               aria-live="polite"
               className="layora-toast pointer-events-auto rounded-2xl border border-outline-variant shadow-2xl overflow-hidden"
             >
-              <div className="flex items-start gap-3 p-4">
+              {/* The whole card is the target — a reminder you cannot act on is
+                  only half a reminder. The close button stops the click below. */}
+              <div
+                role="link"
+                tabIndex={0}
+                onClick={() => { router.push(toast.url); dismiss(toast.id); }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    router.push(toast.url);
+                    dismiss(toast.id);
+                  }
+                }}
+                className="flex items-start gap-3 p-4 cursor-pointer hover:bg-white/5 transition"
+              >
                 <div className="w-8 h-8 rounded-lg bg-primary/15 border border-primary/30 flex items-center justify-center text-primary shrink-0">
                   <Icon className="w-4 h-4" />
                 </div>
@@ -76,7 +92,7 @@ export default function NotificationCenter() {
                 </div>
 
                 <button
-                  onClick={() => dismiss(toast.id)}
+                  onClick={(e) => { e.stopPropagation(); dismiss(toast.id); }}
                   aria-label="Dismiss this reminder"
                   className="p-1.5 rounded-lg text-outline hover:text-on-surface hover:bg-white/10 transition cursor-pointer shrink-0"
                 >

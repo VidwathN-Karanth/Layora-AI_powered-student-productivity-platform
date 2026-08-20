@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { apiFetch, readJson, errorMessage } from '@/lib/apiClient';
+import { clearNotificationMark } from '@/lib/notifications';
+import { toDateKey } from '@/lib/dateFormat';
 import { 
   BookMarked, PlusCircle, Trash, Award, 
   BookOpen, Calendar, HelpCircle, GraduationCap, Clock, ExternalLink,
@@ -13,6 +15,17 @@ import { getPlatformDisplay, formatCourseLink } from '@/lib/courseUtils';
 
 /** What the card shows when a course has no reminder time of its own. */
 const DEFAULT_REMINDER_TIME = '09:00';
+
+/**
+ * Lets a course's reminder fire again today.
+ *
+ * Reminders are announced once a day. Changing the time is a statement that it
+ * should happen at the *new* time, so the old day's mark has to go — otherwise
+ * editing a reminder to five minutes from now would do nothing until tomorrow.
+ */
+function rearmReminder(courseId: string) {
+  clearNotificationMark(`course-${courseId}`, toDateKey(new Date()));
+}
 
 export default function CoursesPage() {
   const store = useStore();
@@ -145,6 +158,8 @@ export default function CoursesPage() {
       reminderEnabled: editReminderEnabled,
       reminderTime: editReminderEnabled ? editReminderTime : undefined
     });
+    // The new time applies today, not tomorrow.
+    rearmReminder(editingCourseId);
 
     setShowEditCourse(false);
     setEditingCourseId(null);
@@ -304,15 +319,16 @@ export default function CoursesPage() {
                       <input
                         type="checkbox"
                         checked={course.reminderEnabled || false}
-                        onChange={(e) =>
+                        onChange={(e) => {
                           store.updateCourse(course.id, {
                             reminderEnabled: e.target.checked,
                             // Without this the switch turned the reminder on but left
                             // reminderTime undefined, so it never fired — while the row
                             // below happily displayed the 09:00 fallback as if it were set.
                             reminderTime: course.reminderTime || DEFAULT_REMINDER_TIME,
-                          })
-                        }
+                          });
+                          rearmReminder(course.id);
+                        }}
                         className="sr-only peer"
                       />
                       <div className="w-8 h-4.5 bg-surface-container-high rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-outline after:border-outline-variant after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-purple-600 peer-checked:to-blue-500 peer-checked:after:bg-on-primary"></div>

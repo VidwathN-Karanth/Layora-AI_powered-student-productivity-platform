@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Pause, Play, RotateCcw, X, Check, SkipForward, Settings2, Minus, Plus } from 'lucide-react';
+import { Pause, Play, RotateCcw, X, Check, SkipForward, Settings, Minus, Plus } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import {
   PHASE_LABEL, SETTING_LIMITS, dayKey, formatFocusDuration, nextPhase, phaseMinutes,
@@ -204,26 +204,18 @@ export default function ZenMode({ open, onClose }: ZenModeProps) {
 
       <div className="absolute top-5 right-5 flex items-center gap-1">
         <button
-          onClick={() => setShowSettings((s) => !s)}
-          aria-label="Session lengths"
-          aria-expanded={showSettings}
-          className={`p-2.5 rounded-full transition cursor-pointer ${
-            showSettings ? 'text-white bg-white/10' : 'text-white/25 hover:text-white hover:bg-white/10'
-          }`}
-        >
-          <Settings2 className="w-5 h-5" />
-        </button>
-        <button
           onClick={exit}
           aria-label="Leave Zen mode"
+          title="Leave Zen mode (Esc)"
           className="p-2.5 rounded-full text-white/25 hover:text-white hover:bg-white/10 transition cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
       </div>
 
+      {/* Anchored to the controls it belongs to, rather than the far corner. */}
       {showSettings && (
-        <div className="absolute top-16 right-5 w-64 rounded-2xl border border-white/10 bg-[#0B0B0C] p-4 space-y-3 z-10">
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-32 w-64 rounded-2xl border border-white/10 bg-[#0B0B0C] p-4 space-y-3 z-10 shadow-2xl">
           {([
             ['focusMinutes', 'Focus'],
             ['shortBreakMinutes', 'Short break'],
@@ -237,6 +229,7 @@ export default function ZenMode({ open, onClose }: ZenModeProps) {
                   onClick={() => changeSetting(key, -1)}
                   disabled={settings[key] <= SETTING_LIMITS[key].min}
                   aria-label={`Decrease ${label}`}
+                  title={`Decrease ${label.toLowerCase()}`}
                   className="p-1 rounded-md border border-white/15 text-white/60 hover:text-white hover:border-white/40 transition cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed"
                 >
                   <Minus className="w-3 h-3" />
@@ -249,6 +242,7 @@ export default function ZenMode({ open, onClose }: ZenModeProps) {
                   onClick={() => changeSetting(key, 1)}
                   disabled={settings[key] >= SETTING_LIMITS[key].max}
                   aria-label={`Increase ${label}`}
+                  title={`Increase ${label.toLowerCase()}`}
                   className="p-1 rounded-md border border-white/15 text-white/60 hover:text-white hover:border-white/40 transition cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed"
                 >
                   <Plus className="w-3 h-3" />
@@ -318,12 +312,14 @@ export default function ZenMode({ open, onClose }: ZenModeProps) {
           <div className="flex items-center gap-3">
             <button
               onClick={() => advance(phase, true)}
+              title={`Begin the ${PHASE_LABEL[upcoming].toLowerCase()} now`}
               className="px-5 py-2.5 rounded-full bg-white text-black text-sm font-semibold hover:bg-white/90 transition cursor-pointer"
             >
               Start {PHASE_LABEL[upcoming].toLowerCase()}
             </button>
             <button
               onClick={exit}
+              title="Leave Zen mode (Esc)"
               className="px-5 py-2.5 rounded-full border border-white/20 hover:border-white/50 text-sm text-white/80 hover:text-white transition cursor-pointer"
             >
               Finish
@@ -331,29 +327,48 @@ export default function ZenMode({ open, onClose }: ZenModeProps) {
           </div>
         </div>
       ) : (
-        <div className="mt-12 flex items-center gap-3 opacity-30 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300 motion-reduce:transition-none">
+        <div className="mt-12 flex flex-col items-center gap-4 opacity-30 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300 motion-reduce:transition-none">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setRunning((r) => !r)}
+              aria-label={ticking ? 'Pause' : 'Resume'}
+              title={ticking ? 'Pause the timer (Space)' : 'Resume the timer (Space)'}
+              className="p-3.5 rounded-full border border-white/20 hover:border-white/60 text-white transition cursor-pointer"
+            >
+              {ticking ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={() => { setRemaining(phaseMinutes(phase, settings) * 60); setRunning(true); }}
+              aria-label="Restart this phase"
+              title={`Restart this ${PHASE_LABEL[phase].toLowerCase()} from ${phaseMinutes(phase, settings)}:00`}
+              className="p-3.5 rounded-full border border-white/20 hover:border-white/60 text-white transition cursor-pointer"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+            {/* Skipping never banks a focus round — only finishing one does. */}
+            <button
+              onClick={() => advance(phase, settings.autoStartNext)}
+              aria-label={`Skip to ${PHASE_LABEL[upcoming].toLowerCase()}`}
+              title={`Skip to ${PHASE_LABEL[upcoming].toLowerCase()} — this round will not be counted`}
+              className="p-3.5 rounded-full border border-white/20 hover:border-white/60 text-white transition cursor-pointer"
+            >
+              <SkipForward className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Below the transport row: reached less often than pause or skip. */}
           <button
-            onClick={() => setRunning((r) => !r)}
-            aria-label={ticking ? 'Pause' : 'Resume'}
-            className="p-3.5 rounded-full border border-white/20 hover:border-white/60 text-white transition cursor-pointer"
+            onClick={() => setShowSettings((v) => !v)}
+            aria-label="Session lengths"
+            aria-expanded={showSettings}
+            title="Session lengths — focus, breaks, and rounds per cycle"
+            className={`p-2.5 rounded-full border transition cursor-pointer ${
+              showSettings
+                ? 'border-white/60 text-white bg-white/10'
+                : 'border-white/20 text-white/60 hover:border-white/60 hover:text-white'
+            }`}
           >
-            {ticking ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-          </button>
-          <button
-            onClick={() => { setRemaining(phaseMinutes(phase, settings) * 60); setRunning(true); }}
-            aria-label="Restart this phase"
-            className="p-3.5 rounded-full border border-white/20 hover:border-white/60 text-white transition cursor-pointer"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
-          {/* Skipping never banks a focus round — only finishing one does. */}
-          <button
-            onClick={() => advance(phase, settings.autoStartNext)}
-            aria-label={`Skip to ${PHASE_LABEL[upcoming].toLowerCase()}`}
-            title={`Skip to ${PHASE_LABEL[upcoming].toLowerCase()}`}
-            className="p-3.5 rounded-full border border-white/20 hover:border-white/60 text-white transition cursor-pointer"
-          >
-            <SkipForward className="w-4 h-4" />
+            <Settings className="w-4 h-4" />
           </button>
         </div>
       )}

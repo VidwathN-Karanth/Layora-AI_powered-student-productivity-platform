@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useStore } from '@/store/useStore';
 import { apiFetch, readJson } from '@/lib/apiClient';
 import { occursOn, type RepeatRule } from '@/lib/recurrence';
@@ -20,8 +20,14 @@ interface CalendarEvent {
   isStaff: boolean;
 }
 
-/** How often the timetable and course reminders are re-checked. */
-const TICK_MS = 60_000;
+/**
+ * How often the timetable and course reminders are re-checked.
+ *
+ * Fifteen seconds rather than a minute: a student who sets a reminder for two
+ * minutes' time is watching the clock, and a minute of dead air reads as
+ * broken. The work per tick is a scan of two small arrays.
+ */
+const TICK_MS = 15_000;
 
 /** A block announces itself this many minutes before it starts. */
 const LEAD_MINUTES = 5;
@@ -99,11 +105,9 @@ export default function NotificationAgent() {
     return () => { cancelled = true; };
   }, [enabled]);
 
-  // 2 & 3. Timetable blocks and course reminders, checked once a minute.
-  useEffect(() => {
-    if (!enabled) return;
-
-    const check = () => {
+  // 2 & 3. Timetable blocks and course reminders.
+  const check = useCallback(() => {
+    {
       const now = new Date();
       const day = toDateKey(now);
       const nowMinutes = now.getHours() * 60 + now.getMinutes();
@@ -137,12 +141,23 @@ export default function NotificationAgent() {
         announce({ title: reminder.title, body: reminder.body, tag: reminder.key, kind: 'course' });
         markNotified(reminder.key, day);
       }
-    };
+    }
+  }, []);
 
+  useEffect(() => {
+    if (!enabled) return;
     check();
     const id = setInterval(check, TICK_MS);
     return () => clearInterval(id);
-  }, [enabled]);
+  }, [enabled, check]);
+
+  // Editing a reminder re-checks straight away instead of waiting for the next
+  // tick, so a time set for a minute from now behaves the way it reads.
+  useEffect(() => {
+    if (!enabled) return;
+    const id = setTimeout(check, 0);
+    return () => clearTimeout(id);
+  }, [enabled, courses, check]);
 
   return null;
 }

@@ -48,6 +48,8 @@ export interface NotifyOptions {
   tag?: string;
   /** Silent notifications still appear, they just make no sound. */
   silent?: boolean;
+  /** Where clicking the notification should take the student. */
+  url?: string;
 }
 
 /**
@@ -58,13 +60,28 @@ export function notify(title: string, options: NotifyOptions = {}): boolean {
   if (!notificationsSupported() || Notification.permission !== 'granted') return false;
 
   try {
-    new Notification(title, {
+    const notification = new Notification(title, {
       body: options.body,
       tag: options.tag,
       silent: options.silent,
       icon: '/icon',
       badge: '/icon',
     });
+
+    // A reminder you cannot act on is only half a reminder: clicking brings the
+    // workspace forward and lands on the page the reminder is about.
+    notification.onclick = () => {
+      try {
+        window.focus();
+        if (options.url && window.location.pathname !== options.url) {
+          window.location.href = options.url;
+        }
+      } catch {
+        // Focus can be refused; the notification still closes below.
+      }
+      notification.close();
+    };
+
     return true;
   } catch {
     // Some browsers throw when the page is not visible or the API is disabled.
@@ -178,7 +195,16 @@ export interface Toast {
   title: string;
   body?: string;
   kind: ToastKind;
+  /** Where clicking the toast goes. */
+  url: string;
 }
+
+/** The page each kind of reminder is about. */
+export const KIND_DESTINATION: Record<ToastKind, string> = {
+  event: '/dashboard/events/',
+  block: '/dashboard/planner/',
+  course: '/dashboard/courses/',
+};
 
 type ToastListener = (toast: Toast) => void;
 
@@ -198,6 +224,8 @@ export interface Announcement {
   /** Collapses repeats in the OS notification centre. */
   tag?: string;
   kind?: ToastKind;
+  /** Overrides the page a click opens; defaults to the one for `kind`. */
+  url?: string;
 }
 
 /**
@@ -207,16 +235,19 @@ export interface Announcement {
  * the browser has granted permission. Returns true if the OS one went out, so
  * callers can tell the two apart when they care.
  */
-export function announce({ title, body, tag, kind = 'event' }: Announcement): boolean {
+export function announce({ title, body, tag, kind = 'event', url }: Announcement): boolean {
+  const destination = url || KIND_DESTINATION[kind];
+
   const toast: Toast = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     title,
     body,
     kind,
+    url: destination,
   };
   toastListeners.forEach((listener) => listener(toast));
 
-  return notify(title, { body, tag });
+  return notify(title, { body, tag, url: destination });
 }
 
 /** Just enough of an event for the agenda line. */
@@ -318,6 +349,23 @@ export function clearTodaysNotificationMarks(): void {
       if (key && key.startsWith(SEEN_PREFIX)) keys.push(key);
     }
     keys.forEach((key) => window.localStorage.removeItem(key));
+  } catch {
+    // Nothing here is worth interrupting the page for.
+  }
+}
+
+/**
+ * Forgets the mark for one key, so that reminder can fire again today.
+ *
+ * Editing a reminder's time is a statement that it should happen at the new
+ * time — but the once-per-day mark would suppress it if the old time had
+ * already passed. Clearing the mark on edit is what makes a newly-set time
+ * take effect straight away rather than tomorrow.
+ */
+export function clearNotificationMark(key: string, day: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(`${SEEN_PREFIX}${day}-${key}`);
   } catch {
     // Nothing here is worth interrupting the page for.
   }
