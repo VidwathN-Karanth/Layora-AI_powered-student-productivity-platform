@@ -1,12 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CalendarDays, Clock, BookMarked, X } from 'lucide-react';
 import { onToast, type Toast, type ToastKind } from '@/lib/notifications';
 
-/** How long a toast stays before it leaves on its own. */
+/** How long a toast stays *once the student can actually see it*. */
 const LIFETIME_MS = 20_000;
 
 const ICONS: Record<ToastKind, typeof CalendarDays> = {
@@ -25,24 +25,68 @@ const ICONS: Record<ToastKind, typeof CalendarDays> = {
  *
  * Deliberately opaque: a translucent panel over a busy workspace made the text
  * unreadable, so this paints a solid surface rather than frosted glass.
+ *
+ * The twenty seconds only start counting while the tab is actually visible. A
+ * reminder that arrives in a background tab used to appear and expire unseen —
+ * and since it was marked sent for the day, it looked to the student exactly
+ * like it had never fired at all. Now it waits until they come back.
  */
 export default function NotificationCenter() {
   const router = useRouter();
   const [toasts, setToasts] = useState<Toast[]>([]);
 
+  /** Toasts still waiting for the tab to be looked at before their clock starts. */
+  const pendingRef = useRef<Set<string>>(new Set());
+  const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
   const dismiss = useCallback((id: string) => {
+    const timer = timersRef.current.get(id);
+    if (timer) clearTimeout(timer);
+    timersRef.current.delete(id);
+    pendingRef.current.delete(id);
     setToasts((current) => current.filter((t) => t.id !== id));
   }, []);
+
+  /** Starts a toast's countdown, but only once it is on a visible page. */
+  const scheduleDismiss = useCallback((id: string) => {
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+      pendingRef.current.add(id);
+      return;
+    }
+    pendingRef.current.delete(id);
+    if (timersRef.current.has(id)) return;
+    timersRef.current.set(id, setTimeout(() => dismiss(id), LIFETIME_MS));
+  }, [dismiss]);
 
   useEffect(() => {
     // Subscribing is not a state update, so nothing renders twice here.
     const unsubscribe = onToast((toast) => {
       // Newest on top, and never more than a screenful.
       setToasts((current) => [toast, ...current].slice(0, 4));
-      setTimeout(() => dismiss(toast.id), LIFETIME_MS);
+      scheduleDismiss(toast.id);
     });
     return unsubscribe;
-  }, [dismiss]);
+  }, [scheduleDismiss]);
+
+  // Coming back to the tab is what starts the clock on anything that arrived
+  // while it was hidden.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      pendingRef.current.forEach((id) => scheduleDismiss(id));
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [scheduleDismiss]);
+
+  // Clear every outstanding timer on unmount.
+  useEffect(() => {
+    const timers = timersRef.current;
+    return () => {
+      timers.forEach((t) => clearTimeout(t));
+      timers.clear();
+    };
+  }, []);
 
   if (toasts.length === 0) return null;
 

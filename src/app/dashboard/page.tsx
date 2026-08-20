@@ -616,7 +616,13 @@ export default function DashboardHome() {
                       </a>
 
                       <button
-                        onClick={() => store.removeWebsite(site.id)}
+                        onClick={() => {
+                          // Deleting a launcher is one click and not undoable,
+                          // so name the one about to go.
+                          if (confirm(`Are you sure you want to delete ${site.name}?`)) {
+                            store.removeWebsite(site.id);
+                          }
+                        }}
                         className="text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition duration-200 shrink-0 cursor-pointer"
                         title="Delete Launcher"
                       >
