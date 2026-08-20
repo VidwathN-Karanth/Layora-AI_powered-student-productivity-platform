@@ -171,17 +171,8 @@ export function generateLocalWeeklySchedule(
       let blockIdCounter = 0;
       // Monday to Friday
       if (day >= 1 && day <= 5) {
-        schedule.push({
-          id: `block-${day}-class-${blockIdCounter++}`,
-          day,
-          start: '09:00',
-          end: '16:00',
-          title: 'College Class Hours',
-          type: 'class',
-          color: colors.class,
-          details: 'Mandatory college class hours (locked)'
-        });
-
+        // The college-hours bar is gone from the template too — see the
+        // weekday note in the personalised path below.
         schedule.push({
           id: `block-${day}-break-${blockIdCounter++}`,
           day,
@@ -380,18 +371,14 @@ export function generateLocalWeeklySchedule(
     let blockIdCounter = 0;
     const occupiedIntervals: { start: number; end: number }[] = [];
 
-    // A. College Class Timing Block (Monday - Friday) (Rule 6: always locked)
+    // A. Weekday college hours (Monday - Friday)
+    //
+    // No visible block any more: students are no longer asked when their
+    // lectures are, so a bar claiming "09:00 - 16:00, mandatory" was the app
+    // asserting something it had stopped knowing. The window is still reserved
+    // so activities are not placed in the middle of the college day — study
+    // blocks were never placed here anyway, they only go in free blocks.
     if (day >= 1 && day <= 5) {
-      schedule.push({
-        id: `block-${day}-class-${blockIdCounter++}`,
-        day,
-        start: routine.collegeTimings?.start || '09:00',
-        end: routine.collegeTimings?.end || '16:00',
-        title: 'College Lectures',
-        type: 'class',
-        color: colors.class,
-        details: 'Mandatory college academic lectures'
-      });
       occupiedIntervals.push({ start: collegeStart, end: collegeEnd });
     }
 

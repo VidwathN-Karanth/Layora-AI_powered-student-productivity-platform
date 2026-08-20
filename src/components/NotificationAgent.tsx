@@ -7,7 +7,7 @@ import { occursOn, type RepeatRule } from '@/lib/recurrence';
 import { toDateKey } from '@/lib/dateFormat';
 import {
   agendaAnnouncement, alreadyNotified, announce, dueCourseReminders,
-  markNotified, pruneNotificationMarks, timeToMinutes,
+  markNotified, pruneNotificationMarks, requestPermissionOnFirstRun, timeToMinutes,
 } from '@/lib/notifications';
 
 interface CalendarEvent {
@@ -66,6 +66,30 @@ export default function NotificationAgent() {
   useEffect(() => { timetableRef.current = timetable; }, [timetable]);
   useEffect(() => { coursesRef.current = courses; }, [courses]);
   useEffect(() => { plannerRef.current = plannerEnabled; }, [plannerEnabled]);
+
+  // 0. A brand-new student is asked for desktop permission once, on their
+  //    first visit. Chrome prompts on load; Firefox and Safari refuse without a
+  //    gesture, and for those the toast below points at the switch in Settings.
+  //    Runs in a timeout so nothing is set synchronously during the effect.
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+
+    const id = setTimeout(async () => {
+      const { state, asked } = await requestPermissionOnFirstRun();
+      if (cancelled || asked || state !== 'default') return;
+
+      // The browser would not even show the prompt, so ask in-app instead.
+      announce({
+        title: 'Turn on desktop reminders',
+        body: 'Open Settings to let Layora notify you on this device.',
+        tag: 'layora-permission-nudge',
+        url: '/dashboard/settings/',
+      });
+    }, 1500);
+
+    return () => { cancelled = true; clearTimeout(id); };
+  }, [enabled]);
 
   // 1. Today's agenda, announced every time the workspace is opened.
   //

@@ -10,9 +10,10 @@ import {
   ShieldCheck, Loader2, Info, Lock
 } from 'lucide-react';
 import {
-  announce, clearTodaysNotificationMarks, permissionState, requestPermission,
-  type NotificationPermissionState,
+  alreadyNotified, announce, clearTodaysNotificationMarks, diagnoseCourseReminders,
+  permissionState, requestPermission, type NotificationPermissionState,
 } from '@/lib/notifications';
+import { toDateKey } from '@/lib/dateFormat';
 
 export default function SettingsPage() {
   const store = useStore();
@@ -62,6 +63,15 @@ export default function SettingsPage() {
    * clears today's "already announced" marks, so a real reminder that already
    * fired can fire again while testing.
    */
+  // Recomputed on every render, which is often enough for a settings page and
+  // avoids another timer. Reading it is what turns "nothing happened" into a
+  // specific reason.
+  const reminderDiagnosis = diagnoseCourseReminders(
+    store.courses,
+    new Date(),
+    (key) => alreadyNotified(key, toDateKey(new Date()))
+  );
+
   const sendTestReminder = () => {
     clearTodaysNotificationMarks();
     announce({
@@ -284,6 +294,36 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </div>
+
+              {/* Why a course reminder did or did not fire. Silence is the one
+                  thing a reminder cannot explain about itself. */}
+              {reminderDiagnosis.length > 0 && (
+                <div className="mt-3 space-y-1.5">
+                  <p className="text-[9px] font-mono uppercase tracking-wider text-outline">Course reminders</p>
+                  {reminderDiagnosis.map((d) => (
+                    <div key={`${d.name}-${d.time}`} className="flex items-center justify-between gap-2 text-[10px] font-mono">
+                      <span className="text-on-surface-variant truncate">{d.name}</span>
+                      <span className="flex items-center gap-2 shrink-0">
+                        <span className="text-outline tabular-nums">{d.time}</span>
+                        <span className={
+                          d.status === 'due now' ? 'text-emerald-400'
+                          : d.status === 'already sent today' ? 'text-outline'
+                          : d.status === 'not due yet' ? 'text-on-surface-variant'
+                          : 'text-red-400'
+                        }>
+                          {d.status}
+                        </span>
+                      </span>
+                    </div>
+                  ))}
+                  {notifPermission !== 'granted' && (
+                    <p className="text-[9px] font-mono text-amber-400/80 leading-relaxed pt-1">
+                      Desktop alerts are {notifPermission === 'denied' ? 'blocked in your browser' : 'not allowed yet'} —
+                      reminders will still appear in the app.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

@@ -370,3 +370,87 @@ export function clearNotificationMark(key: string, day: string): void {
     // Nothing here is worth interrupting the page for.
   }
 }
+
+/**
+ * Asks a brand-new student for notification permission, once, unprompted.
+ *
+ * Browsers disagree about this. Chrome will show the prompt on load; Firefox
+ * and Safari require a user gesture and reject a request that arrives without
+ * one. So this attempts it and reports what happened, letting the caller fall
+ * back to an in-app nudge when the browser declined to even ask.
+ *
+ * The attempt is recorded per device, so a student who dismissed the prompt is
+ * not badgered on every visit — dismissing leaves the permission at 'default',
+ * which would otherwise look identical to never having been asked.
+ */
+const ASKED_KEY = 'layora-notification-asked';
+
+export function hasBeenAskedForPermission(): boolean {
+  if (typeof window === 'undefined') return true;
+  try {
+    return window.localStorage.getItem(ASKED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markAskedForPermission(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(ASKED_KEY, '1');
+  } catch {
+    // Storage being unavailable only means we may ask again next visit.
+  }
+}
+
+export interface FirstRunPromptResult {
+  /** What the permission ended up as. */
+  state: NotificationPermissionState;
+  /** True when this call actually put a prompt in front of the student. */
+  asked: boolean;
+}
+
+export async function requestPermissionOnFirstRun(): Promise<FirstRunPromptResult> {
+  const before = permissionState();
+
+  // Nothing to do: already decided, unsupported, or asked on a previous visit.
+  if (before !== 'default') return { state: before, asked: false };
+  if (hasBeenAskedForPermission()) return { state: before, asked: false };
+
+  markAskedForPermission();
+  const state = await requestPermission();
+
+  // A browser that refuses to prompt without a gesture leaves it at 'default'.
+  return { state, asked: state !== 'default' };
+}
+
+/** One line of "why is (or isn't) this reminder going to fire?". */
+export interface ReminderDiagnosis {
+  name: string;
+  time: string;
+  /** Human-readable state, in the order the agent evaluates them. */
+  status: 'switched off' | 'not due yet' | 'already sent today' | 'due now';
+}
+
+/**
+ * Explains, per course, exactly what the agent will do on its next tick.
+ *
+ * Reminders fail silently by nature: nothing appears, and there is no way to
+ * tell "switched off" from "not due yet" from "already sent". This turns each
+ * of those into something readable rather than a guess.
+ */
+export function diagnoseCourseReminders(
+  courses: CourseReminderInput[],
+  now: Date,
+  isMarked: (key: string) => boolean
+): ReminderDiagnosis[] {
+  return (courses || []).map((course) => {
+    const time = course.reminderTime || DEFAULT_COURSE_REMINDER_TIME;
+    const base = { name: course.name, time };
+
+    if (!course.reminderEnabled) return { ...base, status: 'switched off' as const };
+    if (!hasReminderTimePassed(time, now)) return { ...base, status: 'not due yet' as const };
+    if (isMarked(`course-${course.id}`)) return { ...base, status: 'already sent today' as const };
+    return { ...base, status: 'due now' as const };
+  });
+}

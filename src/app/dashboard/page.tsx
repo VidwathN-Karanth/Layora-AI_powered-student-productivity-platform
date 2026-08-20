@@ -567,8 +567,9 @@ export default function DashboardHome() {
               )}
             </AnimatePresence>
 
-            {/* Stacked Launchers List */}
-            <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
+            {/* Launchers wrap as compact pills rather than stacking full-width,
+                so several fit across before the list grows downwards. */}
+            <div className="flex flex-wrap gap-2 max-h-[260px] overflow-y-auto pr-1 content-start">
               {websites.length === 0 ? (
                 <p className="text-xs text-white/40 font-mono text-center py-6">No launchers configured</p>
               ) : (
@@ -588,38 +589,38 @@ export default function DashboardHome() {
 
                   return (
                     <div 
-                      key={site.id} 
-                      className="flex items-center justify-between p-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-cyber-blue/40 transition group"
+                      key={site.id}
+                      title={site.url}
+                      className="relative flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 hover:border-cyber-blue/40 transition group max-w-[11rem]"
                     >
                       <a
                         href={site.url.startsWith('http') ? site.url : `https://${site.url}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-3 flex-1 min-w-0"
+                        className="flex items-center gap-2 min-w-0"
                       >
-                        <div className="w-8 h-8 rounded-lg bg-black/45 border border-white/10 flex items-center justify-center p-1.5 shrink-0 overflow-hidden">
+                        <div className="w-6 h-6 rounded-full bg-black/45 border border-white/10 flex items-center justify-center p-1 shrink-0 overflow-hidden">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img 
                             src={faviconSrc} 
                             alt={site.name} 
-                            className="w-5 h-5 object-contain"
+                            className="w-4 h-4 object-contain"
                             onError={(e) => {
                               (e.target as HTMLElement).style.display = 'none';
                             }}
                           />
                         </div>
-                        <div className="truncate">
-                          <div className="text-xs font-mono font-bold text-white group-hover:text-cyber-blue transition">{site.name}</div>
-                          <div className="text-[9px] font-mono text-white/40 truncate">{site.url}</div>
-                        </div>
+                        <span className="text-[11px] font-mono font-bold text-white group-hover:text-cyber-blue transition truncate">
+                          {site.name}
+                        </span>
                       </a>
 
                       <button
                         onClick={() => store.removeWebsite(site.id)}
-                        className="text-red-400 hover:text-red-300 p-1 opacity-0 group-hover:opacity-100 transition duration-200 shrink-0 cursor-pointer"
+                        className="text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition duration-200 shrink-0 cursor-pointer"
                         title="Delete Launcher"
                       >
-                        <Trash className="w-3.5 h-3.5" />
+                        <Trash className="w-3 h-3" />
                       </button>
                     </div>
                   );

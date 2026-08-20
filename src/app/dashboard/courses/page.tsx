@@ -282,7 +282,9 @@ export default function CoursesPage() {
 
                   <button 
                     onClick={() => handleOpenEditModal(course)}
-                    className="p-1 hover:bg-primary/20 text-on-surface/20 hover:text-primary rounded-lg transition shrink-0 cursor-pointer"
+                    /* Solid, not a 20%-opacity ghost: a card action you cannot
+                       see is a card action nobody uses. */
+                    className="p-1.5 rounded-lg border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 hover:border-primary transition shrink-0 cursor-pointer"
                     title="Edit course"
                   >
                     <Pencil className="w-3.5 h-3.5" />

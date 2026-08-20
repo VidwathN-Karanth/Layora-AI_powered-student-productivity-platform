@@ -342,7 +342,9 @@ export default function TasksPage() {
 
                       <button 
                         onClick={() => store.removeTask(task.id)}
-                        className="p-1 hover:bg-red-950/40 text-white/20 hover:text-red-400 rounded transition"
+                        /* Solid, not a 20%-opacity ghost — same reasoning as the
+                           edit button on a course card. */
+                        className="p-1.5 rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:border-red-400 transition cursor-pointer"
                         title="Delete milestone"
                       >
                         <Trash className="w-3 h-3" strokeWidth={1.5} />
