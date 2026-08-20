@@ -215,7 +215,7 @@ export default function ZenMode({ open, onClose }: ZenModeProps) {
 
       {/* Anchored to the controls it belongs to, rather than the far corner. */}
       {showSettings && (
-        <div className="absolute left-1/2 -translate-x-1/2 bottom-32 w-64 rounded-2xl border border-white/10 bg-[#0B0B0C] p-4 space-y-3 z-10 shadow-2xl">
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-24 sm:bottom-32 w-[min(16rem,calc(100vw-2rem))] max-h-[70vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#0B0B0C] p-4 space-y-3 z-10 shadow-2xl">
           {([
             ['focusMinutes', 'Focus'],
             ['shortBreakMinutes', 'Short break'],
@@ -267,12 +267,12 @@ export default function ZenMode({ open, onClose }: ZenModeProps) {
         </div>
       )}
 
-      <span className="text-[11px] font-mono uppercase tracking-[0.35em] text-white/30 mb-2">
+      <span className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.35em] text-white/30 mb-1 sm:mb-2">
         {done ? `${PHASE_LABEL[phase]} complete` : ticking ? PHASE_LABEL[phase] : 'Paused'}
       </span>
 
       {/* Which round of the cycle this is — the long break is the payoff. */}
-      <div className="flex items-center gap-1.5 mb-6" aria-label={`Round ${roundInCycle} of ${settings.roundsBeforeLongBreak}`}>
+      <div className="flex items-center gap-1.5 mb-3 sm:mb-6" aria-label={`Round ${roundInCycle} of ${settings.roundsBeforeLongBreak}`}>
         {Array.from({ length: settings.roundsBeforeLongBreak }, (_, i) => (
           <span
             key={i}
@@ -296,13 +296,13 @@ export default function ZenMode({ open, onClose }: ZenModeProps) {
       <div
         aria-live="polite"
         className="font-mono font-bold tabular-nums leading-none text-white"
-        style={{ fontSize: 'clamp(5rem, 22vw, 20rem)' }}
+        style={{ fontSize: 'clamp(3rem, min(20vw, 26vh), 20rem)' }}
       >
         {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
       </div>
 
       {done ? (
-        <div className="mt-10 flex flex-col items-center gap-5">
+        <div className="mt-6 sm:mt-10 flex flex-col items-center gap-4 sm:gap-5">
           <p className="flex items-center gap-2 text-sm text-white/70">
             <Check className="w-4 h-4 text-emerald-400" />
             {phase === 'focus'
@@ -327,7 +327,7 @@ export default function ZenMode({ open, onClose }: ZenModeProps) {
           </div>
         </div>
       ) : (
-        <div className="mt-12 flex flex-col items-center gap-4 opacity-30 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300 motion-reduce:transition-none">
+        <div className="mt-6 sm:mt-12 flex flex-col items-center gap-3 sm:gap-4 opacity-30 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300 motion-reduce:transition-none">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setRunning((r) => !r)}
@@ -374,7 +374,7 @@ export default function ZenMode({ open, onClose }: ZenModeProps) {
       )}
 
       {/* The day's record, quiet enough to ignore while the timer runs. */}
-      <div className="absolute bottom-14 flex items-center gap-5 text-[10px] font-mono text-white/25 tracking-wider">
+      <div className="absolute bottom-14 hidden [@media(min-height:560px)]:flex items-center gap-3 sm:gap-5 text-[10px] font-mono text-white/25 tracking-wider text-center px-4">
         <span>
           Today <span className="text-white/50">{today.sessions}</span>{' '}
           {today.sessions === 1 ? 'session' : 'sessions'} · {formatFocusDuration(today.focusMinutes)}
@@ -383,7 +383,7 @@ export default function ZenMode({ open, onClose }: ZenModeProps) {
         <span>7 days <span className="text-white/50">{formatFocusDuration(week.focusMinutes)}</span></span>
       </div>
 
-      <p className="absolute bottom-6 text-[10px] font-mono text-white/20 tracking-wider">
+      <p className="absolute bottom-6 hidden [@media(min-height:480px)]:block text-[10px] font-mono text-white/20 tracking-wider text-center px-4">
         Space to pause · Esc to leave
       </p>
     </div>,

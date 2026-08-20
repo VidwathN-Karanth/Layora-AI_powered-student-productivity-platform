@@ -238,7 +238,7 @@ export default function OnboardingPage() {
             <span className="text-xl text-primary font-bold">Layora Onboarding</span>
             <span className="text-xs text-outline-variant">| v1.0.4</span>
           </div>
-          <div className="text-xs text-secondary font-medium">
+          <div className="text-xs font-bold text-on-surface bg-surface-container-high border border-outline-variant px-2.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
             Step {step} of {totalSteps}
           </div>
         </div>

@@ -237,7 +237,9 @@ export default function OnboardingModal() {
           </div>
           
           <div className="flex items-center gap-4">
-            <span className="text-xs text-secondary border border-secondary bg-secondary-fixed px-2.5 py-0.5 rounded-full">
+            {/* Was text-secondary on bg-secondary-fixed: 1.06:1 in dark mode.
+                This pair measures 12.75:1 dark and 9.9:1 light. */}
+            <span className="text-xs font-bold text-on-surface bg-surface-container-high border border-outline-variant px-2.5 py-0.5 rounded-full whitespace-nowrap">
               Step 0{step} of 0{totalSteps}
             </span>
           </div>

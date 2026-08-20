@@ -263,7 +263,7 @@ export default function EventsPage() {
                       /* Every cell carries its own surface, in both themes —
                          dark mode used to leave the grid as bare text on the
                          page with no day boxes at all. */
-                      className={`min-h-[84px] rounded-lg p-1.5 flex flex-col items-stretch gap-1 border text-left transition cursor-pointer overflow-hidden ${
+                      className={`min-h-[54px] sm:min-h-[84px] rounded-lg p-1 sm:p-1.5 flex flex-col items-stretch gap-1 border text-left transition cursor-pointer overflow-hidden ${
                         isSelected
                           ? 'border-primary bg-primary/10'
                           : 'border-white/20 bg-surface-container hover:border-white/40 hover:bg-surface-container-high'
@@ -281,9 +281,22 @@ export default function EventsPage() {
                         {day.getDate()}
                       </span>
 
-                      {/* The title itself, so a glance at the month says what is
-                          on rather than only that something is. */}
-                      <span className="flex flex-col gap-0.5 min-w-0">
+                      {/* A 375px phone gives each cell about 47px, which truncates
+                          a title to roughly six characters — worse than useless.
+                          Dots there, titles from sm up; the day panel below always
+                          spells them out in full. */}
+                      {dayEvents.length > 0 && (
+                        <span className="flex sm:hidden items-center justify-center gap-0.5 mt-auto pb-0.5">
+                          {dayEvents.slice(0, 3).map((e) => (
+                            <span
+                              key={e.id}
+                              className={`w-1.5 h-1.5 rounded-full ${e.isStaff ? 'bg-amber-400' : 'bg-primary'}`}
+                            />
+                          ))}
+                        </span>
+                      )}
+
+                      <span className="hidden sm:flex flex-col gap-0.5 min-w-0">
                         {dayEvents.slice(0, 2).map((e) => (
                           <span
                             key={e.id}
