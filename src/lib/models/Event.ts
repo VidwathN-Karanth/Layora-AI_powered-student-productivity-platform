@@ -2,6 +2,7 @@ import 'server-only';
 
 import { supabaseAdmin } from '../supabaseAdmin';
 import { COHORTS, type Cohort } from '../cohorts';
+import { type RepeatRule } from '../recurrence';
 
 /** Everyone in the department, regardless of year. */
 export const EVERYONE_AUDIENCE = 'Everyone';
@@ -21,7 +22,11 @@ export interface EventRow {
   id: string;
   title: string;
   description: string | null;
-  eventDate: string; // 'YYYY-MM-DD'
+  eventDate: string; // 'YYYY-MM-DD' — the first occurrence
+  /** How the entry repeats. Occurrences are expanded on read, not stored. */
+  repeat: RepeatRule;
+  /** Last day the series may fall on; null means open-ended. */
+  repeatUntil: string | null;
   audience: EventAudience;
   createdBy: string;
   creatorName: string | null;
@@ -34,6 +39,8 @@ interface DatabaseEventRow {
   title: string;
   description: string | null;
   event_date: string;
+  repeat: string | null;
+  repeat_until: string | null;
   audience: string;
   created_by: string;
   creator_name: string | null;
@@ -47,6 +54,8 @@ function mapRow(row: DatabaseEventRow): EventRow {
     title: row.title,
     description: row.description,
     eventDate: row.event_date,
+    repeat: (row.repeat as RepeatRule) || 'none',
+    repeatUntil: row.repeat_until ?? null,
     audience: row.audience as EventAudience,
     createdBy: row.created_by,
     creatorName: row.creator_name,
@@ -99,6 +108,8 @@ export class Event {
     title: string;
     description?: string | null;
     eventDate: string;
+    repeat?: RepeatRule;
+    repeatUntil?: string | null;
     audience: EventAudience;
     createdBy: string;
     creatorName?: string | null;
@@ -110,6 +121,9 @@ export class Event {
         title: input.title,
         description: input.description ?? null,
         event_date: input.eventDate,
+        repeat: input.repeat ?? 'none',
+        // An end date is meaningless without a rule, so drop it for one-offs.
+        repeat_until: input.repeat && input.repeat !== 'none' ? input.repeatUntil ?? null : null,
         audience: input.audience,
         created_by: input.createdBy,
         creator_name: input.creatorName ?? null,

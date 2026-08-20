@@ -2,15 +2,21 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
-  CalendarDays, ChevronLeft, ChevronRight, Plus, Trash, Users, User as UserIcon, Loader2,
+  CalendarDays, ChevronLeft, ChevronRight, Plus, Trash, Users, User as UserIcon, Loader2, Repeat,
 } from 'lucide-react';
 import { apiFetch, readJson, errorMessage } from '@/lib/apiClient';
+import {
+  REPEAT_RULES, REPEAT_LABEL, expandByDate, type RepeatRule,
+} from '@/lib/recurrence';
 
 interface CalendarEvent {
   id: string;
   title: string;
   description: string | null;
+  /** The first occurrence. Repeats are expanded on the client, not stored. */
   eventDate: string;
+  repeat?: RepeatRule | null;
+  repeatUntil?: string | null;
   audience: string;
   createdBy: string;
   creatorName: string | null;
@@ -45,6 +51,8 @@ export default function EventsPage() {
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [repeat, setRepeat] = useState<RepeatRule>('none');
+  const [repeatUntil, setRepeatUntil] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -62,18 +70,20 @@ export default function EventsPage() {
     return () => { cancelled = true; };
   }, []);
 
-  const byDate = useMemo(() => {
-    const map = new Map<string, CalendarEvent[]>();
-    for (const e of events) {
-      const list = map.get(e.eventDate) || [];
-      list.push(e);
-      map.set(e.eventDate, list);
-    }
-    return map;
-  }, [events]);
-
   const grid = useMemo(() => buildGrid(cursor.getFullYear(), cursor.getMonth()), [cursor]);
-  const selectedEvents = byDate.get(selected) || [];
+
+  // One stored row can occupy many cells: a weekly seminar shows on all of its
+  // Tuesdays without a row per week existing anywhere.
+  const byDate = useMemo(
+    () => expandByDate(events, toKey(grid[0]), toKey(grid[grid.length - 1])),
+    [events, grid]
+  );
+
+  // The selected day can sit outside the drawn month, so expand it on its own.
+  const selectedEvents = useMemo(
+    () => expandByDate(events, selected, selected).get(selected) || [],
+    [events, selected]
+  );
 
   const addEvent = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,12 +95,20 @@ export default function EventsPage() {
         await apiFetch('/api/events', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title, description, eventDate: selected }),
+          body: JSON.stringify({
+            title,
+            description,
+            eventDate: selected,
+            repeat,
+            repeatUntil: repeat === 'none' ? null : repeatUntil || null,
+          }),
         })
       );
       setEvents((prev) => [...prev, data.event]);
       setTitle('');
       setDescription('');
+      setRepeat('none');
+      setRepeatUntil('');
       setShowForm(false);
     } catch (err) {
       setError(errorMessage(err, 'Could not add the event.'));
@@ -99,8 +117,14 @@ export default function EventsPage() {
     }
   };
 
-  const removeEvent = async (id: string) => {
-    if (!confirm('Remove this event from your calendar?')) return;
+  const removeEvent = async (event: CalendarEvent) => {
+    // Deleting a series is not the same as deleting one day of it, so say which.
+    const repeating = !!event.repeat && event.repeat !== 'none';
+    const question = repeating
+      ? `"${event.title}" repeats. Removing it deletes every occurrence, not just this day. Continue?`
+      : 'Remove this event from your calendar?';
+    if (!confirm(question)) return;
+    const id = event.id;
     setError('');
     try {
       await readJson(await apiFetch(`/api/events?id=${encodeURIComponent(id)}`, { method: 'DELETE' }));
@@ -267,7 +291,7 @@ export default function EventsPage() {
                   </div>
                   {!e.isStaff && (
                     <button
-                      onClick={() => removeEvent(e.id)}
+                      onClick={() => removeEvent(e)}
                       aria-label="Remove event"
                       className="p-1 rounded text-outline hover:text-red-400 transition cursor-pointer shrink-0"
                     >
@@ -275,10 +299,19 @@ export default function EventsPage() {
                     </button>
                   )}
                 </div>
-                <span className="inline-flex items-center gap-1 mt-2 text-[8px] font-mono font-bold uppercase tracking-wider text-outline">
-                  {e.isStaff ? <Users className="w-2.5 h-2.5" /> : <UserIcon className="w-2.5 h-2.5" />}
-                  {e.isStaff ? `Department · ${e.audience}` : 'Personal'}
-                </span>
+                <div className="flex items-center gap-2.5 mt-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1 text-[8px] font-mono font-bold uppercase tracking-wider text-outline">
+                    {e.isStaff ? <Users className="w-2.5 h-2.5" /> : <UserIcon className="w-2.5 h-2.5" />}
+                    {e.isStaff ? `Department · ${e.audience}` : 'Personal'}
+                  </span>
+                  {e.repeat && e.repeat !== 'none' && (
+                    <span className="inline-flex items-center gap-1 text-[8px] font-mono font-bold uppercase tracking-wider text-primary">
+                      <Repeat className="w-2.5 h-2.5" />
+                      {REPEAT_LABEL[e.repeat]}
+                      {e.repeatUntil ? ` until ${e.repeatUntil}` : ''}
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -301,6 +334,33 @@ export default function EventsPage() {
                 maxLength={500}
                 className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary resize-none"
               />
+              <div className="grid grid-cols-2 gap-2">
+                <label className="block">
+                  <span className="block text-[9px] font-mono text-outline mb-1">Repeat</span>
+                  <select
+                    value={repeat}
+                    onChange={(ev) => setRepeat(ev.target.value as RepeatRule)}
+                    className="w-full bg-surface-container border border-outline-variant rounded-lg px-2 py-1.5 text-[11px] text-on-surface focus:outline-none focus:border-primary cursor-pointer"
+                  >
+                    {REPEAT_RULES.map((r) => (
+                      <option key={r} value={r}>{REPEAT_LABEL[r]}</option>
+                    ))}
+                  </select>
+                </label>
+                {repeat !== 'none' && (
+                  <label className="block">
+                    <span className="block text-[9px] font-mono text-outline mb-1">Until (optional)</span>
+                    <input
+                      type="date"
+                      value={repeatUntil}
+                      min={selected}
+                      onChange={(ev) => setRepeatUntil(ev.target.value)}
+                      className="w-full bg-surface-container border border-outline-variant rounded-lg px-2 py-1.5 text-[11px] text-on-surface focus:outline-none focus:border-primary cursor-pointer"
+                    />
+                  </label>
+                )}
+              </div>
+
               <div className="flex gap-2">
                 <button
                   type="submit"
@@ -312,7 +372,10 @@ export default function EventsPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setShowForm(false); setTitle(''); setDescription(''); }}
+                  onClick={() => {
+                    setShowForm(false); setTitle(''); setDescription('');
+                    setRepeat('none'); setRepeatUntil('');
+                  }}
                   className="border border-outline-variant hover:border-outline text-outline hover:text-on-surface rounded-lg px-3 py-1.5 text-xs font-mono transition cursor-pointer"
                 >
                   Cancel

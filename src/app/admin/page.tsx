@@ -15,6 +15,13 @@ import {
 import { getPlatformDisplay } from '@/lib/courseUtils';
 import { isAdminEmail } from '@/lib/admin';
 import { COHORTS, SHARED_RESOURCE_TAG, shortCohortLabel, type Cohort } from '@/lib/cohorts';
+import { drivePreviewUrl } from '@/lib/driveLinks';
+import { REPEAT_RULES, REPEAT_LABEL, type RepeatRule } from '@/lib/recurrence';
+import CertificateGroups, { type InspectedCertificate } from '@/components/CertificateGroups';
+import {
+  CERTIFICATE_CATEGORIES, CATEGORY_ADMIN_ACCENT, resolveCategory,
+  type CertificateCategory,
+} from '@/lib/certificateCategories';
 
 interface TelemetryUser {
   id: string;
@@ -55,7 +62,10 @@ interface StaffEvent {
   id: string;
   title: string;
   description: string | null;
+  /** The first occurrence; a repeating entry is stored once. */
   eventDate: string;
+  repeat?: RepeatRule | null;
+  repeatUntil?: string | null;
   audience: string;
   creatorName: string | null;
   isStaff: boolean;
@@ -75,6 +85,8 @@ interface CertificateUploader {
   name: string;
   email: string;
   count: number;
+  /** Always carries all three keys — a category with none reads 0, not blank. */
+  byCategory?: Record<CertificateCategory, number>;
   latestAt: string | null;
 }
 
@@ -123,7 +135,7 @@ export default function AdminPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [isLocalMode, setIsLocalMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'subjects' | 'tasks' | 'courses' | 'timetable' | 'certificates'>('profile');
-  const [inspectedCerts, setInspectedCerts] = useState<any[]>([]);
+  const [inspectedCerts, setInspectedCerts] = useState<InspectedCertificate[]>([]);
   const [loadingInspectedCerts, setLoadingInspectedCerts] = useState(false);
   const [activeCertPreview, setActiveCertPreview] = useState<any | null>(null);
   const [editStreak, setEditStreak] = useState<number>(0);
@@ -244,6 +256,8 @@ export default function AdminPage() {
   const [eventTitle, setEventTitle] = useState('');
   const [eventDesc, setEventDesc] = useState('');
   const [eventDate, setEventDate] = useState('');
+  const [eventRepeat, setEventRepeat] = useState<RepeatRule>('none');
+  const [eventRepeatUntil, setEventRepeatUntil] = useState('');
   const [eventAudience, setEventAudience] = useState<'cohort' | 'everyone'>('cohort');
   const [savingEvent, setSavingEvent] = useState(false);
 
@@ -267,6 +281,8 @@ export default function AdminPage() {
     setEventTitle('');
     setEventDesc('');
     setEventDate('');
+    setEventRepeat('none');
+    setEventRepeatUntil('');
     setEventAudience('cohort');
     setShowEventForm(false);
   };
@@ -286,6 +302,8 @@ export default function AdminPage() {
             title: eventTitle,
             description: eventDesc,
             eventDate,
+            repeat: eventRepeat,
+            repeatUntil: eventRepeat === 'none' ? null : eventRepeatUntil || null,
             audience: eventAudience === 'everyone' ? 'Everyone' : selectedCohort,
           }),
         })
@@ -1657,6 +1675,41 @@ export default function AdminPage() {
                     />
                   </div>
 
+                  {/* A weekly lab or a monthly review is one entry with a rule,
+                      not one entry per week. */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label htmlFor="ev-repeat" className="block text-[10px] font-mono uppercase tracking-wider text-white/40">
+                        Repeat
+                      </label>
+                      <select
+                        id="ev-repeat"
+                        value={eventRepeat}
+                        onChange={(e) => setEventRepeat(e.target.value as RepeatRule)}
+                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-400 cursor-pointer"
+                      >
+                        {REPEAT_RULES.map((r) => (
+                          <option key={r} value={r}>{REPEAT_LABEL[r]}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {eventRepeat !== 'none' && (
+                      <div className="space-y-1.5">
+                        <label htmlFor="ev-repeat-until" className="block text-[10px] font-mono uppercase tracking-wider text-white/40">
+                          Until (optional)
+                        </label>
+                        <input
+                          id="ev-repeat-until"
+                          type="date"
+                          value={eventRepeatUntil}
+                          min={eventDate || undefined}
+                          onChange={(e) => setEventRepeatUntil(e.target.value)}
+                          className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-400 cursor-pointer"
+                        />
+                      </div>
+                    )}
+                  </div>
+
                   <div className="space-y-1.5">
                     <span className="block text-[10px] font-mono uppercase tracking-wider text-white/40">
                       Who sees it
@@ -1897,7 +1950,10 @@ export default function AdminPage() {
                       <tr className="border-b border-white/10 bg-white/2 text-white/40 font-bold uppercase tracking-wider">
                         <th className="p-4 font-normal">Student</th>
                         <th className="p-4 font-normal">Email</th>
-                        <th className="p-4 font-normal text-right">Certificates</th>
+                        {CERTIFICATE_CATEGORIES.map((c) => (
+                          <th key={c} className="p-4 font-normal text-center">{c}</th>
+                        ))}
+                        <th className="p-4 font-normal text-right">Total</th>
                         <th className="p-4 font-normal">Latest upload</th>
                         <th className="p-4 font-normal text-center w-28">View</th>
                       </tr>
@@ -1922,8 +1978,24 @@ export default function AdminPage() {
                           <td className="p-4 text-white/50 font-mono text-[10px] truncate max-w-[220px]">
                             {uploader.email}
                           </td>
+                          {/* One column per category, so a year can be scanned
+                              down a single bucket without opening anyone. */}
+                          {CERTIFICATE_CATEGORIES.map((c) => {
+                            const n = uploader.byCategory?.[c] ?? 0;
+                            return (
+                              <td key={c} className="p-4 text-center">
+                                <span
+                                  className={`inline-block min-w-[2rem] px-2 py-1 rounded-lg font-bold text-xs tabular-nums border ${
+                                    n > 0 ? CATEGORY_ADMIN_ACCENT[c] : 'border-white/5 text-white/20'
+                                  }`}
+                                >
+                                  {n}
+                                </span>
+                              </td>
+                            );
+                          })}
                           <td className="p-4 text-right">
-                            <span className="px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-lg font-black text-sm">
+                            <span className="px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-lg font-black text-sm tabular-nums">
                               {uploader.count}
                             </span>
                           </td>
@@ -2121,35 +2193,11 @@ export default function AdminPage() {
                     No certificates found for this student.
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {inspectedCerts.map((cert) => (
-                      <div key={cert.id} className="bg-black/45 border border-white/5 rounded-xl overflow-hidden flex flex-col justify-between hover:border-amber-400/30 transition group">
-                        <div
-                          className="relative aspect-[4/3] bg-black flex items-center justify-center overflow-hidden border-b border-white/5 cursor-pointer"
-                          onClick={() => setActiveCertPreview(cert)}
-                        >
-                          <img src={cert.file_url} alt={cert.name} className="w-full h-full object-cover group-hover:scale-[1.02] transition" />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
-                            <Eye className="w-4 h-4 text-white" />
-                          </div>
-                        </div>
-                        <div className="p-3 space-y-1.5">
-                          <div>
-                            <h4 className="text-xs font-bold text-white line-clamp-1">{cert.name}</h4>
-                            <span className="inline-block text-[8px] font-bold tracking-wider px-1.5 py-0.5 mt-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded uppercase">
-                              {cert.platform}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between text-[9px] text-white/40 pt-1.5 border-t border-white/5">
-                            <span>{new Date(cert.created_at).toLocaleDateString()}</span>
-                            <a href={cert.file_url} target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline flex items-center gap-0.5">
-                              Original <ExternalLink className="w-2.5 h-2.5" />
-                            </a>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <CertificateGroups
+                    certificates={inspectedCerts}
+                    onPreview={setActiveCertPreview}
+                    accent="amber"
+                  />
                 )}
               </div>
             </motion.aside>
@@ -2511,35 +2559,11 @@ export default function AdminPage() {
                         No verified credentials or skill certificates uploaded by this user.
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {inspectedCerts.map((cert) => (
-                          <div key={cert.id} className="bg-black/45 border border-white/5 rounded-xl overflow-hidden flex flex-col justify-between hover:border-cyber-blue/30 transition group">
-                            <div 
-                              className="relative aspect-[4/3] bg-black flex items-center justify-center overflow-hidden border-b border-white/5 cursor-pointer"
-                              onClick={() => setActiveCertPreview(cert)}
-                            >
-                              <img src={cert.file_url} alt={cert.name} className="w-full h-full object-cover group-hover:scale-[1.02] transition" />
-                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition animate-fade-in">
-                                <Eye className="w-4 h-4 text-white" />
-                              </div>
-                            </div>
-                            <div className="p-3 space-y-1.5">
-                              <div>
-                                <h4 className="text-xs font-bold text-white line-clamp-1">{cert.name}</h4>
-                                <span className="inline-block text-[8px] font-bold tracking-wider px-1.5 py-0.5 mt-1 bg-cyber-blue/10 border border-cyber-blue/20 text-cyber-blue rounded uppercase">
-                                  {cert.platform}
-                                </span>
-                              </div>
-                              <div className="flex items-center justify-between text-[9px] text-white/40 pt-1.5 border-t border-white/5">
-                                <span>{new Date(cert.created_at).toLocaleDateString()}</span>
-                                <a href={cert.file_url} target="_blank" rel="noopener noreferrer" className="text-cyber-blue hover:underline flex items-center gap-0.5">
-                                  Original <ExternalLink className="w-2.5 h-2.5" />
-                                </a>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      <CertificateGroups
+                        certificates={inspectedCerts}
+                        onPreview={setActiveCertPreview}
+                        accent="blue"
+                      />
                     )}
                   </div>
                 )}
@@ -2727,7 +2751,7 @@ export default function AdminPage() {
               <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
                 <div>
                   <h3 className="text-xs font-bold text-white">{activeCertPreview.name}</h3>
-                  <p className="text-[9px] text-white/40 uppercase font-mono mt-0.5">{activeCertPreview.platform} credential</p>
+                  <p className="text-[9px] text-white/40 uppercase font-mono mt-0.5">{resolveCategory(activeCertPreview.category)} certificate</p>
                 </div>
                 <button
                   onClick={() => setActiveCertPreview(null)}
@@ -2736,8 +2760,28 @@ export default function AdminPage() {
                   <X className="w-4 h-4" />
                 </button>
               </div>
+              {/* Drive files embed inline; any other link can only be opened in a tab. */}
               <div className="bg-black/50 p-2 rounded-lg flex items-center justify-center overflow-auto max-h-[60vh]">
-                <img src={activeCertPreview.file_url} alt={activeCertPreview.name} className="max-w-full max-h-[50vh] object-contain rounded-lg border border-white/5" />
+                {drivePreviewUrl(activeCertPreview.file_url) ? (
+                  <iframe
+                    src={drivePreviewUrl(activeCertPreview.file_url) as string}
+                    title={activeCertPreview.name}
+                    className="w-full h-[55vh] rounded-lg border border-white/5 bg-white"
+                  />
+                ) : (
+                  <div className="text-center text-[11px] text-white/40 py-10 space-y-2">
+                    <FileText className="w-8 h-8 mx-auto text-white/20" />
+                    <p>This link cannot be previewed here.</p>
+                    <a
+                      href={activeCertPreview.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-cyber-blue hover:underline inline-flex items-center gap-1"
+                    >
+                      Open original <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>

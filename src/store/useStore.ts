@@ -1,5 +1,9 @@
 import { create } from 'zustand';
 import type { Cohort } from '@/lib/cohorts';
+import {
+  DEFAULT_POMODORO_SETTINGS, normalizeSettings, recordSession,
+  type PomodoroDay, type PomodoroSettings,
+} from '@/lib/pomodoro';
 import { 
   Subject, 
   Activity, 
@@ -141,6 +145,16 @@ interface AppState {
   setCalendarSynced: (synced: boolean) => void;
   is24HourFormat: boolean;
   setIs24HourFormat: (val: boolean) => void;
+
+  /**
+   * Pomodoro rhythm, shared by the Zen mode timer and the weekly scheduler —
+   * change the focus length here and study blocks resize to match.
+   */
+  pomodoroSettings: PomodoroSettings;
+  setPomodoroSettings: (settings: Partial<PomodoroSettings>) => void;
+  /** One row per day of completed focus sessions, trimmed to the last 60 days. */
+  pomodoroLog: PomodoroDay[];
+  recordPomodoroSession: (focusMinutes: number) => void;
   globalResources: { id: string; name: string; url: string; type: string; uploadedBy: string; uploaderName: string; createdAt: string }[];
   setGlobalResources: (resources: any[]) => void;
   addGlobalResource: (res: any) => void;
@@ -903,7 +917,7 @@ export const useStore = create<AppState>()(
             (b) => b.id && (b.id.startsWith('custom-block-') || b.id.startsWith('ai-block-'))
           );
 
-          const result = generateLocalWeeklySchedule(routine, subjects, activities, courses, tasks);
+          const result = generateLocalWeeklySchedule(routine, subjects, activities, courses, tasks, get().pomodoroSettings);
           
           // Merge base schedule with custom/AI blocks and resolve overlaps
           const combined = [...customBlocks, ...result.schedule];
@@ -925,6 +939,16 @@ export const useStore = create<AppState>()(
       setCalendarSynced: (synced) => set({ calendarSynced: synced }),
       is24HourFormat: false,
       setIs24HourFormat: (val) => set({ is24HourFormat: val }),
+
+      pomodoroSettings: DEFAULT_POMODORO_SETTINGS,
+      // Normalised on the way in, so a stale or hand-edited synced value can
+      // never hand the timer a 0-minute phase.
+      setPomodoroSettings: (settings) =>
+        set((state) => ({ pomodoroSettings: normalizeSettings({ ...state.pomodoroSettings, ...settings }) })),
+      pomodoroLog: [],
+      recordPomodoroSession: (focusMinutes) =>
+        set((state) => ({ pomodoroLog: recordSession(state.pomodoroLog, focusMinutes) })),
+
       globalResources: [],
       setGlobalResources: (resources) => set({ globalResources: resources }),
       addGlobalResource: (res) => set((state) => ({ globalResources: [...state.globalResources, res] })),
@@ -967,7 +991,9 @@ export const useStore = create<AppState>()(
           themeAccent: 'purple',
           themeMode: 'dark',
           calendarSynced: false,
-          is24HourFormat: false
+          is24HourFormat: false,
+          pomodoroSettings: DEFAULT_POMODORO_SETTINGS,
+          pomodoroLog: []
         });
 
         // After set() persists the cleaned state, overwrite the key entirely to remove any leftovers

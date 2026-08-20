@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { Event, PERSONAL_AUDIENCE } from '@/lib/models/Event';
 import { requireStudent } from '@/lib/authz';
+import { REPEAT_RULES, isDateKey, isRepeatRule } from '@/lib/recurrence';
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
   if (!guard.ok) return guard.response;
 
   try {
-    const { title, description, eventDate } = await request.json();
+    const { title, description, eventDate, repeat, repeatUntil } = await request.json();
 
     if (typeof title !== 'string' || !title.trim()) {
       return NextResponse.json({ error: 'Give the event a title.' }, { status: 400 });
@@ -41,10 +42,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Pick a valid date.' }, { status: 400 });
     }
 
+    // A missing rule is a plain one-off; a bad one is a mistake worth reporting.
+    const rule = repeat === undefined || repeat === null ? 'none' : repeat;
+    if (!isRepeatRule(rule)) {
+      return NextResponse.json(
+        { error: `Invalid repeat. Expected one of: ${REPEAT_RULES.join(', ')}.` },
+        { status: 400 }
+      );
+    }
+    if (repeatUntil != null && repeatUntil !== '' && !isDateKey(repeatUntil)) {
+      return NextResponse.json({ error: 'Pick a valid end date for the repeat.' }, { status: 400 });
+    }
+    if (isDateKey(repeatUntil) && repeatUntil < eventDate) {
+      return NextResponse.json({ error: 'The repeat cannot end before it starts.' }, { status: 400 });
+    }
+
     const event = await Event.create({
       title: title.trim().slice(0, 120),
       description: typeof description === 'string' ? description.trim().slice(0, 500) || null : null,
       eventDate,
+      repeat: rule,
+      repeatUntil: isDateKey(repeatUntil) ? repeatUntil : null,
       audience: PERSONAL_AUDIENCE,
       createdBy: guard.requester.userId,
       creatorName: guard.requester.name,

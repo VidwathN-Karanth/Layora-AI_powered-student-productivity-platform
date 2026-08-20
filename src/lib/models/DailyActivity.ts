@@ -46,6 +46,18 @@ interface DatabaseDailyActivityRow {
 }
 
 /**
+ * One already-summed row per student, as returned by the
+ * `leaderboard_activity_totals` Postgres function.
+ */
+interface ActivityTotalsRow {
+  user_id: string;
+  points: number;
+  leetcode_solved: number;
+  github_contributions: number;
+  codechef_solved: number;
+}
+
+/**
  * Maps database snake_case row to camelCase JS object.
  */
 function mapActivityRow(row: DatabaseDailyActivityRow | null | undefined): DailyActivityRow | null {
@@ -150,22 +162,33 @@ export class DailyActivity {
       return !!(hasLeetcode || hasGithub || hasCodechef);
     });
 
-    // 2. Fetch daily activities for the chosen range
-    let query = supabaseAdmin.from('daily_activities').select('*');
-
+    // 2. Aggregate the points ledger in Postgres, not in Node.
+    //
+    // This used to `select('*')` the whole daily_activities table and sum it
+    // here. That is one row per student per day forever — at 800 students it
+    // reaches tens of megabytes on every single request. The RPC does the
+    // GROUP BY server-side and hands back one row per student instead.
     const today = new Date();
-    
+    const todayStr = today.toISOString().split('T')[0];
+
+    let startDate: string | null = null;
+    let endDate: string | null = null;
+
     if (range === 'today') {
-      const todayStr = today.toISOString().split('T')[0];
-      query = query.eq('date', todayStr);
+      startDate = todayStr;
+      endDate = todayStr;
     } else if (range === 'week') {
       const lastWeek = new Date();
       lastWeek.setUTCDate(today.getUTCDate() - 6); // 7 days rolling (including today)
-      const startDateStr = lastWeek.toISOString().split('T')[0];
-      query = query.gte('date', startDateStr);
+      startDate = lastWeek.toISOString().split('T')[0];
     }
 
-    const { data: activities, error } = await query;
+    const { data: totals, error } = await supabaseAdmin.rpc('leaderboard_activity_totals', {
+      p_user_ids: users.map((u) => u.id),
+      p_start_date: startDate,
+      p_end_date: endDate
+    });
+
     if (error) {
       throw new Error(`Failed to fetch daily activities for leaderboard: ${error.message}`);
     }
@@ -187,24 +210,21 @@ export class DailyActivity {
       };
     }
 
-    const activityRows = (activities || []) as unknown as DatabaseDailyActivityRow[];
+    // 4. Fold the per-student totals in
+    for (const row of (totals || []) as ActivityTotalsRow[]) {
+      const summary = leaderboardMap[row.user_id];
+      if (!summary) continue;
 
-    // 4. Sum up points
-    for (const act of activityRows) {
-      const summary = leaderboardMap[act.user_id];
-      if (summary) {
-        if (range === 'all') {
-          // For all-time, we accumulate GitHub contributions and GitHub points from ledger
-          const ghPoints = 0;
-          summary.totalGithubContributions += act.github_contributions_today;
-          summary.totalPoints += ghPoints;
-        } else {
-          // For today/week, we sum the daily points_earned, leetcode_solved_today, and codechef_solved_today directly
-          summary.totalPoints += act.points_earned;
-          summary.totalLeetcodeSolved += act.leetcode_solved_today;
-          summary.totalGithubContributions += act.github_contributions_today;
-          summary.totalCodechefSolved += act.codechef_solved_today || 0;
-        }
+      if (range === 'all') {
+        // All-time points come from the User profile totals in step 4.5; the
+        // ledger only contributes the GitHub contribution count.
+        summary.totalGithubContributions += Number(row.github_contributions);
+      } else {
+        // For today/week, the daily ledger is the whole story.
+        summary.totalPoints += Number(row.points);
+        summary.totalLeetcodeSolved += Number(row.leetcode_solved);
+        summary.totalGithubContributions += Number(row.github_contributions);
+        summary.totalCodechefSolved += Number(row.codechef_solved);
       }
     }
 

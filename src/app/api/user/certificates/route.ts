@@ -1,28 +1,45 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { requireStudent } from '@/lib/authz';
+import { CERTIFICATE_CATEGORIES, isCertificateCategory } from '@/lib/certificateCategories';
+
+/**
+ * A student's certificates.
+ *
+ * The PDF lives in the student's own Google Drive; we store only the link, so
+ * this costs no Supabase storage. 800 students uploading phone photos of their
+ * certificates would have blown past the 1 GB storage allowance on its own.
+ *
+ * Every handler is scoped to the caller — one student can never read or delete
+ * another's. Staff read them through the admin-only routes instead.
+ */
+
+const MAX_NAME_LENGTH = 200;
+
+/** The certificates table ships in a separate migration; treat an absent one
+ *  as "nothing uploaded yet" rather than a hard failure. */
+function isMissingTable(error: { message?: string; code?: string }): boolean {
+  return !!error.message?.includes('does not exist') || error.code === 'PGRST116';
+}
 
 export async function GET() {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  const guard = await requireStudent();
+  if (!guard.ok) return guard.response;
 
+  try {
     const { data: certs, error } = await supabaseAdmin
       .from('certificates')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', guard.requester.userId)
       .order('created_at', { ascending: false });
 
     if (error) {
-      // Handle the case where the certificates table has not been created yet in Supabase
-      if (error.message?.includes('does not exist') || error.code === 'PGRST116') {
+      if (isMissingTable(error)) {
         return NextResponse.json(
-          { 
-            error: 'Certificates database table is missing. Run the SQL script from your implementation plan.', 
-            code: 'MISSING_TABLE' 
-          }, 
+          {
+            error: 'Certificates database table is missing. Run supabase/schema.sql against your project.',
+            code: 'MISSING_TABLE',
+          },
           { status: 503 }
         );
       }
@@ -30,137 +47,102 @@ export async function GET() {
     }
 
     return NextResponse.json(certs || []);
-  } catch (err: any) {
-    console.error('GET certificates failed:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error('GET certificates failed:', errMsg);
+    return NextResponse.json({ error: errMsg }, { status: 500 });
   }
 }
 
+/**
+ * Records one certificate. The body carries a link, not a file — the upload
+ * itself already happened against the student's Drive.
+ */
 export async function POST(req: Request) {
+  const guard = await requireStudent();
+  if (!guard.ok) return guard.response;
+
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { name, category, url } = await req.json();
+
+    if (typeof name !== 'string' || !name.trim()) {
+      return NextResponse.json({ error: 'A certificate title is required.' }, { status: 400 });
+    }
+    // The set is closed and the column is constrained to match, so a bad value
+    // is rejected here rather than becoming a 500 from Postgres.
+    if (!isCertificateCategory(category)) {
+      return NextResponse.json(
+        { error: `Choose a category: ${CERTIFICATE_CATEGORIES.join(', ')}.` },
+        { status: 400 }
+      );
+    }
+    if (typeof url !== 'string' || !url.trim()) {
+      return NextResponse.json({ error: 'A link to the certificate is required.' }, { status: 400 });
     }
 
-    const formData = await req.formData();
-    const file = formData.get('file') as File | null;
-    const name = formData.get('name') as string | null;
-    const platform = formData.get('platform') as string | null;
-
-    if (!file || !name || !platform) {
-      return NextResponse.json({ error: 'Missing required parameters (file, name, platform)' }, { status: 400 });
-    }
-
-    // Try to ensure the Storage bucket exists dynamically
+    let parsed: URL;
     try {
-      await supabaseAdmin.storage.createBucket('certificates', {
-        public: true,
-        allowedMimeTypes: ['image/png', 'image/jpeg', 'image/jpg'],
-      });
-    } catch (err) {
-      // Ignore if bucket already exists
+      parsed = new URL(url.trim());
+    } catch {
+      return NextResponse.json({ error: 'That does not look like a valid link.' }, { status: 400 });
+    }
+    if (parsed.protocol !== 'https:') {
+      return NextResponse.json({ error: 'The link must start with https://' }, { status: 400 });
     }
 
-    const fileExt = file.name.split('.').pop() || 'jpg';
-    const fileName = `${userId}-${Date.now()}.${fileExt}`;
-    const filePath = `${userId}/${fileName}`;
-
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    // Upload image to the certificates bucket
-    const { error: uploadError } = await supabaseAdmin.storage
-      .from('certificates')
-      .upload(filePath, buffer, {
-        contentType: file.type || 'image/jpeg',
-        upsert: true
-      });
-
-    if (uploadError) {
-      throw uploadError;
-    }
-
-    // Retrieve public access URL
-    const { data: urlData } = supabaseAdmin.storage
-      .from('certificates')
-      .getPublicUrl(filePath);
-
-    const fileUrl = urlData.publicUrl;
-
-    // Record certificate metadata in the table
-    const { data: dbData, error: dbError } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin
       .from('certificates')
       .insert({
-        user_id: userId,
-        name,
-        platform,
-        file_url: fileUrl
+        user_id: guard.requester.userId,
+        name: name.trim().slice(0, MAX_NAME_LENGTH),
+        category,
+        file_url: parsed.toString(),
       })
       .select()
       .single();
 
-    if (dbError) {
-      // Try to cleanup the uploaded file if database insert fails
-      await supabaseAdmin.storage.from('certificates').remove([filePath]);
-      throw dbError;
-    }
+    if (error) throw error;
 
-    return NextResponse.json({ success: true, certificate: dbData });
-  } catch (err: any) {
-    console.error('POST certificate failed:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ success: true, certificate: data });
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error('POST certificate failed:', errMsg);
+    return NextResponse.json({ error: errMsg }, { status: 500 });
   }
 }
 
+/** Forgets a certificate. The Drive file itself stays the student's to delete. */
 export async function DELETE(req: Request) {
+  const guard = await requireStudent();
+  if (!guard.ok) return guard.response;
+
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
-
+    const id = new URL(req.url).searchParams.get('id');
     if (!id) {
       return NextResponse.json({ error: 'Missing certificate ID' }, { status: 400 });
     }
 
-    // Retrieve the certificate to verify ownership
-    const { data: cert, error: fetchError } = await supabaseAdmin
+    // Filtering on user_id as part of the delete is the ownership check: a row
+    // belonging to someone else simply matches nothing.
+    const { data, error } = await supabaseAdmin
       .from('certificates')
-      .select('*')
+      .delete()
       .eq('id', id)
-      .eq('user_id', userId)
-      .single();
+      .eq('user_id', guard.requester.userId)
+      .select('id');
 
-    if (fetchError || !cert) {
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
       return NextResponse.json({ error: 'Certificate not found or access denied' }, { status: 404 });
     }
 
-    // Parse the file path inside the certificates bucket from the URL
-    const fileUrl = cert.file_url;
-    const urlParts = fileUrl.split('/certificates/');
-    const filePath = urlParts[1] ? decodeURIComponent(urlParts[1]) : null;
-
-    if (filePath) {
-      await supabaseAdmin.storage.from('certificates').remove([filePath]);
-    }
-
-    // Delete the metadata row
-    const { error: deleteError } = await supabaseAdmin
-      .from('certificates')
-      .delete()
-      .eq('id', id);
-
-    if (deleteError) {
-      throw deleteError;
-    }
-
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    console.error('DELETE certificate failed:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error('DELETE certificate failed:', errMsg);
+    return NextResponse.json({ error: errMsg }, { status: 500 });
   }
 }
+
+export const dynamic = 'force-dynamic';

@@ -69,3 +69,91 @@ create index if not exists idx_daily_activities_date on public.daily_activities(
 create index if not exists idx_users_codechef on public.users(codechef_username) where codechef_username is not null;
 
 
+
+-- 9. Leaderboard aggregation
+-- The leaderboard must never pull raw daily_activities rows into the app —
+-- that is one row per student per day and grows without bound. This function
+-- does the GROUP BY in Postgres and returns one already-summed row per
+-- student. Pass p_user_ids to scope it to a single cohort.
+create or replace function public.leaderboard_activity_totals(
+  p_user_ids text[] default null,
+  p_start_date date default null,
+  p_end_date date default null
+)
+returns table (
+  user_id text,
+  points bigint,
+  leetcode_solved bigint,
+  github_contributions bigint,
+  codechef_solved bigint
+)
+language sql
+stable
+security invoker
+set search_path = public
+as $$
+  select
+    da.user_id,
+    coalesce(sum(da.points_earned), 0)::bigint,
+    coalesce(sum(da.leetcode_solved_today), 0)::bigint,
+    coalesce(sum(da.github_contributions_today), 0)::bigint,
+    coalesce(sum(da.codechef_solved_today), 0)::bigint
+  from public.daily_activities da
+  where (p_user_ids is null or da.user_id = any (p_user_ids))
+    and (p_start_date is null or da.date >= p_start_date)
+    and (p_end_date is null or da.date <= p_end_date)
+  group by da.user_id;
+$$;
+
+-- Only the backend's service role may call this; the browser never talks to
+-- Postgres directly in this app.
+revoke all on function public.leaderboard_activity_totals(text[], date, date) from public;
+revoke all on function public.leaderboard_activity_totals(text[], date, date) from anon;
+revoke all on function public.leaderboard_activity_totals(text[], date, date) from authenticated;
+grant execute on function public.leaderboard_activity_totals(text[], date, date) to service_role;
+
+-- 10. Certificates
+-- Only the link is stored. The PDF itself lives in the student's own Google
+-- Drive, so a cohort of 800 uploading their course certificates costs the
+-- department no Supabase storage at all.
+create table if not exists public.certificates (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null references public.users(id) on delete cascade,
+  name text not null,
+  -- One of three fixed buckets, mirrored in src/lib/certificateCategories.ts.
+  -- The admin console reports on them one at a time, so the set is closed.
+  category text not null check (category in ('NPTEL', 'Course', 'Competitions')),
+  file_url text not null, -- Google Drive share link, not a stored object
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.certificates enable row level security;
+
+create index if not exists idx_certificates_user on public.certificates(user_id);
+
+-- 11. Events
+-- A repeating entry is ONE row with a rule, not one row per occurrence. The
+-- occurrences are expanded when a range of the calendar is drawn — see
+-- src/lib/recurrence.ts — so the table does not grow with the term and editing
+-- or deleting a series is a single write.
+create table if not exists public.events (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text,
+  event_date date not null, -- the FIRST occurrence
+  repeat text not null default 'none',
+  repeat_until date,        -- null means open-ended
+  audience text not null default 'Personal', -- a cohort, 'Everyone', or 'Personal'
+  created_by text not null,
+  creator_name text,
+  is_staff boolean not null default false,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  constraint events_repeat_check check (repeat in ('none', 'daily', 'weekly', 'monthly')),
+  -- A series may not end before it starts.
+  constraint events_repeat_until_check check (repeat_until is null or repeat_until >= event_date)
+);
+
+alter table public.events enable row level security;
+
+create index if not exists idx_events_date on public.events(event_date);
+create index if not exists idx_events_audience on public.events(audience);

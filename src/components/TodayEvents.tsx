@@ -4,12 +4,15 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CalendarDays, X, Users, User as UserIcon } from 'lucide-react';
 import { apiFetch, readJson } from '@/lib/apiClient';
+import { occursOn, type RepeatRule } from '@/lib/recurrence';
 
 interface CalendarEvent {
   id: string;
   title: string;
   description: string | null;
   eventDate: string;
+  repeat?: RepeatRule | null;
+  repeatUntil?: string | null;
   audience: string;
   isStaff: boolean;
 }
@@ -44,7 +47,9 @@ export default function TodayEvents() {
         const data = await readJson<{ events: CalendarEvent[] }>(await apiFetch('/api/events'));
         if (cancelled) return;
 
-        const todays = (data.events || []).filter((e) => e.eventDate === day);
+        // A repeating entry is stored once, so match on its occurrences rather
+        // than on the stored start date.
+        const todays = (data.events || []).filter((e) => occursOn(e, day));
         if (todays.length === 0) return;
 
         setEvents(todays);

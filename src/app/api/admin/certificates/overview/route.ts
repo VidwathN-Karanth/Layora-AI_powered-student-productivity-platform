@@ -2,14 +2,23 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { requireAdminCohort } from '@/lib/authz';
 import { emailsForCohort } from '@/lib/roster';
+import {
+  CERTIFICATE_CATEGORIES, resolveCategory,
+  type CertificateCategory,
+} from '@/lib/certificateCategories';
 
 interface CertificateUploader {
   userId: string;
   name: string;
   email: string;
   count: number;
+  /** Always carries all three keys, so a category nobody used still reads 0. */
+  byCategory: Record<CertificateCategory, number>;
   latestAt: string | null;
 }
+
+const emptyCounts = (): Record<CertificateCategory, number> =>
+  Object.fromEntries(CERTIFICATE_CATEGORIES.map((c) => [c, 0])) as Record<CertificateCategory, number>;
 
 /**
  * Who in one academic year has uploaded certificates, and how many.
@@ -27,7 +36,7 @@ export async function GET(request: Request) {
 
     const { data: certs, error } = await supabaseAdmin
       .from('certificates')
-      .select('user_id, created_at')
+      .select('user_id, created_at, category')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -69,14 +78,19 @@ export async function GET(request: Request) {
       const existing = byUser.get(cert.user_id);
       if (existing) {
         existing.count += 1;
+        existing.byCategory[resolveCategory(cert.category)] += 1;
         continue;
       }
+
+      const byCategory = emptyCounts();
+      byCategory[resolveCategory(cert.category)] += 1;
 
       byUser.set(cert.user_id, {
         userId: cert.user_id,
         name: profile.name || 'Student',
         email: profile.email,
         count: 1,
+        byCategory,
         // Rows arrive newest-first, so the first one seen is the latest.
         latestAt: cert.created_at ?? null,
       });

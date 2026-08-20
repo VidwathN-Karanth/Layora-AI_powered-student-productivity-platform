@@ -4,6 +4,13 @@
 // features were removed; what remains is the deterministic local scheduler,
 // which is now the only way a timetable gets built.
 
+import {
+  DEFAULT_POMODORO_SETTINGS, normalizeSettings, type PomodoroSettings,
+} from './pomodoro';
+
+/** Below this, a focus block is too short to be worth putting on a timetable. */
+const MIN_FOCUS_MINUTES = 15;
+
 
 export interface Task {
   id: string;
@@ -82,8 +89,12 @@ export function generateLocalWeeklySchedule(
   subjects: Subject[],
   activities: Activity[],
   courses: Course[],
-  tasks?: Task[]
+  tasks?: Task[],
+  pomodoroSettings?: PomodoroSettings
 ): { schedule: TimetableBlock[]; insights: string[] } {
+  // Study time is laid out in the same focus/break rhythm as the Zen timer, so
+  // a block on the timetable is exactly one sitting at the timer.
+  const pomo = normalizeSettings(pomodoroSettings || DEFAULT_POMODORO_SETTINGS);
   const schedule: TimetableBlock[] = [];
   const days = [1, 2, 3, 4, 5, 6, 0]; // Monday to Saturday (rest on Sunday by default)
   const insights: string[] = [];
@@ -93,9 +104,13 @@ export function generateLocalWeeklySchedule(
     return h * 60 + m;
   };
 
+  // Clamped to the day, never wrapped. A late sleep time used to push the
+  // fallback block negative ("-1:-30"), and a long activity past midnight came
+  // back as an end time earlier than its own start.
   const minToTime = (m: number) => {
-    const h = Math.floor(m / 60) % 24;
-    const min = Math.floor(m % 60);
+    const clamped = Math.min(1439, Math.max(0, Math.floor(m)));
+    const h = Math.floor(clamped / 60);
+    const min = clamped % 60;
     return `${h.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
   };
 
@@ -338,6 +353,10 @@ export function generateLocalWeeklySchedule(
 
   const sortedStudyItems = studyItems.sort((a, b) => b.priorityScore - a.priorityScore);
 
+  // What each task actually received, so the deadline check afterwards can be
+  // about scheduled reality rather than intent.
+  const taskAllocation: { [taskId: string]: { title: string; minutes: number; weekdays: Set<number> } } = {};
+
   const collegeStart = timeToMin(routine.collegeTimings?.start || '09:00');
   const collegeEnd = timeToMin(routine.collegeTimings?.end || '16:00');
   const currentDayOfWeek = new Date().getDay();
@@ -472,6 +491,8 @@ export function generateLocalWeeklySchedule(
           let blockDetails = '';
           let blockDuration = 60;
           let blockSubCode = '';
+          let blockTaskId = '';
+          let blockTaskTitle = '';
 
           // 1. Rule 3: URGENT Tasks due within 24 hours -> schedule immediately today
           if (isTodayOrTomorrow && urgentTasks.length > 0) {
@@ -479,6 +500,8 @@ export function generateLocalWeeklySchedule(
             blockTitle = `Study: ${t.title}`;
             blockDuration = Math.min(duration, t.estimatedMinutes || 60);
             blockDetails = `Urgent Task: Due in 24 hours. Maintain focus!`;
+            blockTaskId = t.id;
+            blockTaskTitle = t.title;
             blockSubCode = subjects.find(s => s.id === t.subjectId)?.code || '';
 
             if (!insights.some(ins => ins.includes(t.title))) {
@@ -492,6 +515,8 @@ export function generateLocalWeeklySchedule(
             blockTitle = `Study: ${t.title}`;
             blockDuration = Math.min(duration, t.estimatedMinutes || 60);
             blockDetails = `High Priority Task: Due in 3 days. Focus!`;
+            blockTaskId = t.id;
+            blockTaskTitle = t.title;
             blockSubCode = subjects.find(s => s.id === t.subjectId)?.code || '';
 
             if (!insights.some(ins => ins.includes(t.title))) {
@@ -505,6 +530,8 @@ export function generateLocalWeeklySchedule(
             blockTitle = `Study: ${t.title}`;
             blockDuration = Math.min(duration, t.estimatedMinutes || 60);
             blockDetails = `Milestone Study: ${t.title}`;
+            blockTaskId = t.id;
+            blockTaskTitle = t.title;
             blockSubCode = subjects.find(s => s.id === t.subjectId)?.code || '';
             mediumTasks.shift();
           }
@@ -525,48 +552,80 @@ export function generateLocalWeeklySchedule(
           }
 
           blockDuration = Math.min(blockDuration, duration, maxStudyMins - dayStudyMins);
-          if (blockDuration < 15) break;
+          if (blockDuration < MIN_FOCUS_MINUTES) break;
 
-          const blockEnd = segStart + blockDuration;
-          schedule.push({
-            id: `block-${day}-study-${blockIdCounter++}`,
-            day,
-            start: minToTime(segStart),
-            end: minToTime(blockEnd),
-            title: blockTitle,
-            type: 'study',
-            color: colors.study,
-            subjectCode: blockSubCode,
-            details: blockDetails
-          });
+          // Lay the work out as Pomodoro rounds rather than one long block: a
+          // focus session, a short break, and a long break once the student has
+          // done a full cycle. Same lengths the Zen timer uses.
+          const rounds = Math.max(1, Math.ceil(blockDuration / pomo.focusMinutes));
+          let cursor = segStart;
+          let placedFocus = 0;
+          let roundsPlaced = 0;
 
-          dayStudyMins += blockDuration;
-          occupiedIntervals.push({ start: segStart, end: blockEnd });
+          while (placedFocus < blockDuration && cursor < segEnd) {
+            const focusLength = Math.min(pomo.focusMinutes, blockDuration - placedFocus, segEnd - cursor);
+            if (focusLength < MIN_FOCUS_MINUTES) break;
 
-          // Rule 3: Insert a 15-min break after 90 minutes of study
-          if (blockDuration >= 90 && (duration - blockDuration) >= 30 && dayStudyMins < maxStudyMins) {
-            const breakEnd = blockEnd + 15;
+            const focusEnd = cursor + focusLength;
+            roundsPlaced += 1;
+
+            schedule.push({
+              id: `block-${day}-study-${blockIdCounter++}`,
+              day,
+              start: minToTime(cursor),
+              end: minToTime(focusEnd),
+              title: rounds > 1 ? `${blockTitle} (${roundsPlaced}/${rounds})` : blockTitle,
+              type: 'study',
+              color: colors.study,
+              subjectCode: blockSubCode,
+              details: blockDetails,
+              isSession: true
+            });
+
+            occupiedIntervals.push({ start: cursor, end: focusEnd });
+            placedFocus += focusLength;
+            dayStudyMins += focusLength;
+            cursor = focusEnd;
+
+            if (blockTaskId) {
+              const entry = taskAllocation[blockTaskId] || { title: blockTaskTitle, minutes: 0, weekdays: new Set<number>() };
+              entry.minutes += focusLength;
+              entry.weekdays.add(day);
+              taskAllocation[blockTaskId] = entry;
+            }
+
+            // No trailing break: the run is over, or the day's budget is spent.
+            if (placedFocus >= blockDuration || dayStudyMins >= maxStudyMins) break;
+
+            const isLongBreak = roundsPlaced % pomo.roundsBeforeLongBreak === 0;
+            const breakLength = isLongBreak ? pomo.longBreakMinutes : pomo.shortBreakMinutes;
+
+            // Only insert a break if the work after it still fits.
+            if (segEnd - cursor < breakLength + MIN_FOCUS_MINUTES) break;
+
+            const breakEnd = cursor + breakLength;
             schedule.push({
               id: `block-${day}-break-${blockIdCounter++}`,
               day,
-              start: minToTime(blockEnd),
+              start: minToTime(cursor),
               end: minToTime(breakEnd),
-              title: 'Power Rest & Hydrate',
+              title: isLongBreak ? 'Long break' : 'Short break',
               type: 'break',
               color: colors.break,
-              details: 'AI recommended break to optimize focus and prevent cognitive burnout.'
+              details: isLongBreak
+                ? `A full cycle of ${pomo.roundsBeforeLongBreak} focus rounds is done — step away properly.`
+                : 'Stand up, look away from the screen, drink some water.',
+              isSession: true
             });
 
-            if (insights.filter(ins => ins.includes("Added a break")).length < 2) {
-              insights.push(`Added a break at ${minToTime(blockEnd)} — you've been studying for 90 minutes.`);
-            }
-
-            occupiedIntervals.push({ start: blockEnd, end: breakEnd });
-            segStart = breakEnd;
-          } else {
-            segStart = blockEnd;
+            occupiedIntervals.push({ start: cursor, end: breakEnd });
+            cursor = breakEnd;
           }
 
+          // Nothing fit: stop rather than spinning on the same segment.
+          if (placedFocus === 0) break;
+
+          segStart = cursor;
           duration = segEnd - segStart;
         }
       });
@@ -600,10 +659,53 @@ export function generateLocalWeeklySchedule(
     }
   });
 
+  // Deadline check. A plan that quietly gives a task less time than it needs is
+  // worse than one that says so, so compare what each task actually received on
+  // the days that fall before its deadline against what it was estimated to need.
+  const currentDow = new Date().getDay();
+
+  for (const task of activeTasks) {
+    const daysLeft = getDaysUntil(task.deadline);
+    if (daysLeft > 7) continue; // Beyond this week's plan; nothing to promise yet.
+
+    const allocation = taskAllocation[task.id];
+    const needed = task.estimatedMinutes || 60;
+
+    if (daysLeft < 0) {
+      insights.push(`"${task.title}" is past its deadline — reschedule it or mark it done.`);
+      continue;
+    }
+
+    // Weekdays that actually occur between today and the deadline, inclusive.
+    const reachableDays = new Set<number>();
+    for (let i = 0; i <= Math.min(daysLeft, 6); i++) {
+      reachableDays.add((currentDow + i) % 7);
+    }
+
+    const minutesInTime = allocation
+      ? [...allocation.weekdays].filter((d) => reachableDays.has(d)).length > 0
+        ? Math.round(
+            (allocation.minutes * [...allocation.weekdays].filter((d) => reachableDays.has(d)).length) /
+              allocation.weekdays.size
+          )
+        : 0
+      : 0;
+
+    if (minutesInTime === 0) {
+      insights.push(
+        `"${task.title}" is due in ${daysLeft === 0 ? 'under a day' : `${daysLeft} day${daysLeft === 1 ? '' : 's'}`} but got no study time — free up a slot.`
+      );
+    } else if (minutesInTime < needed) {
+      insights.push(
+        `"${task.title}" needs about ${needed} min and only ${minutesInTime} min lands before its deadline.`
+      );
+    }
+  }
+
   if (insights.length < 3) {
+    insights.push(`Study time is laid out in ${pomo.focusMinutes}-minute focus rounds with ${pomo.shortBreakMinutes}-minute breaks.`);
     insights.push("Allocated college class hours as mandatory locked blocks.");
     insights.push("Balanced self-study slots around your extracurricular activities.");
-    insights.push("Synced algorithmic study blocks to ensure daily coding consistency.");
   }
 
   return { schedule: resolveScheduleOverlaps(schedule), insights };
@@ -616,10 +718,11 @@ export function resolveScheduleOverlaps(schedule: TimetableBlock[]): TimetableBl
     return h * 60 + m;
   };
 
-  // Helper to convert minutes to "HH:MM"
+  // Helper to convert minutes to "HH:MM", clamped to the day rather than wrapped.
   const minToTime = (m: number) => {
-    const h = Math.floor(m / 60) % 24;
-    const min = Math.floor(m % 60);
+    const clamped = Math.min(1439, Math.max(0, Math.floor(m)));
+    const h = Math.floor(clamped / 60);
+    const min = clamped % 60;
     return `${h.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
   };
 
@@ -668,9 +771,16 @@ export function resolveScheduleOverlaps(schedule: TimetableBlock[]): TimetableBl
       segments = nextSegments;
     });
 
-    // Keep segments at least 10 minutes long to avoid tiny, useless blocks
+    // The 10-minute floor exists to drop useless slivers left behind by a split.
+    // A block that came through untouched is kept whatever its length —
+    // otherwise a 5-minute Pomodoro break gets deleted and the timetable shows
+    // an unexplained gap where the break should be.
+    const original = { start: timeToMin(block.start), end: timeToMin(block.end) };
+    const untouched = (seg: { start: number; end: number }) =>
+      seg.start === original.start && seg.end === original.end;
+
     return segments
-      .filter((seg) => seg.end - seg.start >= 10)
+      .filter((seg) => untouched(seg) || seg.end - seg.start >= 10)
       .map((seg, idx) => ({
         ...block,
         id: idx === 0 ? block.id : `${block.id}-split-${idx}`,
