@@ -49,10 +49,6 @@ export async function GET() {
               streakCount: 0,
               totalStudyHours: 0,
               isOnboarded: true,
-              wakeTime: '06:00',
-              sleepTime: '22:00',
-              collegeStart: '09:00',
-              collegeEnd: '16:00',
               freeBlocks: [
                 { id: 'free-1', start: '17:00', end: '19:00', label: 'Evening Study' },
                 { id: 'free-2', start: '20:00', end: '22:00', label: 'Night Review' }
@@ -79,10 +75,6 @@ export async function GET() {
               streakCount: 0,
               totalStudyHours: 0,
               isOnboarded: true,
-              wakeTime: '06:00',
-              sleepTime: '22:00',
-              collegeStart: '09:00',
-              collegeEnd: '16:00',
               freeBlocks: [
                 { id: 'free-1', start: '17:00', end: '19:00', label: 'Evening Study' },
                 { id: 'free-2', start: '20:00', end: '22:00', label: 'Night Review' }

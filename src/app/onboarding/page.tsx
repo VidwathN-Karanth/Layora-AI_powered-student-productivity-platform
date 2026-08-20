@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/store/useStore';
+import ResumePanel from '@/components/ResumePanel';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
 import { 
   Clock, BookOpen, UploadCloud, Dumbbell, Globe, Award, CheckCircle, 
@@ -30,10 +31,6 @@ export default function OnboardingPage() {
   const totalSteps = 7;
 
   // Onboarding local states, pre-populated with realistic defaults
-  const [wakeTime, setWakeTime] = useState('06:00');
-  const [sleepTime, setSleepTime] = useState('22:00');
-  const [collegeStart, setCollegeStart] = useState('09:00');
-  const [collegeEnd, setCollegeEnd] = useState('16:00');
   const [freeBlocks, setFreeBlocks] = useState([
     { id: '1', start: '17:00', end: '19:00', label: 'Evening Study' },
     { id: '2', start: '20:00', end: '22:00', label: 'Night Work' }
@@ -208,10 +205,6 @@ export default function OnboardingPage() {
 
     const updatedUser = store.user ? {
       ...store.user,
-      wakeTime,
-      sleepTime,
-      collegeStart,
-      collegeEnd,
       freeBlocks,
       isOnboarded: true
     } : null;
@@ -284,70 +277,24 @@ export default function OnboardingPage() {
                   <div className="flex items-center gap-3 border-b border-outline-variant pb-4">
                     <Clock className="w-6 h-6 text-primary" />
                     <div>
-                      <h3 className="text-lg font-mono font-bold">Routine Setup</h3>
-                      <p className="text-xs text-outline">Determine sleep windows, mandatory lecture schedules, and study blocks.</p>
+                      <h3 className="text-lg font-mono font-bold">Your CV &amp; study slots</h3>
+                      <p className="text-xs text-outline">Upload your CV for the department, and mark the hours you are free to study.</p>
                     </div>
                   </div>
  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/*
+                      This column used to ask for wake time, sleep time and
+                      college start/end. One department on one timetable
+                      answered them identically every time, so the scheduler
+                      now assumes a fixed day and the space goes to something
+                      staff actually need: the student's CV.
+                    */}
                     <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-mono text-primary/70 mb-1">Wake Time</label>
-                          <input 
-                            type="time" 
-                            value={wakeTime}
-                            onChange={(e) => {
-                              setWakeTime(e.target.value);
-                              setStepErrors(prev => ({ ...prev, wakeTime: undefined }));
-                            }}
-                            className="bg-surface-container border border-outline-variant rounded-xl px-3 py-2 text-sm text-center w-full focus:outline-none focus:border-primary"
-                          />
-                          {stepErrors.wakeTime && <p className="text-red-500 text-[10px] font-mono mt-1">{stepErrors.wakeTime}</p>}
-                        </div>
-                        <div>
-                          <label className="block text-xs font-mono text-primary/70 mb-1">Sleep Time</label>
-                          <input 
-                            type="time" 
-                            value={sleepTime}
-                            onChange={(e) => {
-                              setSleepTime(e.target.value);
-                              setStepErrors(prev => ({ ...prev, sleepTime: undefined }));
-                            }}
-                            className="bg-surface-container border border-outline-variant rounded-xl px-3 py-2 text-sm text-center w-full focus:outline-none focus:border-primary"
-                          />
-                          {stepErrors.sleepTime && <p className="text-red-500 text-[10px] font-mono mt-1">{stepErrors.sleepTime}</p>}
-                        </div>
-                      </div>
- 
-                      <div className="grid grid-cols-2 gap-4 pt-2">
-                        <div>
-                          <label className="block text-xs font-mono text-cyan-300/70 mb-1">College Start</label>
-                          <input 
-                            type="time" 
-                            value={collegeStart}
-                            onChange={(e) => {
-                              setCollegeStart(e.target.value);
-                              setStepErrors(prev => ({ ...prev, collegeStart: undefined }));
-                            }}
-                            className="bg-surface-container border border-secondary rounded-xl px-3 py-2 text-sm text-center w-full focus:outline-none focus:border-secondary"
-                          />
-                          {stepErrors.collegeStart && <p className="text-red-500 text-[10px] font-mono mt-1">{stepErrors.collegeStart}</p>}
-                        </div>
-                        <div>
-                          <label className="block text-xs font-mono text-cyan-300/70 mb-1">College End</label>
-                          <input 
-                            type="time" 
-                            value={collegeEnd}
-                            onChange={(e) => {
-                              setCollegeEnd(e.target.value);
-                              setStepErrors(prev => ({ ...prev, collegeEnd: undefined }));
-                            }}
-                            className="bg-surface-container border border-secondary rounded-xl px-3 py-2 text-sm text-center w-full focus:outline-none focus:border-secondary"
-                          />
-                          {stepErrors.collegeEnd && <p className="text-red-500 text-[10px] font-mono mt-1">{stepErrors.collegeEnd}</p>}
-                        </div>
-                      </div>
+                      <ResumePanel />
+                      <p className="text-[10px] font-mono text-outline leading-relaxed">
+                        You can skip this and add it later from Settings.
+                      </p>
                     </div>
 
                     <div className="space-y-4 border-l border-outline-variant pl-0 md:pl-6">
@@ -903,8 +850,8 @@ export default function OnboardingPage() {
 
                   {/* Summary Box */}
                   <div className="w-full max-w-md bg-surface-container rounded-xl border border-outline-variant p-4 grid grid-cols-2 gap-3 text-xs font-mono">
-                    <div className="text-outline">Wake/Sleep cycles:</div>
-                    <div className="text-right text-primary">{formatTimeStr(wakeTime, store.is24HourFormat)} - {formatTimeStr(sleepTime, store.is24HourFormat)}</div>
+                    <div className="text-outline">Free study slots:</div>
+                    <div className="text-right text-primary">{freeBlocks.length} blocks</div>
                     <div className="text-outline">Subjects loaded:</div>
                     <div className="text-right text-primary">{subjects.length} courses</div>
                     <div className="text-outline">Extra activities:</div>

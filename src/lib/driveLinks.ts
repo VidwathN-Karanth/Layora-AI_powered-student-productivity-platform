@@ -10,7 +10,7 @@
 /** The shapes a Drive share link actually arrives in. */
 const DRIVE_ID_PATTERNS = [
   /\/file\/d\/([a-zA-Z0-9_-]{10,})/, // .../file/d/{id}/view
-  /\/document\/d\/([a-zA-Z0-9_-]{10,})/, // Docs-flavoured links
+  /\/(?:document|presentation|spreadsheets)\/d\/([a-zA-Z0-9_-]{10,})/, // Docs, Slides, Sheets
   /[?&]id=([a-zA-Z0-9_-]{10,})/, // .../open?id={id}, .../uc?id={id}
 ];
 

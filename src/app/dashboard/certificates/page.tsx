@@ -5,6 +5,7 @@ import { useUser } from '@clerk/nextjs';
 import { apiFetch, readJson, errorMessage } from '@/lib/apiClient';
 import { drivePreviewUrl } from '@/lib/driveLinks';
 import CertificateThumb from '@/components/CertificateThumb';
+import { formatDate } from '@/lib/dateFormat';
 import {
   CERTIFICATE_CATEGORIES, CATEGORY_HINTS, CATEGORY_ACCENT, countByCategory, resolveCategory,
   type CertificateCategory,
@@ -513,7 +514,7 @@ export default function CertificatesPage() {
                     <div className="flex items-center justify-between text-[9px] text-outline font-mono pt-1.5 border-t border-outline-variant/20">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3 h-3 text-outline-variant" />
-                        {cert.created_at ? new Date(cert.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}
+                        {formatDate(cert.created_at, 'N/A')}
                       </span>
                       <a
                         href={cert.file_url}

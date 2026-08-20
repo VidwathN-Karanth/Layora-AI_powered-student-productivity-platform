@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   CalendarDays, ChevronLeft, ChevronRight, Plus, Trash, Users, User as UserIcon, Loader2, Repeat,
+  RefreshCw, Check,
 } from 'lucide-react';
 import { apiFetch, readJson, errorMessage } from '@/lib/apiClient';
+import { formatLongDate, formatMonthLabel } from '@/lib/dateFormat';
 import {
   REPEAT_RULES, REPEAT_LABEL, expandByDate, type RepeatRule,
 } from '@/lib/recurrence';
@@ -54,6 +56,8 @@ export default function EventsPage() {
   const [repeat, setRepeat] = useState<RepeatRule>('none');
   const [repeatUntil, setRepeatUntil] = useState('');
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -134,7 +138,30 @@ export default function EventsPage() {
     }
   };
 
-  const monthLabel = cursor.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  /** Pushes everything on this calendar into the student's own Google Calendar. */
+  const syncToGoogle = async () => {
+    setSyncing(true);
+    setSyncMessage('');
+    setError('');
+    try {
+      const data = await readJson<{ syncedCount: number; skipped: number }>(
+        await apiFetch('/api/calendar/events', { method: 'POST' })
+      );
+      setSyncMessage(
+        data.syncedCount === 0
+          ? 'Nothing to sync — there are no upcoming events.'
+          : `Added ${data.syncedCount} event${data.syncedCount === 1 ? '' : 's'} to your Google Calendar.` +
+            (data.skipped ? ` ${data.skipped} could not be added.` : '')
+      );
+      setTimeout(() => setSyncMessage(''), 6000);
+    } catch (err) {
+      setError(errorMessage(err, 'Could not sync to Google Calendar.'));
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const monthLabel = formatMonthLabel(cursor);
   const shiftMonth = (delta: number) =>
     setCursor((c) => new Date(c.getFullYear(), c.getMonth() + delta, 1));
 
@@ -150,17 +177,37 @@ export default function EventsPage() {
             Your own reminders, plus anything the department has scheduled for you.
           </p>
         </div>
-        <button
-          onClick={() => { setSelected(todayKey); setCursor(new Date(today.getFullYear(), today.getMonth(), 1)); }}
-          className="px-3.5 py-2 rounded-xl border border-outline-variant bg-white/3 hover:border-primary text-xs font-mono text-outline hover:text-on-surface transition cursor-pointer self-start"
-        >
-          Today
-        </button>
+        <div className="flex items-center gap-2 self-start">
+          <button
+            onClick={() => { setSelected(todayKey); setCursor(new Date(today.getFullYear(), today.getMonth(), 1)); }}
+            className="px-3.5 py-2 rounded-xl border border-outline-variant bg-white/3 hover:border-primary text-xs font-mono text-outline hover:text-on-surface transition cursor-pointer"
+          >
+            Today
+          </button>
+          {/* Copies these entries into the student's own Google Calendar, which
+              is what makes them show up in the Google Calendar app on a phone. */}
+          <button
+            onClick={syncToGoogle}
+            disabled={syncing || events.length === 0}
+            title="Add these events to your own Google Calendar"
+            className="px-3.5 py-2 rounded-xl border border-primary/40 bg-primary/10 hover:bg-primary/20 text-xs font-mono font-bold text-primary transition cursor-pointer flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {syncing
+              ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Syncing...</>
+              : <><CalendarDays className="w-3.5 h-3.5" /> Sync to Google Calendar</>}
+          </button>
+        </div>
       </div>
 
       {error && (
         <div className="p-3.5 rounded-xl bg-red-950/20 border border-red-500/25 text-red-300 text-xs font-mono">
           {error}
+        </div>
+      )}
+
+      {syncMessage && (
+        <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-mono flex items-center gap-2">
+          <Check className="w-3.5 h-3.5 shrink-0" /> {syncMessage}
         </div>
       )}
 
@@ -213,14 +260,17 @@ export default function EventsPage() {
                     <button
                       key={key}
                       onClick={() => { setSelected(key); setShowForm(false); }}
-                      className={`aspect-square rounded-lg p-1.5 flex flex-col items-center justify-start gap-1 border transition cursor-pointer ${
+                      /* Every cell carries its own surface, in both themes —
+                         dark mode used to leave the grid as bare text on the
+                         page with no day boxes at all. */
+                      className={`min-h-[84px] rounded-lg p-1.5 flex flex-col items-stretch gap-1 border text-left transition cursor-pointer overflow-hidden ${
                         isSelected
                           ? 'border-primary bg-primary/10'
-                          : 'border-transparent hover:border-outline-variant hover:bg-white/3'
-                      } ${inMonth ? '' : 'opacity-35'}`}
+                          : 'border-white/20 bg-surface-container hover:border-white/40 hover:bg-surface-container-high'
+                      } ${inMonth ? '' : 'opacity-45'}`}
                     >
                       <span
-                        className={`text-[11px] font-mono ${
+                        className={`text-[11px] font-mono px-0.5 ${
                           isToday
                             ? 'font-black text-primary'
                             : isSelected
@@ -230,16 +280,29 @@ export default function EventsPage() {
                       >
                         {day.getDate()}
                       </span>
-                      {dayEvents.length > 0 && (
-                        <span className="flex items-center gap-0.5">
-                          {dayEvents.slice(0, 3).map((e) => (
-                            <span
-                              key={e.id}
-                              className={`w-1 h-1 rounded-full ${e.isStaff ? 'bg-amber-400' : 'bg-primary'}`}
-                            />
-                          ))}
-                        </span>
-                      )}
+
+                      {/* The title itself, so a glance at the month says what is
+                          on rather than only that something is. */}
+                      <span className="flex flex-col gap-0.5 min-w-0">
+                        {dayEvents.slice(0, 2).map((e) => (
+                          <span
+                            key={e.id}
+                            title={e.title}
+                            className={`block truncate rounded px-1 py-0.5 text-[9px] font-medium leading-tight ${
+                              e.isStaff
+                                ? 'bg-amber-400/15 text-amber-500 border-l-2 border-amber-400'
+                                : 'bg-primary/15 text-primary border-l-2 border-primary'
+                            }`}
+                          >
+                            {e.title}
+                          </span>
+                        ))}
+                        {dayEvents.length > 2 && (
+                          <span className="text-[8px] font-mono text-outline px-1">
+                            +{dayEvents.length - 2} more
+                          </span>
+                        )}
+                      </span>
                     </button>
                   );
                 })}
@@ -261,9 +324,7 @@ export default function EventsPage() {
         <div className="glass-card rounded-2xl border border-outline-variant p-5 space-y-4">
           <div className="border-b border-outline-variant pb-2">
             <h3 className="text-xs font-mono font-bold tracking-wider text-primary">
-              {new Date(`${selected}T00:00:00`).toLocaleDateString(undefined, {
-                weekday: 'long', day: 'numeric', month: 'long',
-              })}
+              {formatLongDate(selected)}
             </h3>
             <p className="text-[9px] font-mono text-outline mt-0.5">
               {selectedEvents.length === 0

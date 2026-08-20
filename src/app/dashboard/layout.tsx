@@ -8,16 +8,17 @@ import { resolveScheduleOverlaps } from '@/lib/scheduler';
 import { apiFetch } from '@/lib/apiClient';
 import { 
   LayoutDashboard, CalendarRange, BookMarked, CheckSquare, CalendarDays, 
-  FolderLock, BarChart3, Settings, LogOut, ChevronLeft, 
+  FolderLock, Settings, LogOut, ChevronLeft, 
   ChevronRight, Clock, 
   Check, Menu, X, Trophy, Award,
-  Globe, Sun, Moon
+  Globe, Sun, Moon, Timer
 } from 'lucide-react';
+import { formatShortDate } from '@/lib/dateFormat';
 import { UserButton, useUser, useAuth } from '@clerk/nextjs';
 import OnboardingModal from '@/components/OnboardingModal';
 import ZenMode from '@/components/ZenMode';
 import TodayEvents from '@/components/TodayEvents';
-import { isSupabaseConfigured } from '@/lib/supabaseClient';
+import NotificationAgent from '@/components/NotificationAgent';
 import { isAdminEmail } from '@/lib/admin';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -100,7 +101,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const updateTime = () => {
       const d = new Date();
       setTimeStr(d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: !store.is24HourFormat }));
-      setDateStr(d.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' }));
+      setDateStr(formatShortDate(d));
       
       const currentDayStr = d.toLocaleDateString('en-CA');
       if (currentDayStr !== lastCheckedDateRef.current) {
@@ -167,7 +168,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: 'Courses', path: '/dashboard/courses', icon: BookMarked },
     { name: 'Resources', path: '/dashboard/resources', icon: FolderLock },
     { name: 'Certificates', path: '/dashboard/certificates', icon: Award },
-    { name: 'Analytics', path: '/dashboard/analytics', icon: BarChart3 },
     { name: 'Leaderboard', path: '/dashboard/leaderboard', icon: Trophy },
     { name: 'Global Resources', path: '/dashboard/global-resources', icon: Globe },
     { name: 'Settings', path: '/dashboard/settings', icon: Settings }
@@ -265,12 +265,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <motion.aside
         animate={{ width: sidebarOpen ? 260 : 76 }}
         transition={{ duration: 0.3, ease: 'easeInOut' }}
-        className="hidden md:flex flex-col justify-between p-4 border-r border-white/10 bg-black/20 backdrop-blur-md shrink-0 h-screen sticky top-0 z-30 overflow-hidden"
+        className={`hidden md:flex flex-col justify-between py-4 border-r border-white/10 bg-black/20 backdrop-blur-md shrink-0 h-screen sticky top-0 z-30 overflow-hidden ${
+          sidebarOpen ? 'px-4' : 'px-2'
+        }`}
       >
         {/* Top Section: Logo & Navigation Container */}
         <div className="flex flex-col flex-1 min-h-0 space-y-6">
           {/* Logo panel */}
-          <div className="flex items-center justify-between shrink-0">
+          <div className={`shrink-0 ${sidebarOpen ? 'flex items-center justify-between' : 'flex flex-col items-center gap-2'}`}>
             <AnimatePresence mode="wait">
               {sidebarOpen ? (
                 <motion.span 
@@ -288,10 +290,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   initial={{ opacity: 0 }} 
                   animate={{ opacity: 1 }} 
                   exit={{ opacity: 0 }}
-                  className="flex flex-col items-center justify-center w-full gap-2"
+                  className="flex items-center justify-center"
                   title="Layora"
                 >
-                  <span className="font-mono font-black text-base text-primary w-full text-center">
+                  <span className="w-9 h-9 rounded-lg bg-primary/15 border border-primary/30 flex items-center justify-center font-mono font-black text-base text-primary">
                     L
                   </span>
                 </motion.div>
@@ -300,14 +302,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <button 
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-1 hover:bg-white/10 rounded-lg border border-white/10 text-white/50 hover:text-white transition"
+              aria-label={sidebarOpen ? 'Collapse the sidebar' : 'Expand the sidebar'}
+              title={sidebarOpen ? 'Collapse the sidebar' : 'Expand the sidebar'}
+              className="p-1.5 hover:bg-white/10 rounded-lg border border-white/10 text-white/50 hover:text-white transition cursor-pointer shrink-0"
             >
               {sidebarOpen ? <ChevronLeft className="w-3.5 h-3.5" strokeWidth={1.5} /> : <ChevronRight className="w-3.5 h-3.5" strokeWidth={1.5} />}
             </button>
           </div>
 
           {/* Navigation Links (Scrollable independently if screen height is small) */}
-          <nav className="space-y-1 flex-1 overflow-y-auto pr-1 scrollbar-none">
+          <nav className={`space-y-1 flex-1 overflow-y-auto scrollbar-none ${sidebarOpen ? 'pr-1' : ''}`}>
             {menuItems.map((item) => {
               const active = pathname.replace(/\/$/, '') === item.path.replace(/\/$/, '');
               const Icon = item.icon;
@@ -315,10 +319,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <button
                   key={item.name}
                   onClick={() => router.push(item.path)}
-                  className={`w-full flex items-center gap-3 py-2.5 rounded-xl text-xs font-mono transition relative border ${
-                    active 
-                      ? 'bg-gradient-to-r from-cyber-purple/25 to-cyber-blue/15 text-white font-bold border-white/15 pl-2 pr-3' 
-                      : 'text-white/60 hover:bg-white/5 hover:text-white border-transparent pl-2 pr-3'
+                  title={sidebarOpen ? undefined : item.name}
+                  aria-label={item.name}
+                  className={`flex items-center rounded-xl text-xs font-mono transition relative border cursor-pointer ${
+                    sidebarOpen ? 'w-full gap-3 py-2.5 pl-2 pr-3' : 'w-11 h-11 mx-auto justify-center'
+                  } ${
+                    active
+                      ? 'bg-gradient-to-r from-cyber-purple/25 to-cyber-blue/15 text-white font-bold border-white/15'
+                      : 'text-white/60 hover:bg-white/5 hover:text-white border-transparent'
                   }`}
                 >
                   <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-cyber-blue' : ''}`} strokeWidth={1.5} />
@@ -330,8 +338,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Bottom Section: User Card & Logout (Always static/pinned at the bottom) */}
-        <div className="space-y-4 pt-4 border-t border-white/5 shrink-0">
-          <div className="flex items-center gap-2.5 bg-white/5 p-2.5 rounded-xl border border-white/10 overflow-hidden">
+        <div className={`pt-4 border-t border-white/5 shrink-0 ${sidebarOpen ? 'space-y-4' : 'space-y-2'}`}>
+          <div className={`flex items-center bg-white/5 rounded-xl border border-white/10 overflow-hidden ${
+            sidebarOpen ? 'gap-2.5 p-2.5' : 'justify-center p-1.5'
+          }`}>
             <UserButton appearance={{ elements: { userButtonAvatarBox: "w-8 h-8 rounded-lg shrink-0" } }} />
             {sidebarOpen && (
               <div className="truncate min-w-0">
@@ -343,7 +353,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           
           <button 
             onClick={handleLogout} 
-            className="w-full flex items-center justify-center gap-2 border border-red-500/20 bg-red-950/10 hover:bg-red-950/30 text-red-400 py-2 rounded-xl text-xs font-mono transition cursor-pointer"
+            title={sidebarOpen ? undefined : 'Logout'}
+            aria-label="Logout"
+            className={`flex items-center justify-center border border-red-500/20 bg-red-950/10 hover:bg-red-950/30 text-red-400 rounded-xl text-xs font-mono transition cursor-pointer ${
+              sidebarOpen ? 'w-full gap-2 py-2' : 'w-11 h-11 mx-auto'
+            }`}
           >
             <LogOut className="w-4 h-4 shrink-0" strokeWidth={1.5} /> 
             {sidebarOpen && <span>Logout</span>}
@@ -359,30 +373,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex items-center gap-2 font-mono text-xs text-white/40">
             <span>Workspace:</span>
             <span className="text-cyber-blue font-bold uppercase">{menuItems.find(item => pathname.replace(/\/$/, '') === item.path.replace(/\/$/, ''))?.name || 'DASHBOARD'}</span>
+            {/* Today's date lives here rather than stacked under the clock,
+                where it made the pill tall and lopsided. */}
+            <span className="hidden lg:flex items-center gap-2 ml-2 pl-3 border-l border-white/10">
+              <CalendarDays className="w-3.5 h-3.5 text-white/30" />
+              <span className="text-white/60 font-semibold tracking-wide">{dateStr}</span>
+            </span>
           </div>
 
-          {/* Live digital clock with 12/24 toggle */}
+          {/* Live digital clock and the theme switch. */}
           <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2.5 border border-white/10 bg-white/5 px-4 py-1.5 rounded-full font-mono">
-            <span 
-              className={`w-2 h-2 rounded-full shrink-0 ${isSupabaseConfigured ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]'}`}
-              title={isSupabaseConfigured ? "Synced to Supabase" : "Running in Local Demo Mode"}
-            />
             <Clock className="w-4 h-4 text-primary" strokeWidth={1.5} />
-            <div className="flex flex-col items-center leading-none">
-              <span className="text-white font-bold font-mono text-lg min-w-[100px] text-center">
-                {timeStr || '00:00:00'}
-              </span>
-              <span className="text-[9px] font-mono uppercase tracking-wider text-white/45 mt-0.5">
-                {dateStr}
-              </span>
-            </div>
-            <button 
-              onClick={() => store.setIs24HourFormat(!store.is24HourFormat)}
-              className="ml-1 text-xs font-semibold uppercase bg-white/10 hover:bg-white/20 text-white/80 px-1.5 py-0.5 rounded cursor-pointer transition border border-white/10"
-              title="Toggle 12h/24h Format"
-            >
-              {store.is24HourFormat ? '24H' : '12H'}
-            </button>
+            <span className="text-white font-bold font-mono text-lg min-w-[100px] text-center leading-none">
+              {timeStr || '00:00:00'}
+            </span>
             <div className="h-4 w-[1px] bg-white/15 ml-1.5 mr-0.5 shrink-0" />
             <button
               onClick={() => store.setThemeMode(store.themeMode === 'light' ? 'dark' : 'light')}
@@ -409,10 +413,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex items-center gap-4">
             <button
               onClick={() => setZenOpen(true)}
-              title="Zen mode — a 20 minute focus session"
+              title="Zen mode — a fullscreen Pomodoro session"
               className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 hover:border-primary hover:text-primary text-white/70 transition cursor-pointer"
             >
-              <Moon className="w-3.5 h-3.5" strokeWidth={1.5} />
+              <Timer className="w-3.5 h-3.5" strokeWidth={1.5} />
               <span className="font-mono text-[11px] font-bold uppercase tracking-wider">Zen</span>
             </button>
 
@@ -459,6 +463,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       <ZenMode open={zenOpen} onClose={() => setZenOpen(false)} />
       <TodayEvents />
+      <NotificationAgent />
       <OnboardingModal />
     </div>
   );

@@ -309,11 +309,11 @@ html.light-mode[data-theme="emerald"] {
 }
 
 /* Wildcard selector to override ALL transparent white text classes to muted neutral (Light Mode) */
-.light-mode [class*="text-white/10"],
-.light-mode [class*="text-white/20"],
-.light-mode [class*="text-white/30"],
-.light-mode [class*="text-white/40"],
-.light-mode [class*="text-white/50"],
+.light-mode [class*="text-white/10"]:not(.zen-overlay *),
+.light-mode [class*="text-white/20"]:not(.zen-overlay *),
+.light-mode [class*="text-white/30"]:not(.zen-overlay *),
+.light-mode [class*="text-white/40"]:not(.zen-overlay *),
+.light-mode [class*="text-white/50"]:not(.zen-overlay *),
 .light-mode [class*="text-zinc-400"],
 .light-mode [class*="text-zinc-500"],
 .light-mode [class*="text-neutral-400"],
@@ -325,10 +325,10 @@ html.light-mode[data-theme="emerald"] {
   color: var(--l-ink-soft) !important; /* Apple secondary label */
 }
 
-.light-mode [class*="text-white/60"],
-.light-mode [class*="text-white/70"],
-.light-mode [class*="text-white/80"],
-.light-mode [class*="text-white/90"] {
+.light-mode [class*="text-white/60"]:not(.zen-overlay *),
+.light-mode [class*="text-white/70"]:not(.zen-overlay *),
+.light-mode [class*="text-white/80"]:not(.zen-overlay *),
+.light-mode [class*="text-white/90"]:not(.zen-overlay *) {
   color: var(--l-ink) !important; /* Apple primary label */
 }
 
@@ -350,12 +350,12 @@ html.light-mode[data-theme="emerald"] {
 
 /* Stage box background overrides for Light Mode */
 /* bg-white/5 (used for schedule rows, task rows, icon containers) → light grey, NOT white */
-.light-mode [class*="bg-white/5"] {
+.light-mode [class*="bg-white/5"]:not(.zen-overlay *) {
   background-color: var(--l-tint) !important; /* Apple secondary background – visible row tint */
 }
 
 /* bg-white/10 (used for icon boxes, hover trays) → slightly darker grey */
-.light-mode [class*="bg-white/10"] {
+.light-mode [class*="bg-white/10"]:not(.zen-overlay *) {
   background-color: var(--l-stone) !important;
 }
 
@@ -375,20 +375,20 @@ html.light-mode[data-theme="emerald"] {
 }
 
 /* Solid black/checkbox area backgrounds */
-.light-mode [class*="bg-black/40"] {
+.light-mode [class*="bg-black/40"]:not(.zen-overlay *) {
   background-color: var(--l-tint) !important;
 }
 
-.light-mode [class*="bg-white/15"],
-.light-mode [class*="bg-white/20"],
-.light-mode [class*="bg-white/30"] {
+.light-mode [class*="bg-white/15"]:not(.zen-overlay *),
+.light-mode [class*="bg-white/20"]:not(.zen-overlay *),
+.light-mode [class*="bg-white/30"]:not(.zen-overlay *) {
   background-color: var(--l-stone) !important; /* Slightly more visible than F2F2F7 */
 }
 
 /* Stage border/outline overrides for Light Mode */
-.light-mode [class*="border-white/5"],
-.light-mode [class*="border-white/10"],
-.light-mode [class*="border-white/20"],
+.light-mode [class*="border-white/5"]:not(.zen-overlay *),
+.light-mode [class*="border-white/10"]:not(.zen-overlay *),
+.light-mode [class*="border-white/20"]:not(.zen-overlay *),
 .light-mode [class*="border-zinc-800"],
 .light-mode [class*="border-zinc-700"],
 .light-mode [class*="border-neutral-800"],
@@ -762,14 +762,14 @@ html.light-mode[data-theme="emerald"] {
 
 /* Everything unclaimed falls to the soft ink. Brass micro-labels and the
    semantic highlights are excluded so they survive this sweep. */
-.light-mode p,
-.light-mode li,
-.light-mode td,
-.light-mode th,
-.light-mode code,
-.light-mode label,
-.light-mode span:not(.text-primary):not([class*="text-cyber-"]):not([class*="text-purple"]):not([class*="text-red-"]):not([class*="text-rose-"]):not([class*="text-emerald-"]):not([class*="text-blue-"]):not(.text-on-surface):not(.text-white):not(.hud-label):not([class*="tracking-widest"]),
-.light-mode div:not(.bg-primary):not(.bg-primary *):not([class*="text-red-"]):not([class*="text-rose-"]):not(.btn-neon):not(.bg-primary-fixed):not([class*="text-cyber-"]):not([class*="text-purple"]):not(.glass-card):not(.glass-panel-neon):not(.hud-label):not([class*="tracking-widest"]) {
+.light-mode p:not(.zen-overlay *),
+.light-mode li:not(.zen-overlay *),
+.light-mode td:not(.zen-overlay *),
+.light-mode th:not(.zen-overlay *),
+.light-mode code:not(.zen-overlay *),
+.light-mode label:not(.zen-overlay *),
+.light-mode span:not(.text-primary):not([class*="text-cyber-"]):not([class*="text-purple"]):not([class*="text-red-"]):not([class*="text-rose-"]):not([class*="text-emerald-"]):not([class*="text-blue-"]):not(.text-on-surface):not(.text-white):not(.hud-label):not([class*="tracking-widest"]):not(.zen-overlay *),
+.light-mode div:not(.bg-primary):not(.bg-primary *):not([class*="text-red-"]):not([class*="text-rose-"]):not(.btn-neon):not(.bg-primary-fixed):not([class*="text-cyber-"]):not([class*="text-purple"]):not(.glass-card):not(.glass-panel-neon):not(.hud-label):not([class*="tracking-widest"]):not(.zen-overlay):not(.zen-overlay *) {
   color: var(--l-ink-soft) !important;
 }
 
@@ -786,7 +786,7 @@ html.light-mode[data-theme="emerald"] {
 }
 
 /* Fix overall text colors */
-.light-mode .text-white {
+.light-mode .text-white:not(.zen-overlay):not(.zen-overlay *) {
   color: var(--l-ink) !important;
 }
 
@@ -1354,3 +1354,225 @@ h1, h2, h3, h4, h5, h6 {
 
 
 
+
+/* ────────────────────────────────────────────────────────────────
+   LIGHT MODE — the Clerk sign-in card
+
+   The Clerk block above paints the card dark. In light mode the sweeping
+   `.light-mode h1 / p / span` rules then repaint Clerk's own heading, subtitle
+   and button labels to dark ink — dark text on a dark card, which is what made
+   the sign-in box unreadable. Rather than fight each of those rules, repaint
+   the whole card light so it belongs to the page it sits on.
+   ──────────────────────────────────────────────────────────────── */
+html.light-mode .cl-card {
+  background: var(--l-card) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid var(--l-rule) !important;
+  box-shadow: 0 18px 40px -22px rgba(74, 58, 42, 0.30) !important;
+}
+
+html.light-mode .cl-headerTitle {
+  color: var(--l-ink) !important;
+  text-shadow: none !important;
+}
+
+html.light-mode .cl-headerSubtitle,
+html.light-mode .cl-dividerText,
+html.light-mode .cl-footerActionText,
+html.light-mode .cl-identityPreviewText {
+  color: var(--l-ink-soft) !important;
+}
+
+html.light-mode .cl-socialButtonsBlockButton {
+  background: var(--l-card) !important;
+  border: 1px solid var(--l-rule) !important;
+  color: var(--l-ink) !important;
+}
+
+html.light-mode .cl-socialButtonsBlockButton:hover {
+  background: var(--l-tint) !important;
+  border-color: var(--l-accent) !important;
+  box-shadow: none !important;
+}
+
+html.light-mode .cl-socialButtonsBlockButtonText {
+  color: var(--l-ink) !important;
+}
+
+html.light-mode .cl-dividerLine {
+  background: var(--l-rule) !important;
+}
+
+html.light-mode .cl-formFieldLabel {
+  color: var(--l-ink) !important;
+}
+
+html.light-mode .cl-formFieldInput {
+  background: var(--l-card) !important;
+  border: 1px solid var(--l-rule) !important;
+  color: var(--l-ink) !important;
+}
+
+html.light-mode .cl-formButtonPrimary,
+html.light-mode .cl-formButtonPrimary * {
+  color: #FFFFFF !important;
+}
+
+/* Clerk's "Last used" chip sits on the social button and inherits the dark
+   treatment otherwise. */
+html.light-mode .cl-socialButtonsBlockButton .cl-badge,
+html.light-mode .cl-badge {
+  background: var(--l-stone) !important;
+  color: var(--l-ink-soft) !important;
+  border-color: var(--l-rule) !important;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   LIGHT MODE — the admin console
+
+   The console is written against the dark palette throughout: bg-black/25…/80
+   panels, bg-white/2 rows, hairlines at border-white/15…/30. The sweeps above
+   cover the handful of steps the student workspace happens to use, which left
+   the console with black cards on a warm paper page. These fill the gaps so
+   the console reads as one surface in light mode.
+   ──────────────────────────────────────────────────────────────── */
+.light-mode .bg-black\/25,
+.light-mode .bg-black\/30,
+.light-mode .bg-black\/45,
+.light-mode .bg-black\/50 {
+  background-color: var(--l-tint) !important;
+}
+
+/* The heaviest scrims are modal backdrops — they must stay dark enough to
+   separate the dialog from the page, just warmer and lighter than pure black. */
+.light-mode .bg-black\/70,
+.light-mode .bg-black\/80 {
+  background-color: rgba(74, 58, 42, 0.35) !important;
+}
+
+/* Barely-there row tints. Left alone they stay transparent over a dark
+   assumption and the zebra striping disappears entirely. */
+.light-mode .bg-white\/2,
+.light-mode .bg-white\/3 {
+  background-color: var(--l-tint) !important;
+}
+
+.light-mode .hover\:bg-white\/3:hover,
+.light-mode .hover\:bg-white\/5:hover {
+  background-color: var(--l-stone) !important;
+}
+
+.light-mode .border-white\/15,
+.light-mode .border-white\/25,
+.light-mode .border-white\/30,
+.light-mode .divide-white\/5 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--l-rule) !important;
+}
+
+.light-mode .hover\:border-white\/25:hover,
+.light-mode .hover\:border-white\/30:hover {
+  border-color: var(--l-rule-strong) !important;
+}
+
+/* Two opacity steps the text sweep above does not name. */
+.light-mode [class*="text-white/25"]:not(.zen-overlay *),
+.light-mode [class*="text-white/45"]:not(.zen-overlay *) {
+  color: var(--l-ink-mute) !important;
+}
+
+/* Admin tables: a readable header row and legible body cells on paper. */
+.light-mode thead tr {
+  background-color: var(--l-tint) !important;
+}
+
+.light-mode tbody tr:hover {
+  background-color: var(--l-tint) !important;
+}
+
+/* The console's search and date inputs sit on bg-black/40, which the sweep
+   turns into a tint — the text inside still needs the dark ink. */
+.light-mode input,
+.light-mode select,
+.light-mode textarea {
+  color: var(--l-ink) !important;
+}
+
+.light-mode input::placeholder,
+.light-mode textarea::placeholder {
+  color: var(--l-ink-mute) !important;
+}
+
+/* The dark accents the console uses for section headings and chips are far too
+   light against paper; hold them at the readable end of their own hue. */
+.light-mode .text-cyber-purple {
+  color: #6D3BC9 !important;
+}
+
+.light-mode .text-cyber-blue {
+  color: #0B6E8A !important;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   ZEN MODE is the same black room in both themes
+
+   The overlay is deliberately a black screen with white type. In light mode
+   the sweeping `.light-mode .text-white / border-white/… / bg-white/…` rules
+   repaint all of it in warm dark ink — dark controls on a black background,
+   invisible. Restate the dark values inside the overlay so the focus screen
+   looks identical whichever theme the workspace is in.
+   ──────────────────────────────────────────────────────────────── */
+html.light-mode .zen-overlay,
+html.light-mode .zen-overlay .bg-black {
+  background-color: #000000 !important;
+}
+
+/* Attribute form on purpose: the escaped-hash class selector
+   (.bg-\[\#0B0B0C\]) fails to parse and takes the rest of this block with it. */
+html.light-mode .zen-overlay [class*="bg-[#0B0B0C]"] {
+  background-color: #0B0B0C !important;
+}
+
+html.light-mode .zen-overlay,
+html.light-mode .zen-overlay .text-white {
+  color: #FFFFFF !important;
+}
+
+html.light-mode .zen-overlay .text-white\/20 { color: rgba(255, 255, 255, 0.20) !important; }
+html.light-mode .zen-overlay .text-white\/25 { color: rgba(255, 255, 255, 0.25) !important; }
+html.light-mode .zen-overlay .text-white\/30 { color: rgba(255, 255, 255, 0.30) !important; }
+html.light-mode .zen-overlay .text-white\/40 { color: rgba(255, 255, 255, 0.40) !important; }
+html.light-mode .zen-overlay .text-white\/50 { color: rgba(255, 255, 255, 0.50) !important; }
+html.light-mode .zen-overlay .text-white\/60 { color: rgba(255, 255, 255, 0.60) !important; }
+html.light-mode .zen-overlay .text-white\/70 { color: rgba(255, 255, 255, 0.70) !important; }
+html.light-mode .zen-overlay .text-white\/80 { color: rgba(255, 255, 255, 0.80) !important; }
+
+html.light-mode .zen-overlay .bg-white\/10 { background-color: rgba(255, 255, 255, 0.10) !important; }
+html.light-mode .zen-overlay .bg-white\/15 { background-color: rgba(255, 255, 255, 0.15) !important; }
+html.light-mode .zen-overlay .bg-white\/30 { background-color: rgba(255, 255, 255, 0.30) !important; }
+html.light-mode .zen-overlay .bg-white\/70 { background-color: rgba(255, 255, 255, 0.70) !important; }
+
+html.light-mode .zen-overlay .border-white\/10 { border-color: rgba(255, 255, 255, 0.10) !important; }
+html.light-mode .zen-overlay .border-white\/15 { border-color: rgba(255, 255, 255, 0.15) !important; }
+html.light-mode .zen-overlay .border-white\/20 { border-color: rgba(255, 255, 255, 0.20) !important; }
+
+html.light-mode .zen-overlay .hover\:text-white:hover { color: #FFFFFF !important; }
+html.light-mode .zen-overlay .hover\:bg-white\/10:hover { background-color: rgba(255, 255, 255, 0.10) !important; }
+html.light-mode .zen-overlay .hover\:bg-white\/20:hover { background-color: rgba(255, 255, 255, 0.20) !important; }
+html.light-mode .zen-overlay .hover\:border-white\/40:hover { border-color: rgba(255, 255, 255, 0.40) !important; }
+html.light-mode .zen-overlay .hover\:border-white\/50:hover { border-color: rgba(255, 255, 255, 0.50) !important; }
+html.light-mode .zen-overlay .hover\:border-white\/60:hover { border-color: rgba(255, 255, 255, 0.60) !important; }
+
+/* The one inverted control: "Start break" is white-on-black. */
+html.light-mode .zen-overlay .bg-white { background-color: #FFFFFF !important; }
+html.light-mode .zen-overlay .text-black { color: #000000 !important; }
+html.light-mode .zen-overlay .hover\:bg-white\/90:hover { background-color: rgba(255, 255, 255, 0.90) !important; }
+html.light-mode .zen-overlay .text-emerald-400 { color: #34D399 !important; }
+
+/* Keep the mono/geist voice of the dark UI rather than the light serif stack. */
+html.light-mode .zen-overlay,
+html.light-mode .zen-overlay p,
+html.light-mode .zen-overlay span,
+html.light-mode .zen-overlay button {
+  font-family: var(--font-geist-mono), var(--font-geist), monospace !important;
+}

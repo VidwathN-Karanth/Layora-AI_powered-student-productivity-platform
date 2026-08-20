@@ -11,6 +11,21 @@ import {
 /** Below this, a focus block is too short to be worth putting on a timetable. */
 const MIN_FOCUS_MINUTES = 15;
 
+/**
+ * The day the scheduler assumes.
+ *
+ * Students used to be asked for their wake time, sleep time and college hours
+ * during onboarding and in Settings. For one department on one timetable those
+ * four questions never varied enough to earn the friction, so they are gone and
+ * these values stand in.
+ */
+export const DEFAULT_ROUTINE = {
+  wakeTime: '06:00',
+  sleepTime: '22:00',
+  collegeStart: '09:00',
+  collegeEnd: '16:00',
+} as const;
+
 
 export interface Task {
   id: string;

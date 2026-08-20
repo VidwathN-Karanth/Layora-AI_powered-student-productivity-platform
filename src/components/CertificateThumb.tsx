@@ -11,6 +11,8 @@ interface Props {
   /** Tailwind classes for the fallback icon, so each surface keeps its accent. */
   iconClass?: string;
   labelClass?: string;
+  /** Wording under the fallback icon. */
+  label?: string;
 }
 
 /**
@@ -32,6 +34,7 @@ export default function CertificateThumb({
   name,
   iconClass = 'text-primary/60 group-hover:text-primary',
   labelClass = 'text-outline',
+  label = 'PDF in Drive',
 }: Props) {
   const thumbnail = driveThumbnailUrl(url);
   const [failed, setFailed] = useState(false);
@@ -52,7 +55,7 @@ export default function CertificateThumb({
   return (
     <div className="flex flex-col items-center justify-center gap-2">
       <FileText className={`w-9 h-9 transition ${iconClass}`} />
-      <span className={`text-[8px] font-mono uppercase tracking-widest ${labelClass}`}>PDF in Drive</span>
+      <span className={`text-[8px] font-mono uppercase tracking-widest ${labelClass}`}>{label}</span>
     </div>
   );
 }

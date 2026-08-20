@@ -5,6 +5,7 @@ import {
   FileText, UploadCloud, Link2, X, ExternalLink, Loader2, Check, Lock,
 } from 'lucide-react';
 import { apiFetch, readJson, errorMessage } from '@/lib/apiClient';
+import { formatDate } from '@/lib/dateFormat';
 
 interface Resume {
   url: string;
@@ -170,7 +171,7 @@ export default function ResumePanel() {
             <div className="min-w-0 flex-1">
               <div className="text-xs font-bold text-on-surface truncate">{resume.name || 'Resume'}</div>
               <div className="text-[9px] font-mono text-outline">
-                {resume.uploadedAt ? `Uploaded ${new Date(resume.uploadedAt).toLocaleDateString()}` : 'Uploaded'}
+                {resume.uploadedAt ? `Uploaded ${formatDate(resume.uploadedAt)}` : 'Uploaded'}
               </div>
             </div>
             <a

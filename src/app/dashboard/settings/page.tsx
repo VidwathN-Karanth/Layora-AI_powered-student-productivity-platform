@@ -6,10 +6,10 @@ import { useStore } from '@/store/useStore';
 import { apiFetch, readJson, errorMessage } from '@/lib/apiClient';
 import ResumePanel from '@/components/ResumePanel';
 import { 
-  Settings, Key, Eye, EyeOff, Check, Sparkles, 
-  User, Bell, Calendar, ShieldCheck, RefreshCw,
-  Loader2, Info, Lock
+  Check, Sparkles, User, Bell, BellOff, Calendar,
+  ShieldCheck, Loader2, Info, Lock
 } from 'lucide-react';
+import { permissionState, requestPermission, notify, type NotificationPermissionState } from '@/lib/notifications';
 
 export default function SettingsPage() {
   const store = useStore();
@@ -18,11 +18,6 @@ export default function SettingsPage() {
   // Local profile states
   // The display name is read-only — Clerk (Google) is the source of truth.
   const displayName = clerkUser?.fullName || store.user?.name || 'Student';
-  const [wakeTime, setWakeTime] = useState(store.user?.wakeTime || '06:00');
-  const [sleepTime, setSleepTime] = useState(store.user?.sleepTime || '22:00');
-  const [collegeStart, setCollegeStart] = useState(store.user?.collegeStart || '09:00');
-  const [collegeEnd, setCollegeEnd] = useState(store.user?.collegeEnd || '16:00');
-
   const [leetcodeUsername, setLeetcodeUsername] = useState(store.user?.leetcodeUsername || '');
   const [githubUsername, setGithubUsername] = useState(store.user?.githubUsername || '');
   const [codechefUsername, setCodechefUsername] = useState(store.user?.codechefUsername || '');
@@ -35,28 +30,25 @@ export default function SettingsPage() {
   const [profileErrors, setProfileErrors] = useState<Record<string, string | undefined>>({});
   const [showCalendarTooltip, setShowCalendarTooltip] = useState(false);
 
-  const handleSaveProfile = (e: React.FormEvent) => {
-    e.preventDefault();
-    const errors: Record<string, string> = {};
-    if (!wakeTime) errors.wakeTime = "This field cannot be empty";
-    if (!sleepTime) errors.sleepTime = "This field cannot be empty";
-    if (!collegeStart) errors.collegeStart = "This field cannot be empty";
-    if (!collegeEnd) errors.collegeEnd = "This field cannot be empty";
+  // The browser's own permission, which is separate from the student's
+  // preference: they can want reminders while the browser blocks them.
+  const [notifPermission, setNotifPermission] = useState<NotificationPermissionState>('default');
+  // Read after mount, never during render: the server has no Notification API,
+  // so reading it inline would not match what the browser hydrates.
+  useEffect(() => {
+    const id = setTimeout(() => setNotifPermission(permissionState()), 0);
+    return () => clearTimeout(id);
+  }, []);
 
-    if (Object.keys(errors).length > 0) {
-      setProfileErrors(errors);
-      return;
+  const enableNotifications = async () => {
+    // Inside the click on purpose — a permission request without a user
+    // gesture is ignored, or silently denied, by most browsers.
+    const state = await requestPermission();
+    setNotifPermission(state);
+    if (state === 'granted') {
+      store.setNotificationsEnabled(true);
+      notify('Reminders are on', { body: 'This is what a Layora reminder looks like.', tag: 'layora-test' });
     }
-
-    store.updateRoutine({
-      wakeTime,
-      sleepTime,
-      collegeStart,
-      collegeEnd
-    });
-    setProfileErrors({});
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 2000);
   };
 
   const handleLinkAccount = async (field: 'leetcode' | 'github' | 'codechef' | 'linkedin') => {
@@ -135,92 +127,42 @@ export default function SettingsPage() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* --- PANEL 1: ACCOUNT PROFILE & CYCLES --- */}
+          {/* --- PANEL 1: ACCOUNT --- */}
+          {/*
+            This used to ask for wake time, sleep time and college start/end.
+            One department on one timetable answered them identically every
+            time, so the questions are gone and the scheduler uses a fixed day
+            (DEFAULT_ROUTINE in src/lib/scheduler.ts).
+          */}
           <div className="glass-card rounded-2xl p-5 space-y-4">
             <div className="flex items-center gap-2.5 border-b border-outline-variant pb-2">
               <User className="w-4 h-4 text-primary" />
-              <h3 className="text-xs font-mono font-bold tracking-wider text-primary">Academic Rhythm Profile</h3>
+              <h3 className="text-xs font-mono font-bold tracking-wider text-primary">Account</h3>
             </div>
 
-            <form onSubmit={handleSaveProfile} noValidate className="space-y-4">
-              {/* Name is not editable: it comes from the college Google account so
-                  the leaderboard and the admin console always show real people. */}
-              <div>
-                <label className="block text-[10px] font-mono text-outline mb-1">Name</label>
-                <div className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface-variant flex items-center justify-between gap-2">
-                  <span className="truncate">{displayName}</span>
-                  <Lock className="w-3 h-3 text-outline shrink-0" />
-                </div>
-                <p className="text-[9px] font-mono text-outline mt-1">
-                  Taken from your college Google account.
-                </p>
+            {/* Name is not editable: it comes from the college Google account so
+                the leaderboard and the admin console always show real people. */}
+            <div>
+              <label className="block text-[10px] font-mono text-outline mb-1">Name</label>
+              <div className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface-variant flex items-center justify-between gap-2">
+                <span className="truncate">{displayName}</span>
+                <Lock className="w-3 h-3 text-outline shrink-0" />
               </div>
+              <p className="text-[9px] font-mono text-outline mt-1">
+                Taken from your college Google account.
+              </p>
+            </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] font-mono text-outline mb-1">Wake Cycle</label>
-                  <input
-                    type="time"
-                    value={wakeTime}
-                    onChange={(e) => {
-                      setWakeTime(e.target.value);
-                      setProfileErrors(prev => ({ ...prev, wakeTime: undefined }));
-                    }}
-                    className="w-full bg-surface-container border border-outline-variant rounded-lg px-2 py-1 text-xs text-on-surface"
-                  />
-                  {profileErrors.wakeTime && <p className="text-red-500 text-[10px] font-mono mt-1">{profileErrors.wakeTime}</p>}
-                </div>
-                <div>
-                  <label className="block text-[10px] font-mono text-outline mb-1">Sleep Cycle</label>
-                  <input
-                    type="time"
-                    value={sleepTime}
-                    onChange={(e) => {
-                      setSleepTime(e.target.value);
-                      setProfileErrors(prev => ({ ...prev, sleepTime: undefined }));
-                    }}
-                    className="w-full bg-surface-container border border-outline-variant rounded-lg px-2 py-1 text-xs text-on-surface"
-                  />
-                  {profileErrors.sleepTime && <p className="text-red-500 text-[10px] font-mono mt-1">{profileErrors.sleepTime}</p>}
-                </div>
+            <div>
+              <label className="block text-[10px] font-mono text-outline mb-1">College email</label>
+              <div className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface-variant flex items-center justify-between gap-2">
+                <span className="truncate">{clerkUser?.primaryEmailAddress?.emailAddress || store.user?.email || '—'}</span>
+                <Lock className="w-3 h-3 text-outline shrink-0" />
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] font-mono text-outline mb-1">College Start</label>
-                  <input
-                    type="time"
-                    value={collegeStart}
-                    onChange={(e) => {
-                      setCollegeStart(e.target.value);
-                      setProfileErrors(prev => ({ ...prev, collegeStart: undefined }));
-                    }}
-                    className="w-full bg-surface-container border border-outline-variant rounded-lg px-2 py-1 text-xs text-on-surface"
-                  />
-                  {profileErrors.collegeStart && <p className="text-red-500 text-[10px] font-mono mt-1">{profileErrors.collegeStart}</p>}
-                </div>
-                <div>
-                  <label className="block text-[10px] font-mono text-outline mb-1">College End</label>
-                  <input
-                    type="time"
-                    value={collegeEnd}
-                    onChange={(e) => {
-                      setCollegeEnd(e.target.value);
-                      setProfileErrors(prev => ({ ...prev, collegeEnd: undefined }));
-                    }}
-                    className="w-full bg-surface-container border border-outline-variant rounded-lg px-2 py-1 text-xs text-on-surface"
-                  />
-                  {profileErrors.collegeEnd && <p className="text-red-500 text-[10px] font-mono mt-1">{profileErrors.collegeEnd}</p>}
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="bg-primary hover:bg-primary-container text-on-surface rounded-lg px-4 py-2 text-xs font-mono font-bold transition cursor-pointer"
-              >
-                Save Rhythm Cycles
-              </button>
-            </form>
+              <p className="text-[9px] font-mono text-outline mt-1">
+                Your year group is set from this address by the department roster.
+              </p>
+            </div>
           </div>
 
           {/* --- PANEL 2: LEETCODE, GITHUB & CODECHEF LINKING --- */}
@@ -451,58 +393,109 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* --- PANEL 5: CALENDAR INTEGRATIONS --- */}
+          {/* --- PANEL 5: DEVICE REMINDERS --- */}
+          {/*
+            This used to be a "Calendar OAuth Integration" card whose only
+            behaviour was flipping a local boolean and showing "this feature
+            will come soon" — it did nothing, which is why nobody could tell
+            what it was for. The real Google Calendar export lives on the
+            Events and Weekly Planner pages, where the thing being exported
+            actually is. What belongs here is the reminder setting.
+          */}
           <div className="glass-card rounded-2xl p-5 space-y-4">
             <div className="flex items-center justify-between border-b border-outline-variant pb-2 relative">
               <div className="flex items-center gap-2.5">
-                <Calendar className="w-4 h-4 text-primary" />
-                <h3 className="text-xs font-mono font-bold tracking-wider text-primary">Calendar OAuth Integration</h3>
+                <Bell className="w-4 h-4 text-primary" />
+                <h3 className="text-xs font-mono font-bold tracking-wider text-primary">Reminders on this device</h3>
               </div>
               <div className="relative flex items-center justify-center">
                 <button
                   type="button"
                   onClick={() => setShowCalendarTooltip(!showCalendarTooltip)}
-                  onMouseEnter={() => setShowCalendarTooltip(true)}
-                  onMouseLeave={() => setShowCalendarTooltip(false)}
-                  className="text-outline hover:text-primary transition p-0.5 focus:outline-none"
+                  className={`transition p-0.5 focus:outline-none cursor-pointer ${
+                    showCalendarTooltip ? 'text-primary' : 'text-outline hover:text-primary'
+                  }`}
+                  aria-expanded={showCalendarTooltip}
+                  aria-label="What reminders does this cover?"
                 >
                   <Info className="w-3.5 h-3.5" />
                 </button>
                 {showCalendarTooltip && (
-                  <div className="absolute right-0 bottom-full mb-2 bg-[#1A1D22] border border-primary/30 text-[9px] text-primary font-mono px-2 py-1 rounded shadow-md shadow-primary/10 whitespace-nowrap z-30">
-                    This feature will come soon
+                  <div className="absolute right-0 top-full mt-2 bg-surface-container-high border border-outline-variant rounded-xl shadow-lg z-30 w-72 p-3.5 space-y-2.5">
+                    <p className="text-[10px] font-mono text-on-surface-variant leading-relaxed">
+                      One switch for every reminder Layora sends. Turning it off silences all of
+                      them. Turn it on separately on every device you use — reminders appear on
+                      whichever device has Layora open, and nothing is emailed.
+                    </p>
+                    <ul className="space-y-1.5 text-[9px] font-mono text-outline leading-relaxed">
+                      <li className="flex items-start gap-2">
+                        <Bell className="w-3 h-3 mt-0.5 shrink-0 text-primary/60" />
+                        <span>Today&rsquo;s events, once, when you open the workspace.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Bell className="w-3 h-3 mt-0.5 shrink-0 text-primary/60" />
+                        <span>Timetable blocks, a few minutes before each starts — switch these on their own with &ldquo;Planner alerts&rdquo; on the Weekly Planner.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Bell className="w-3 h-3 mt-0.5 shrink-0 text-primary/60" />
+                        <span>Course reminders, at the time set on each course under &ldquo;Daily Notification&rdquo;.</span>
+                      </li>
+                    </ul>
+                    <div className="flex items-start gap-2 text-[9px] font-mono text-outline leading-relaxed pt-2 border-t border-outline-variant/40">
+                      <Calendar className="w-3 h-3 mt-0.5 shrink-0" />
+                      <p>
+                        Want them in the Google Calendar app instead? Use &ldquo;Sync to Google
+                        Calendar&rdquo; on the Events page, or on the Weekly Planner for study blocks.
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
 
             <div className="space-y-4">
-              <p className="text-[10px] text-outline font-mono leading-relaxed">
-                Establish synchronization pathways with Google Calendar services. Auto-export allows agenda revisions in real-time.
-              </p>
-
-              <div className="bg-surface-container border border-outline-variant rounded-xl p-4 flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-mono font-bold text-on-surface block">Google OAuth Token</span>
-                  <span className="text-[9px] font-mono text-outline">Status: {store.calendarSynced ? 'Active Sync' : 'Inactive'}</span>
+              <div className="bg-surface-container border border-outline-variant rounded-xl p-4 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <span className="text-xs font-mono font-bold text-on-surface block">Browser notifications</span>
+                  <span className="text-[9px] font-mono text-outline">
+                    {notifPermission === 'unsupported'
+                      ? 'This browser cannot show notifications'
+                      : notifPermission === 'denied'
+                        ? 'Blocked for this site — allow it in your browser settings'
+                        : notifPermission === 'granted'
+                          ? store.notificationsEnabled ? 'On for this device' : 'Allowed, but switched off'
+                          : 'Not yet allowed'}
+                  </span>
                 </div>
 
-                {store.calendarSynced ? (
-                  <div className="flex items-center gap-1.5 text-xs font-mono text-emerald-600 bg-emerald-950/30 border border-emerald-500/20 rounded-full px-3 py-1">
-                    <ShieldCheck className="w-3.5 h-3.5" /> AUTHORIZED
-                  </div>
+                {notifPermission === 'granted' && store.notificationsEnabled ? (
+                  <button
+                    onClick={() => store.setNotificationsEnabled(false)}
+                    className="flex items-center gap-1.5 text-xs font-mono text-emerald-500 bg-emerald-500/10 border border-emerald-500/25 rounded-full px-3 py-1 cursor-pointer hover:bg-emerald-500/20 transition shrink-0"
+                    title="Turn reminders off on this device"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5" /> ON
+                  </button>
+                ) : notifPermission === 'granted' ? (
+                  <button
+                    onClick={() => store.setNotificationsEnabled(true)}
+                    className="bg-primary/10 border border-primary/30 text-primary text-[10px] font-mono font-bold px-3 py-1.5 rounded-lg hover:bg-primary/20 transition cursor-pointer shrink-0"
+                  >
+                    Turn on
+                  </button>
                 ) : (
                   <button
-                    onClick={() => { store.setCalendarSynced(true); setSaveSuccess(true); setTimeout(() => setSaveSuccess(false), 2000); }}
-                    className="bg-cyan-900/30 border border-secondary text-on-surface text-[10px] font-mono font-bold px-3 py-1.5 rounded-lg hover:bg-cyan-900/50 transition cursor-pointer"
+                    onClick={enableNotifications}
+                    disabled={notifPermission === 'unsupported' || notifPermission === 'denied'}
+                    className="bg-primary/10 border border-primary/30 text-primary text-[10px] font-mono font-bold px-3 py-1.5 rounded-lg hover:bg-primary/20 transition cursor-pointer shrink-0 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
                   >
-                    Authorize OAuth
+                    <BellOff className="w-3 h-3" /> Allow
                   </button>
                 )}
               </div>
+
             </div>
           </div>
-
 
       </div>
     </div>

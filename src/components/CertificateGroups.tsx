@@ -3,6 +3,7 @@
 import { Eye, ExternalLink } from 'lucide-react';
 import CertificateThumb from './CertificateThumb';
 import { groupByCategory } from '@/lib/certificateCategories';
+import { formatDate } from '@/lib/dateFormat';
 
 export interface InspectedCertificate {
   id: string;
@@ -84,7 +85,7 @@ export default function CertificateGroups({ certificates, onPreview, accent }: P
                   <div className="p-3 space-y-1.5">
                     <h4 className="text-xs font-bold text-white line-clamp-1">{cert.name}</h4>
                     <div className="flex items-center justify-between text-[9px] text-white/40 pt-1.5 border-t border-white/5">
-                      <span>{new Date(cert.created_at).toLocaleDateString()}</span>
+                      <span>{formatDate(cert.created_at)}</span>
                       <a
                         href={cert.file_url}
                         target="_blank"

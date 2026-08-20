@@ -5,7 +5,7 @@ import { useStore } from '@/store/useStore';
 import { 
   BookMarked, PlusCircle, Trash, Award, 
   BookOpen, Calendar, HelpCircle, GraduationCap, Clock, ExternalLink,
-  Mail, Bell, Pencil
+  Bell, Pencil
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getPlatformDisplay, formatCourseLink } from '@/lib/courseUtils';
@@ -19,44 +19,10 @@ export default function CoursesPage() {
   const [progress, setProgress] = useState(0);
   const [goal, setGoal] = useState(2);
   const [deadline, setDeadline] = useState('2026-06-30');
-  // Helper to calculate the next 15-minute boundary
-  const getNext15MinBoundary = () => {
-    const now = new Date();
-    let minutes = now.getMinutes();
-    let hour = now.getHours();
-
-    let nextMin = Math.ceil((minutes + 1) / 15) * 15;
-    if (nextMin === 60) {
-      nextMin = 0;
-      hour = (hour + 1) % 24;
-    }
-    return `${String(hour).padStart(2, '0')}:${String(nextMin).padStart(2, '0')}`;
-  };
-
-  const getNext15MinDisplay = () => {
-    const timeStr = getNext15MinBoundary();
-    const [hStr, mStr] = timeStr.split(':');
-    const h = parseInt(hStr, 10);
-    let displayHour = h % 12;
-    if (displayHour === 0) displayHour = 12;
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    return `${displayHour}:${mStr} ${ampm}`;
-  };
-
-  const roundToNearest15Minutes = (timeStr: string): string => {
-    if (!timeStr) return '09:00';
-    const [hStr, mStr] = timeStr.split(':');
-    let h = parseInt(hStr, 10);
-    let m = parseInt(mStr, 10);
-
-    const roundedM = Math.round(m / 15) * 15;
-    if (roundedM === 60) {
-      m = 0;
-      h = (h + 1) % 24;
-    } else {
-      m = roundedM;
-    }
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  /** A sensible default when no reminder time is set yet: one minute from now. */
+  const nextMinuteTime = () => {
+    const next = new Date(Date.now() + 60_000);
+    return `${String(next.getHours()).padStart(2, '0')}:${String(next.getMinutes()).padStart(2, '0')}`;
   };
 
   const formatTimeToAMPM = (timeStr: string) => {
@@ -82,15 +48,9 @@ export default function CoursesPage() {
 
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [reminderTime, setReminderTime] = useState(() => {
-    const now = new Date();
-    let minutes = now.getMinutes();
-    let hour = now.getHours();
-    let nextMin = Math.ceil((minutes + 1) / 15) * 15;
-    if (nextMin === 60) {
-      nextMin = 0;
-      hour = (hour + 1) % 24;
-    }
-    return `${String(hour).padStart(2, '0')}:${String(nextMin).padStart(2, '0')}`;
+    // One minute from now, rounded to nothing — any time is valid.
+    const next = new Date(Date.now() + 60_000);
+    return `${String(next.getHours()).padStart(2, '0')}:${String(next.getMinutes()).padStart(2, '0')}`;
   });
   const [formErrors, setFormErrors] = useState<Record<string, string | undefined>>({});
 
@@ -110,11 +70,9 @@ export default function CoursesPage() {
     setEditPlatform(course.platform || '');
     setEditReminderEnabled(course.reminderEnabled || false);
     
-    // If the saved time has already passed today, default to the next future 15m mark
+    // If the saved time has already passed today, start from the next minute.
     const useDefaultFuture = !course.reminderTime || isTimeInPast(course.reminderTime);
-    const initialTime = useDefaultFuture
-      ? getNext15MinBoundary()
-      : roundToNearest15Minutes(course.reminderTime);
+    const initialTime = useDefaultFuture ? nextMinuteTime() : course.reminderTime;
 
     setEditReminderTime(initialTime);
     setEditFormErrors({});
@@ -142,7 +100,7 @@ export default function CoursesPage() {
       name: editName,
       platform: formattedLink,
       reminderEnabled: editReminderEnabled,
-      reminderTime: editReminderEnabled ? roundToNearest15Minutes(editReminderTime) : undefined
+      reminderTime: editReminderEnabled ? editReminderTime : undefined
     });
 
     setShowEditCourse(false);
@@ -178,7 +136,7 @@ export default function CoursesPage() {
       weeklyGoal: goal,
       deadline,
       reminderEnabled,
-      reminderTime: reminderEnabled ? roundToNearest15Minutes(reminderTime) : undefined
+      reminderTime: reminderEnabled ? reminderTime : undefined
     });
 
     setName('');
@@ -186,7 +144,7 @@ export default function CoursesPage() {
     setProgress(0);
     setGoal(2);
     setReminderEnabled(false);
-    setReminderTime(getNext15MinBoundary());
+    setReminderTime(nextMinuteTime());
     setFormErrors({});
     setShowAddCourse(false);
   };
@@ -267,11 +225,11 @@ export default function CoursesPage() {
                   />
                 </div>
 
-                {/* Daily Email Reminder Settings */}
+                {/* Daily notification settings */}
                 <div className="space-y-2 pt-3 border-t border-outline-variant/30">
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] font-mono text-outline flex items-center gap-1.5">
-                      <Mail className="w-3.5 h-3.5 text-primary" /> Daily Email Reminder
+                      <Bell className="w-3.5 h-3.5 text-primary" /> Daily Notification
                     </span>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -391,11 +349,11 @@ export default function CoursesPage() {
                   />
                 </div>
 
-                {/* Daily Email Reminder Fields */}
+                {/* Daily notification fields */}
                 <div className="bg-surface-container-low/50 p-3 rounded-xl border border-outline-variant/30 space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] font-mono text-outline flex items-center gap-1.5">
-                      <Mail className="w-3.5 h-3.5 text-primary" /> Daily Email Reminder
+                      <Bell className="w-3.5 h-3.5 text-primary" /> Daily Notification
                     </span>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -410,15 +368,14 @@ export default function CoursesPage() {
                   {reminderEnabled && (
                     <div className="flex flex-col gap-1.5 pt-1 border-t border-outline-variant/20">
                       <div className="flex justify-between items-center text-[10px] font-mono text-outline">
-                        <span>Preferred Time (15m step):</span>
-                        <span className="text-[9px] text-primary">Next 15m Mark: {getNext15MinDisplay()}</span>
+                        <span>Preferred Time:</span>
+                        <span className="text-[9px] text-outline">Any time</span>
                       </div>
                       <input
                         type="time"
-                        step="900"
+                        step="60"
                         value={reminderTime}
-                        onChange={(e) => setReminderTime(roundToNearest15Minutes(e.target.value))}
-                        onBlur={(e) => setReminderTime(roundToNearest15Minutes(e.target.value))}
+                        onChange={(e) => setReminderTime(e.target.value)}
                         className="bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1 text-xs text-on-surface font-mono focus:outline-none focus:border-primary w-full text-center cursor-pointer"
                       />
                     </div>
@@ -486,11 +443,11 @@ export default function CoursesPage() {
                   />
                 </div>
 
-                {/* Daily Email Reminder Fields */}
+                {/* Daily notification fields */}
                 <div className="bg-surface-container-low/50 p-3 rounded-xl border border-outline-variant/30 space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-outline flex items-center gap-1.5">
-                      <Mail className="w-3.5 h-3.5 text-primary" /> Daily Email Reminder
+                      <Bell className="w-3.5 h-3.5 text-primary" /> Daily Notification
                     </span>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -507,19 +464,18 @@ export default function CoursesPage() {
                     <div className="space-y-3 pt-2 border-t border-outline-variant/20">
                       <div className="flex flex-col gap-1.5">
                         <div className="flex justify-between items-center text-xs text-outline">
-                          <span>Reminder Time (15m step):</span>
-                          <span className="text-[11px] text-primary">Next 15m Mark: {getNext15MinDisplay()}</span>
+                          <span>Reminder Time:</span>
+                          <span className="text-[11px] text-outline">Any time</span>
                         </div>
                         <input
                           type="time"
-                          step="900"
+                          step="60"
                           value={editReminderTime}
-                          onChange={(e) => setEditReminderTime(roundToNearest15Minutes(e.target.value))}
-                          onBlur={(e) => setEditReminderTime(roundToNearest15Minutes(e.target.value))}
+                          onChange={(e) => setEditReminderTime(e.target.value)}
                           className="bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary w-full text-center cursor-pointer"
                         />
                         <p className="text-[11px] text-outline-variant text-right mt-0.5">
-                          Time will snap to the nearest 15-minute interval.
+                          Type a time, or pick one with the clock.
                         </p>
                       </div>
                     </div>

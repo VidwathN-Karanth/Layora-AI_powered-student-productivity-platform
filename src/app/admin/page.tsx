@@ -17,6 +17,7 @@ import { isAdminEmail } from '@/lib/admin';
 import { COHORTS, SHARED_RESOURCE_TAG, shortCohortLabel, type Cohort } from '@/lib/cohorts';
 import { drivePreviewUrl } from '@/lib/driveLinks';
 import { REPEAT_RULES, REPEAT_LABEL, type RepeatRule } from '@/lib/recurrence';
+import { formatDate, formatDateTime } from '@/lib/dateFormat';
 import CertificateGroups, { type InspectedCertificate } from '@/components/CertificateGroups';
 import {
   CERTIFICATE_CATEGORIES, CATEGORY_ADMIN_ACCENT, resolveCategory,
@@ -33,10 +34,6 @@ interface TelemetryUser {
       streakCount?: number;
       totalStudyHours?: number;
       isOnboarded?: boolean;
-      wakeTime?: string;
-      sleepTime?: string;
-      collegeStart?: string;
-      collegeEnd?: string;
       freeBlocks?: { id: string; start: string; end: string; label?: string }[];
     };
     subjects?: { id: string; name: string; code: string; credits: number; difficulty: string; priority: string }[];
@@ -57,6 +54,16 @@ interface GlobalResource {
   uploaderName?: string;
   createdAt?: string;
 }
+
+/** The admin console's sections, in the order they appear. */
+const ADMIN_SECTIONS = [
+  { key: 'nodes' as const, label: '📁 Student Nodes' },
+  { key: 'leaderboard' as const, label: '🏆 Activity Leaderboard' },
+  { key: 'library' as const, label: '📚 Shared Library' },
+  { key: 'certificates' as const, label: '🎓 Certificates' },
+  { key: 'resumes' as const, label: '📄 Resumes' },
+  { key: 'events' as const, label: '🗓 Events' },
+];
 
 interface StaffEvent {
   id: string;
@@ -654,10 +661,6 @@ export default function AdminPage() {
               streakCount: u.streakCount,
               totalStudyHours: u.totalStudyHours,
               isOnboarded: u.isOnboarded,
-              wakeTime: u.wakeTime,
-              sleepTime: u.sleepTime,
-              collegeStart: u.collegeStart,
-              collegeEnd: u.collegeEnd,
               freeBlocks: u.freeBlocks || []
             },
             subjects: u.subjects || [],
@@ -832,7 +835,7 @@ export default function AdminPage() {
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays === 1) return 'Yesterday';
-    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return formatDateTime(date);
   };
 
   if (!authorized) {
@@ -1060,67 +1063,26 @@ export default function AdminPage() {
         {/* Database Search & List Panel */}
         <section className="glass-panel border border-white/10 overflow-hidden">
           <div className="p-4 border-b border-white/10 bg-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setAdminView('nodes')}
-                className={`text-xs font-mono font-bold tracking-wider uppercase px-3 py-1.5 rounded-lg border transition cursor-pointer ${
-                  adminView === 'nodes'
-                    ? 'border-cyber-blue bg-cyber-blue/10 text-cyber-blue'
-                    : 'border-transparent text-white/50 hover:text-white'
-                }`}
-              >
-                📁 Student Nodes
-              </button>
-              <button
-                onClick={() => setAdminView('leaderboard')}
-                className={`text-xs font-mono font-bold tracking-wider uppercase px-3 py-1.5 rounded-lg border transition cursor-pointer ${
-                  adminView === 'leaderboard'
-                    ? 'border-cyber-purple bg-cyber-purple/10 text-cyber-purple'
-                    : 'border-transparent text-white/50 hover:text-white'
-                }`}
-              >
-                🏆 Activity Leaderboard
-              </button>
-              <button
-                onClick={() => setAdminView('library')}
-                className={`text-xs font-mono font-bold tracking-wider uppercase px-3 py-1.5 rounded-lg border transition cursor-pointer ${
-                  adminView === 'library'
-                    ? 'border-emerald-400 bg-emerald-500/10 text-emerald-400'
-                    : 'border-transparent text-white/50 hover:text-white'
-                }`}
-              >
-                📚 Shared Library
-              </button>
-              <button
-                onClick={() => setAdminView('certificates')}
-                className={`text-xs font-mono font-bold tracking-wider uppercase px-3 py-1.5 rounded-lg border transition cursor-pointer ${
-                  adminView === 'certificates'
-                    ? 'border-amber-400 bg-amber-500/10 text-amber-400'
-                    : 'border-transparent text-white/50 hover:text-white'
-                }`}
-              >
-                🎓 Certificates
-              </button>
-              <button
-                onClick={() => setAdminView('resumes')}
-                className={`text-xs font-mono font-bold tracking-wider uppercase px-3 py-1.5 rounded-lg border transition cursor-pointer ${
-                  adminView === 'resumes'
-                    ? 'border-sky-400 bg-sky-500/10 text-sky-400'
-                    : 'border-transparent text-white/50 hover:text-white'
-                }`}
-              >
-                📄 Resumes
-              </button>
-              <button
-                onClick={() => setAdminView('events')}
-                className={`text-xs font-mono font-bold tracking-wider uppercase px-3 py-1.5 rounded-lg border transition cursor-pointer ${
-                  adminView === 'events'
-                    ? 'border-violet-400 bg-violet-500/10 text-violet-400'
-                    : 'border-transparent text-white/50 hover:text-white'
-                }`}
-              >
-                🗓 Events
-              </button>
+            {/* One definition, one accent, one shape. These used to be six
+                hand-written buttons each with its own colour, so choosing a
+                section repainted the row and the selected tab read as a
+                different control. `whitespace-nowrap` plus a scrolling row
+                keeps them on one line whatever sits beside them. */}
+            <div className="flex items-center gap-2 overflow-x-auto max-w-full">
+              {ADMIN_SECTIONS.map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setAdminView(key)}
+                  aria-pressed={adminView === key}
+                  className={`shrink-0 whitespace-nowrap text-xs font-mono font-bold tracking-wider uppercase px-3 py-1.5 rounded-lg border transition cursor-pointer ${
+                    adminView === key
+                      ? 'border-cyber-purple bg-cyber-purple/10 text-cyber-purple'
+                      : 'border-white/10 text-white/50 hover:text-white hover:border-white/25'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
 
             {adminView === 'nodes' ? (
@@ -1597,7 +1559,7 @@ export default function AdminPage() {
                             </span>
                           </td>
                           <td className="p-4 text-white/50 font-mono text-[10px]">
-                            {res.createdAt ? new Date(res.createdAt).toLocaleString() : '—'}
+                            {formatDateTime(res.createdAt)}
                           </td>
                           <td className="p-4">
                             <div className="flex items-center justify-center gap-2">
@@ -1790,9 +1752,7 @@ export default function AdminPage() {
                       {staffEvents.map((ev) => (
                         <tr key={ev.id} className="hover:bg-white/3 transition">
                           <td className="p-4 font-mono text-white/70 whitespace-nowrap">
-                            {new Date(`${ev.eventDate}T00:00:00`).toLocaleDateString(undefined, {
-                              day: 'numeric', month: 'short', year: 'numeric',
-                            })}
+                            {formatDate(ev.eventDate)}
                           </td>
                           <td className="p-4">
                             <div className="font-bold text-white">{ev.title}</div>
@@ -1888,7 +1848,7 @@ export default function AdminPage() {
                             {r.fileName || 'Resume'}
                           </td>
                           <td className="p-4 text-white/50 font-mono text-[10px]">
-                            {r.uploadedAt ? new Date(r.uploadedAt).toLocaleString() : '—'}
+                            {formatDateTime(r.uploadedAt)}
                           </td>
                           <td className="p-4">
                             <div className="flex items-center justify-center gap-2">
@@ -2000,7 +1960,7 @@ export default function AdminPage() {
                             </span>
                           </td>
                           <td className="p-4 text-white/50 font-mono text-[10px]">
-                            {uploader.latestAt ? new Date(uploader.latestAt).toLocaleString() : '—'}
+                            {formatDateTime(uploader.latestAt)}
                           </td>
                           <td className="p-4">
                             <div className="flex items-center justify-center">
@@ -2099,7 +2059,7 @@ export default function AdminPage() {
                   <p className="text-[10px] font-mono text-white/40 truncate mt-0.5">
                     {activeResume.email} &middot; {selectedCohort}
                     {activeResume.uploadedAt
-                      ? ` · uploaded ${new Date(activeResume.uploadedAt).toLocaleDateString()}`
+                      ? ` · uploaded ${formatDate(activeResume.uploadedAt)}`
                       : ''}
                   </p>
                 </div>
@@ -2311,22 +2271,25 @@ export default function AdminPage() {
                 {/* 1. Tab Profile */}
                 {activeTab === 'profile' && (
                   <div className="space-y-6">
+                    {/* The College Timings and Circadian Cycle cards used to sit here.
+                        Students are no longer asked for wake/sleep/college hours — the
+                        scheduler assumes a fixed day — so both read empty. */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="bg-white/2 border border-white/5 rounded-xl p-4">
                         <div className="text-[10px] text-white/40 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                          <Building2 className="w-3.5 h-3.5 text-cyber-blue" /> College Timings
+                          <Clock className="w-3.5 h-3.5 text-cyber-purple" /> Free study slots
                         </div>
                         <div className="mt-2 text-xs font-bold text-white">
-                          {selectedUser.state.user?.collegeStart || 'Not Configured'} - {selectedUser.state.user?.collegeEnd || 'Not Configured'}
+                          {selectedUser.state.user?.freeBlocks?.length || 0} blocks
                         </div>
                       </div>
 
                       <div className="bg-white/2 border border-white/5 rounded-xl p-4">
                         <div className="text-[10px] text-white/40 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5 text-cyber-purple" /> Circadian Cycle
+                          <Building2 className="w-3.5 h-3.5 text-cyber-blue" /> Onboarded
                         </div>
                         <div className="mt-2 text-xs font-bold text-white">
-                          Wake: {selectedUser.state.user?.wakeTime || '06:00'} | Sleep: {selectedUser.state.user?.sleepTime || '22:00'}
+                          {selectedUser.state.user?.isOnboarded ? 'Yes' : 'Not yet'}
                         </div>
                       </div>
                     </div>

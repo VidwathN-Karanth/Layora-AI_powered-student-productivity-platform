@@ -1,10 +1,12 @@
 'use client';
+import { formatDate } from '@/lib/dateFormat';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '@/store/useStore';
 import { useUser } from '@clerk/nextjs';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
 import { apiFetch } from '@/lib/apiClient';
+import DriveThumb from '@/components/CertificateThumb';
 import { isAdminEmail } from '@/lib/admin';
 import { SHARED_RESOURCE_TAG, resolveResourceTag, shortCohortLabel, type Cohort } from '@/lib/cohorts';
 import { 
@@ -48,15 +50,6 @@ export default function GlobalResourcesPage() {
   const [uploadErrors, setUploadErrors] = useState<Record<string, string | undefined>>({});
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Helper to extract Google Drive file ID for thumbnail preview
-  const getDocumentPreview = (url: string) => {
-    const driveIdMatch = url.match(/\/(?:file|presentation|document|spreadsheets)\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-    if (driveIdMatch && driveIdMatch[1]) {
-      return `https://drive.google.com/thumbnail?id=${driveIdMatch[1]}&sz=w400`;
-    }
-    return null;
-  };
 
   const getFileTypeBadge = (type: string) => {
     const ext = type.toLowerCase();
@@ -337,17 +330,7 @@ export default function GlobalResourcesPage() {
     return matchesSearch && matchesShelf;
   });
 
-  const formatUploadedDate = (isoString: string) => {
-    try {
-      return new Date(isoString).toLocaleDateString(undefined, { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
-      });
-    } catch (e) {
-      return 'Unknown';
-    }
-  };
+  const formatUploadedDate = (isoString: string) => formatDate(isoString, 'Unknown');
 
   return (
     <div className="space-y-6">
@@ -603,7 +586,6 @@ export default function GlobalResourcesPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 font-mono text-xs">
           {filteredResources.map((res) => {
             const isOwner = res.uploadedBy.toLowerCase() === currentUserEmail.toLowerCase();
-            const previewUrl = getDocumentPreview(res.url);
 
             return (
               <div 
@@ -616,25 +598,16 @@ export default function GlobalResourcesPage() {
               >
                 {/* Document Preview Area */}
                 <div className="aspect-[4/3] bg-black/40 relative overflow-hidden flex items-center justify-center border-b border-outline-variant/30">
-                  {previewUrl ? (
-                    <img 
-                      src={previewUrl} 
-                      alt={res.name}
-                      className="w-full h-full object-cover object-top transition duration-500 group-hover:scale-105"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-50 pointer-events-none" />
-                  )}
-
-                  {/* Fallback File icon inside the preview container in case no preview img exists */}
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    {!previewUrl && (
-                      <FileText className="w-12 h-12 text-primary/40 group-hover:text-primary/60 transition-colors duration-300" />
-                    )}
-                  </div>
+                  {/* A Drive thumbnail when the file is shared link-visible, and a
+                      labelled file tile when it is not. The old markup hid a failed
+                      image and drew nothing in its place, leaving a black rectangle. */}
+                  <DriveThumb
+                    url={res.url}
+                    name={res.name}
+                    iconClass="text-primary/40 group-hover:text-primary/60"
+                    labelClass="text-outline"
+                    label="No preview"
+                  />
                   
                   {/* File type, and which shelf this came from */}
                   <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">

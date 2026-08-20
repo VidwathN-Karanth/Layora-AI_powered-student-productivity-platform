@@ -1,0 +1,146 @@
+/**
+ * Device notifications.
+ *
+ * Layora used to email students — a daily course reminder and an inactivity
+ * nudge, both sent from an SMTP account on the server. That is gone. Reminders
+ * now surface on whatever device the student has the site open on, using the
+ * browser's own Notification API, so nothing leaves the machine and there is no
+ * mail credential to keep alive.
+ *
+ * Everything here is browser-only and defensive: a device that has no
+ * Notification API, or a student who said no, simply gets nothing rather than
+ * an error.
+ */
+
+export type NotificationPermissionState = 'unsupported' | 'default' | 'granted' | 'denied';
+
+/** Whether this browser can show notifications at all. */
+export function notificationsSupported(): boolean {
+  return typeof window !== 'undefined' && 'Notification' in window;
+}
+
+export function permissionState(): NotificationPermissionState {
+  if (!notificationsSupported()) return 'unsupported';
+  return Notification.permission as NotificationPermissionState;
+}
+
+/**
+ * Asks for permission, returning the resulting state.
+ *
+ * Must be called from a user gesture — browsers ignore (or permanently deny)
+ * a request that arrives on page load, which is why nothing here asks on its
+ * own.
+ */
+export async function requestPermission(): Promise<NotificationPermissionState> {
+  if (!notificationsSupported()) return 'unsupported';
+  if (Notification.permission !== 'default') return Notification.permission as NotificationPermissionState;
+
+  try {
+    return (await Notification.requestPermission()) as NotificationPermissionState;
+  } catch {
+    return 'denied';
+  }
+}
+
+export interface NotifyOptions {
+  body?: string;
+  /** Collapses repeats: a second notification with the same tag replaces the first. */
+  tag?: string;
+  /** Silent notifications still appear, they just make no sound. */
+  silent?: boolean;
+}
+
+/**
+ * Shows one notification. Returns false when nothing was shown, so callers can
+ * decide whether to fall back to something on-screen.
+ */
+export function notify(title: string, options: NotifyOptions = {}): boolean {
+  if (!notificationsSupported() || Notification.permission !== 'granted') return false;
+
+  try {
+    new Notification(title, {
+      body: options.body,
+      tag: options.tag,
+      silent: options.silent,
+      icon: '/icon',
+      badge: '/icon',
+    });
+    return true;
+  } catch {
+    // Some browsers throw when the page is not visible or the API is disabled.
+    return false;
+  }
+}
+
+/**
+ * Remembers that a given notification already fired, keyed per day.
+ *
+ * Without this, every reload of the workspace would re-announce the same
+ * events. `localStorage` is the right store: it is per-device, which is exactly
+ * the scope of a device notification.
+ */
+const SEEN_PREFIX = 'layora-notified-';
+
+export function alreadyNotified(key: string, day: string): boolean {
+  if (typeof window === 'undefined') return true;
+  try {
+    return window.localStorage.getItem(`${SEEN_PREFIX}${day}-${key}`) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function markNotified(key: string, day: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(`${SEEN_PREFIX}${day}-${key}`, '1');
+  } catch {
+    // A full or disabled storage is not worth failing a reminder over.
+  }
+}
+
+/**
+ * Drops the bookkeeping for every day other than today.
+ *
+ * Called when the workspace opens, so the keys cannot accumulate one row per
+ * notification per day for the life of the browser profile.
+ */
+export function pruneNotificationMarks(today: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const stale: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (key && key.startsWith(SEEN_PREFIX) && !key.startsWith(`${SEEN_PREFIX}${today}-`)) {
+        stale.push(key);
+      }
+    }
+    stale.forEach((key) => window.localStorage.removeItem(key));
+  } catch {
+    // Nothing here is worth interrupting the page for.
+  }
+}
+
+/** 'HH:MM' to minutes past midnight, or null when it is not a time. */
+export function timeToMinutes(time: string | null | undefined): number | null {
+  if (!time || !/^\d{1,2}:\d{2}$/.test(time)) return null;
+  const [h, m] = time.split(':').map(Number);
+  if (h > 23 || m > 59) return null;
+  return h * 60 + m;
+}
+
+/**
+ * Whether a reminder set for `time` is due at `now`.
+ *
+ * The window matters: a reminder is checked on a timer, so an exact equality
+ * test would miss it whenever a tick lands either side of the minute. Firing
+ * for a few minutes after the time, combined with the once-per-day mark above,
+ * means it arrives once and is not missed.
+ */
+export function isReminderDue(time: string | null | undefined, now: Date, windowMinutes = 5): boolean {
+  const target = timeToMinutes(time);
+  if (target === null) return false;
+
+  const current = now.getHours() * 60 + now.getMinutes();
+  return current >= target && current < target + windowMinutes;
+}

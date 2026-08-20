@@ -192,7 +192,7 @@ export default function ZenMode({ open, onClose }: ZenModeProps) {
       role="dialog"
       aria-modal="true"
       aria-label={`Zen mode, ${PHASE_LABEL[phase]} for ${phaseMinutes(phase, settings)} minutes`}
-      className="fixed inset-0 z-[100] bg-black text-white flex flex-col items-center justify-center select-none"
+      className="zen-overlay fixed inset-0 z-[100] bg-black text-white flex flex-col items-center justify-center select-none"
     >
       {/* Elapsed, as a hairline across the top. */}
       <div className="absolute top-0 left-0 right-0 h-[2px] bg-white/10">

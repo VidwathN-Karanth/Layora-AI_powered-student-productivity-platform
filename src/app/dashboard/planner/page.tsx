@@ -6,8 +6,9 @@ import { TimetableBlock } from '@/lib/scheduler';
 import { apiFetch } from '@/lib/apiClient';
 import { 
   CalendarRange, Sparkles, CalendarDays, Plus, Trash, 
-  RefreshCw, Check, ArrowRight, Play, AlertCircle
+  RefreshCw, Check, ArrowRight, Play, AlertCircle, Bell, BellOff
 } from 'lucide-react';
+import { permissionState, type NotificationPermissionState } from '@/lib/notifications';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatTimeStr } from '@/lib/timeUtils';
 
@@ -23,6 +24,23 @@ export default function PlannerPage() {
   }, []);
   const [loadingSchedule, setLoadingSchedule] = useState(false);
   const [syncingCalendar, setSyncingCalendar] = useState(false);
+
+  // Browser permission is separate from the student's own preference: they can
+  // want reminders and still have the browser blocking them.
+  const [notifPermission, setNotifPermission] = useState<NotificationPermissionState>('default');
+  // Read after mount, never during render: the server has no Notification API,
+  // so reading it inline would not match what the browser hydrates.
+  useEffect(() => {
+    const id = setTimeout(() => setNotifPermission(permissionState()), 0);
+    return () => clearTimeout(id);
+  }, []);
+
+  // This switch covers timetable blocks only. Notifications as a whole are
+  // turned on or off once, in Settings — which is also where permission is
+  // asked for, so this button never has to.
+  const plannerRemindersLive =
+    store.notificationsEnabled && store.plannerNotificationsEnabled && notifPermission === 'granted';
+  const blockedByMaster = !store.notificationsEnabled || notifPermission !== 'granted';
   const [syncSuccess, setSyncSuccess] = useState(false);
   
   // Delete Schedule confirmation states
@@ -207,6 +225,32 @@ export default function PlannerPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Reminders on this device. Replaces the email reminders Layora used
+              to send from the server — nothing leaves the browser now. */}
+          <button
+            onClick={() => store.setPlannerNotificationsEnabled(!store.plannerNotificationsEnabled)}
+            title={
+              blockedByMaster
+                ? 'Notifications are switched off in Settings — turn them on there first'
+                : store.plannerNotificationsEnabled
+                  ? 'Timetable blocks will notify you before they start'
+                  : 'Timetable blocks will not notify you'
+            }
+            className={`rounded-lg px-4 py-2.5 text-xs font-semibold flex items-center gap-2 border transition active:scale-95 cursor-pointer ${
+              plannerRemindersLive
+                ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400'
+                : store.plannerNotificationsEnabled
+                  ? 'border-outline-variant bg-white/3 text-on-surface-variant'
+                  : 'border-outline-variant bg-white/3 text-outline hover:border-primary hover:text-primary'
+            }`}
+          >
+            {store.plannerNotificationsEnabled ? (
+              <><Bell className="w-4 h-4" strokeWidth={1.5} /> Planner alerts on</>
+            ) : (
+              <><BellOff className="w-4 h-4" strokeWidth={1.5} /> Planner alerts off</>
+            )}
+          </button>
+
           {/* Sync Button */}
           <button
             onClick={handleGoogleSync}
@@ -376,7 +420,7 @@ export default function PlannerPage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-primary font-mono font-bold">02.</span>
-                    <span>Sync to Google Calendar exports study slots so you receive mobile calendar push notifications.</span>
+                    <span>Planner alerts notify you a few minutes before each block starts. Notifications are switched on for the whole site in Settings.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-primary font-mono font-bold">03.</span>

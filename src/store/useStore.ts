@@ -11,7 +11,8 @@ import {
   Routine, 
   TimetableBlock, 
   generateLocalWeeklySchedule,
-  resolveScheduleOverlaps
+  resolveScheduleOverlaps,
+  DEFAULT_ROUTINE
 } from '@/lib/scheduler';
 
 export interface Task {
@@ -39,10 +40,6 @@ export interface UserProfile {
   streakCount: number;
   totalStudyHours: number;
   isOnboarded: boolean;
-  wakeTime: string;
-  sleepTime: string;
-  collegeStart: string;
-  collegeEnd: string;
   freeBlocks: { id: string; start: string; end: string; label?: string }[];
   lastActiveDate?: string;
   leetcodeUsername?: string | null;
@@ -66,10 +63,6 @@ export interface RegisteredUser {
   totalStudyHours: number;
   streakCount: number;
   isOnboarded: boolean;
-  wakeTime: string;
-  sleepTime: string;
-  collegeStart: string;
-  collegeEnd: string;
   freeBlocks: { id: string; start: string; end: string; label?: string }[];
   lastActiveDate?: string;
   leetcodeUsername?: string | null;
@@ -155,6 +148,23 @@ interface AppState {
   /** One row per day of completed focus sessions, trimmed to the last 60 days. */
   pomodoroLog: PomodoroDay[];
   recordPomodoroSession: (focusMinutes: number) => void;
+
+  /**
+   * Whether timetable blocks announce themselves on this device.
+   *
+   * Layora no longer emails anyone; reminders are browser notifications on
+   * whatever machine has the workspace open, so this is a per-student setting
+   * that only means anything once the browser permission is granted.
+   */
+  notificationsEnabled: boolean;
+  setNotificationsEnabled: (enabled: boolean) => void;
+  /**
+   * The weekly planner's own switch. Scoped to timetable blocks only — course
+   * reminders and today's-events have their own switches. `notificationsEnabled`
+   * above sits over all of them as the single off switch in Settings.
+   */
+  plannerNotificationsEnabled: boolean;
+  setPlannerNotificationsEnabled: (enabled: boolean) => void;
   globalResources: { id: string; name: string; url: string; type: string; uploadedBy: string; uploaderName: string; createdAt: string }[];
   setGlobalResources: (resources: any[]) => void;
   addGlobalResource: (res: any) => void;
@@ -227,10 +237,6 @@ export const useStore = create<AppState>()(
           streakCount: 0,
           totalStudyHours: 0,
           isOnboarded: false,
-          wakeTime: '06:00',
-          sleepTime: '22:00',
-          collegeStart: '09:00',
-          collegeEnd: '16:00',
           freeBlocks: [
             { id: 'free-1', start: '17:00', end: '19:00', label: 'Evening Study' },
             { id: 'free-2', start: '20:00', end: '22:00', label: 'Night Review' }
@@ -246,10 +252,6 @@ export const useStore = create<AppState>()(
               streakCount: existing.streakCount,
               totalStudyHours: existing.totalStudyHours,
               isOnboarded: existing.isOnboarded,
-              wakeTime: existing.wakeTime,
-              sleepTime: existing.sleepTime,
-              collegeStart: existing.collegeStart,
-              collegeEnd: existing.collegeEnd,
               freeBlocks: existing.freeBlocks,
               lastActiveDate: existing.lastActiveDate,
               leetcodeUsername: existing.leetcodeUsername,
@@ -287,10 +289,6 @@ export const useStore = create<AppState>()(
               streakCount: newGoogleUser.streakCount,
               totalStudyHours: newGoogleUser.totalStudyHours,
               isOnboarded: newGoogleUser.isOnboarded,
-              wakeTime: newGoogleUser.wakeTime,
-              sleepTime: newGoogleUser.sleepTime,
-              collegeStart: newGoogleUser.collegeStart,
-              collegeEnd: newGoogleUser.collegeEnd,
               freeBlocks: newGoogleUser.freeBlocks,
               lastActiveDate: newGoogleUser.lastActiveDate,
               leetcodeUsername: null,
@@ -333,10 +331,6 @@ export const useStore = create<AppState>()(
             streakCount: matched.streakCount,
             totalStudyHours: matched.totalStudyHours,
             isOnboarded: matched.isOnboarded,
-            wakeTime: matched.wakeTime,
-            sleepTime: matched.sleepTime,
-            collegeStart: matched.collegeStart,
-            collegeEnd: matched.collegeEnd,
             freeBlocks: matched.freeBlocks,
             lastActiveDate: matched.lastActiveDate,
             leetcodeUsername: matched.leetcodeUsername,
@@ -376,10 +370,6 @@ export const useStore = create<AppState>()(
           totalStudyHours: 0,
           streakCount: 0,
           isOnboarded: false,
-          wakeTime: '06:00',
-          sleepTime: '22:00',
-          collegeStart: '09:00',
-          collegeEnd: '16:00',
           freeBlocks: [
             { id: 'free-1', start: '17:00', end: '19:00', label: 'Evening Study' },
             { id: 'free-2', start: '20:00', end: '22:00', label: 'Night Review' }
@@ -410,10 +400,6 @@ export const useStore = create<AppState>()(
                 streakCount: user.streakCount,
                 totalStudyHours: user.totalStudyHours,
                 isOnboarded: user.isOnboarded,
-                wakeTime: user.wakeTime,
-                sleepTime: user.sleepTime,
-                collegeStart: user.collegeStart,
-                collegeEnd: user.collegeEnd,
                 freeBlocks: user.freeBlocks,
                 lastActiveDate: user.lastActiveDate,
                 leetcodeUsername: user.leetcodeUsername,
@@ -901,12 +887,14 @@ export const useStore = create<AppState>()(
           const { user, subjects, activities, courses, timetable, tasks } = get();
           if (!user) return;
           
+          // The four routine questions are gone from onboarding and Settings;
+          // one department on one timetable shares the same day.
           const routine: Routine = {
-            wakeTime: user.wakeTime || '06:00',
-            sleepTime: user.sleepTime || '22:00',
+            wakeTime: DEFAULT_ROUTINE.wakeTime,
+            sleepTime: DEFAULT_ROUTINE.sleepTime,
             collegeTimings: {
-              start: user.collegeStart || '09:00',
-              end: user.collegeEnd || '16:00'
+              start: DEFAULT_ROUTINE.collegeStart,
+              end: DEFAULT_ROUTINE.collegeEnd
             },
             freeBlocks: user.freeBlocks || []
           };
@@ -948,6 +936,14 @@ export const useStore = create<AppState>()(
       pomodoroLog: [],
       recordPomodoroSession: (focusMinutes) =>
         set((state) => ({ pomodoroLog: recordSession(state.pomodoroLog, focusMinutes) })),
+
+      // On by default: a student who signs in should get their reminders without
+      // hunting for a switch. It still does nothing until the browser permission
+      // is granted, which Settings asks for.
+      notificationsEnabled: true,
+      setNotificationsEnabled: (enabled) => set({ notificationsEnabled: enabled }),
+      plannerNotificationsEnabled: true,
+      setPlannerNotificationsEnabled: (enabled) => set({ plannerNotificationsEnabled: enabled }),
 
       globalResources: [],
       setGlobalResources: (resources) => set({ globalResources: resources }),
@@ -993,7 +989,9 @@ export const useStore = create<AppState>()(
           calendarSynced: false,
           is24HourFormat: false,
           pomodoroSettings: DEFAULT_POMODORO_SETTINGS,
-          pomodoroLog: []
+          pomodoroLog: [],
+          notificationsEnabled: true,
+          plannerNotificationsEnabled: true
         });
 
         // After set() persists the cleaned state, overwrite the key entirely to remove any leftovers
