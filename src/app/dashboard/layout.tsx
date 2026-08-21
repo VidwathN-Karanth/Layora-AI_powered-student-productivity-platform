@@ -191,12 +191,42 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="hidden glow-orb w-[500px] h-[500px] bg-cyber-blue/20 bottom-0 right-0"></div>
 
       {/* --- MOBILE NAV TOPBAR --- */}
-      <div className="md:hidden w-full h-14 bg-black/40 backdrop-blur-md border-b border-white/10 flex items-center justify-between px-4 z-40 fixed top-0 left-0">
-        <button onClick={() => setMobileMenuOpen(true)} className="p-2 hover:bg-white/5 rounded-lg text-primary">
+      <div className="md:hidden w-full h-14 bg-black/40 backdrop-blur-md border-b border-white/10 flex items-center justify-between gap-2 px-3 z-40 fixed top-0 left-0">
+        <button
+          onClick={() => setMobileMenuOpen(true)}
+          aria-label="Open the menu"
+          className="p-2 hover:bg-white/5 rounded-lg text-primary shrink-0"
+        >
           <Menu className="w-5 h-5" strokeWidth={1.5} />
         </button>
-        <span className="font-bold text-white text-sm">LAYORA</span>
-        <div className="w-9" />
+
+        {/* Clock and date, the same pair the desktop header shows. */}
+        <div className="flex flex-col items-center leading-none min-w-0">
+          <span className="font-mono font-bold text-white text-sm tabular-nums">
+            {timeStr || '00:00:00'}
+          </span>
+          <span className="text-[9px] font-mono text-white/45 tracking-wide truncate">{dateStr}</span>
+        </div>
+
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={() => store.setThemeMode(store.themeMode === 'light' ? 'dark' : 'light')}
+            aria-label={store.themeMode === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+            className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition"
+          >
+            {store.themeMode === 'light'
+              ? <Sun className="w-4 h-4" strokeWidth={1.5} />
+              : <Moon className="w-4 h-4" strokeWidth={1.5} />}
+          </button>
+          <button
+            onClick={() => setZenOpen(true)}
+            aria-label="Zen mode"
+            title="Zen mode — a fullscreen Pomodoro session"
+            className="p-2 rounded-lg text-primary hover:bg-white/5 transition"
+          >
+            <Timer className="w-4 h-4" strokeWidth={1.5} />
+          </button>
+        </div>
       </div>
 
       {/* --- MOBILE SIDEBAR DRAWER --- */}

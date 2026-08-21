@@ -14,6 +14,34 @@
 
 export type NotificationPermissionState = 'unsupported' | 'default' | 'granted' | 'denied';
 
+/**
+ * The service worker registration, once it is ready.
+ *
+ * Phones do not support `new Notification(...)`: Android Chrome throws
+ * "Illegal constructor" and iOS Safari has no Notification API outside an
+ * installed Home Screen app. Both deliver through the service worker's
+ * showNotification() instead, so this is the path that actually reaches a
+ * phone. Desktop browsers accept either.
+ */
+let swRegistration: ServiceWorkerRegistration | null = null;
+
+/** Registers the notification service worker. Safe to call more than once. */
+export async function ensureServiceWorker(): Promise<ServiceWorkerRegistration | null> {
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return null;
+  if (swRegistration) return swRegistration;
+
+  try {
+    swRegistration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+    // `ready` resolves once one is active and able to show a notification.
+    await navigator.serviceWorker.ready;
+    return swRegistration;
+  } catch {
+    // A blocked or unsupported worker just means desktop-style notifications.
+    swRegistration = null;
+    return null;
+  }
+}
+
 /** Whether this browser can show notifications at all. */
 export function notificationsSupported(): boolean {
   return typeof window !== 'undefined' && 'Notification' in window;
@@ -33,6 +61,11 @@ export function permissionState(): NotificationPermissionState {
  */
 export async function requestPermission(): Promise<NotificationPermissionState> {
   if (!notificationsSupported()) return 'unsupported';
+
+  // Register first: on a phone the granted permission is useless without a
+  // service worker to deliver through.
+  await ensureServiceWorker();
+
   if (Notification.permission !== 'default') return Notification.permission as NotificationPermissionState;
 
   try {
@@ -59,14 +92,23 @@ export interface NotifyOptions {
 export function notify(title: string, options: NotifyOptions = {}): boolean {
   if (!notificationsSupported() || Notification.permission !== 'granted') return false;
 
+  const payload = {
+    body: options.body,
+    tag: options.tag,
+    silent: options.silent,
+    icon: '/layora-logo.png',
+    badge: '/layora-logo.png',
+    data: { url: options.url },
+  };
+
+  // Phones only accept this route; the click is handled inside public/sw.js.
+  if (swRegistration) {
+    swRegistration.showNotification(title, payload).catch(() => {});
+    return true;
+  }
+
   try {
-    const notification = new Notification(title, {
-      body: options.body,
-      tag: options.tag,
-      silent: options.silent,
-      icon: '/icon',
-      badge: '/icon',
-    });
+    const notification = new Notification(title, payload);
 
     // A reminder you cannot act on is only half a reminder: clicking brings the
     // workspace forward and lands on the page the reminder is about.

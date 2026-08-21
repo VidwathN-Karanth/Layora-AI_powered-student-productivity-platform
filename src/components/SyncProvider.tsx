@@ -78,15 +78,45 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           router.replace('/access-denied');
         }
       } catch (err) {
-        // A network blip must not lock a legitimate student out of their own
-        // data, so fall through to the server-side checks on each API call.
-        console.warn('[Access] Could not verify roster access, continuing:', err);
-        if (!cancelled) setAccessState('allowed');
+        if (cancelled) return;
+
+        // One retry: a single blip on a slow connection should not decide this.
+        try {
+          const retry = await apiFetch('/api/me');
+          const data = await retry.json();
+          if (cancelled) return;
+
+          if (data.allowed) {
+            useStore.getState().setCohort(data.cohort ?? null);
+            setAccessState('allowed');
+            return;
+          }
+          useStore.getState().setCohort(null);
+          setAccessState('denied');
+          if (!isAccessDeniedRoute) router.replace('/access-denied');
+          return;
+        } catch (retryErr) {
+          console.warn('[Access] Could not verify roster access:', retryErr);
+        }
+
+        if (cancelled) return;
+
+        // Still no answer. On a protected surface that has to mean no — every
+        // API route enforces the roster independently, so letting the shell
+        // render would only show an empty workspace to someone barred from it.
+        const onProtectedRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/admin');
+        if (onProtectedRoute) {
+          useStore.getState().setCohort(null);
+          setAccessState('denied');
+          if (!isAccessDeniedRoute) router.replace('/access-denied');
+        } else {
+          setAccessState('allowed');
+        }
       }
     })();
 
     return () => { cancelled = true; };
-  }, [isLoaded, user?.id, isAccessDeniedRoute, router]);
+  }, [isLoaded, user?.id, isAccessDeniedRoute, router, pathname]);
 
   const accessAllowed = accessState === 'allowed';
 
@@ -548,7 +578,21 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     };
   }, [isLoaded, user?.id, hasHydrated]);
 
-  if (isLoaded && user && !isCloudLoaded) {
+  // The roster answer gates the shell, not just the data.
+  if (isLoaded && user && accessState === 'checking' && !isAccessDeniedRoute) {
+    return (
+      <main className="min-h-screen bg-[#16181C] text-white flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
+            <span className="text-white font-bold text-lg tracking-tighter">L</span>
+          </div>
+          <p className="text-xs font-mono text-white/40">Checking your access...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (isLoaded && user && !isCloudLoaded && accessAllowed) {
     return (
       <main className="min-h-screen bg-[#16181C] text-white flex flex-col items-center justify-center relative overflow-hidden">
         <div className="z-10 flex flex-col items-center gap-6">

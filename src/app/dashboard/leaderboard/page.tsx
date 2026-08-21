@@ -231,23 +231,23 @@ export default function LeaderboardPage() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* --- LEADERBOARD DISPLAY PANEL --- */}
         <div className="xl:col-span-2 glass-card rounded-2xl border border-outline-variant overflow-hidden flex flex-col">
-          <div className="p-4 border-b border-outline-variant bg-white/3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-primary" />
+          <div className="p-4 border-b border-outline-variant bg-white/3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
+              <Trophy className="w-4 h-4 text-primary shrink-0" />
               <span className="text-xs font-mono font-bold tracking-wider text-primary uppercase">
                 {cohort ? `${cohort} Leaderboard` : 'Leaderboard'}
               </span>
-              <span className="text-[8px] border border-outline-variant text-outline bg-white/2 px-1.5 py-0.5 rounded font-mono font-normal uppercase">
+              <span className="text-[8px] border border-outline-variant text-outline bg-white/2 px-1.5 py-0.5 rounded font-mono font-normal uppercase whitespace-nowrap">
                 🔒 Privacy Mode Active
               </span>
             </div>
-            
-            <div className="flex items-center gap-1.5">
+
+            <div className="flex items-center gap-1.5 overflow-x-auto -mx-1 px-1 sm:mx-0 sm:px-0 sm:overflow-visible">
               {(['today', 'week', 'all'] as const).map((r) => (
                 <button
                   key={r}
                   onClick={() => setLeaderboardRange(r)}
-                  className={`px-2.5 py-1 rounded-lg border text-[9px] uppercase font-bold tracking-wider transition cursor-pointer ${
+                  className={`shrink-0 whitespace-nowrap px-2.5 py-1 rounded-lg border text-[9px] uppercase font-bold tracking-wider transition cursor-pointer ${
                     leaderboardRange === r
                       ? 'border-primary bg-primary/10 text-primary'
                       : 'border-outline-variant bg-white/3 text-outline hover:text-on-surface'

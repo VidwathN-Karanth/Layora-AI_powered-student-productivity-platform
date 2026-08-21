@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   CalendarDays, ChevronLeft, ChevronRight, Plus, Trash, Users, User as UserIcon, Loader2, Repeat,
-  RefreshCw, Check,
+  RefreshCw, Check, X,
 } from 'lucide-react';
 import { apiFetch, readJson, errorMessage } from '@/lib/apiClient';
 import { formatLongDate, formatMonthLabel } from '@/lib/dateFormat';
@@ -56,6 +56,7 @@ export default function EventsPage() {
   const [repeat, setRepeat] = useState<RepeatRule>('none');
   const [repeatUntil, setRepeatUntil] = useState('');
   const [saving, setSaving] = useState(false);
+  const [daySheetOpen, setDaySheetOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
 
@@ -165,6 +166,143 @@ export default function EventsPage() {
   const shiftMonth = (delta: number) =>
     setCursor((c) => new Date(c.getFullYear(), c.getMonth() + delta, 1));
 
+  // Rendered twice — as the desktop column and as the phone sheet — so the two
+  // can never drift apart.
+  const dayPanel = (
+    <>
+            <div className="border-b border-outline-variant pb-2">
+              <h3 className="text-xs font-mono font-bold tracking-wider text-primary">
+                {formatLongDate(selected)}
+              </h3>
+              <p className="text-[9px] font-mono text-outline mt-0.5">
+                {selectedEvents.length === 0
+                  ? 'Nothing scheduled'
+                  : `${selectedEvents.length} event${selectedEvents.length === 1 ? '' : 's'}`}
+              </p>
+            </div>
+
+            <div className="space-y-2.5">
+              {selectedEvents.map((e) => (
+                <div
+                  key={e.id}
+                  className={`p-3 rounded-xl border ${
+                    e.isStaff
+                      ? 'border-amber-500/25 bg-amber-950/15'
+                      : 'border-outline-variant bg-white/3'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-on-surface break-words">{e.title}</p>
+                      {e.description && (
+                        <p className="text-[10px] text-outline mt-1 leading-relaxed break-words">{e.description}</p>
+                      )}
+                    </div>
+                    {!e.isStaff && (
+                      <button
+                        onClick={() => removeEvent(e)}
+                        aria-label="Remove event"
+                        className="p-1 rounded text-outline hover:text-red-400 transition cursor-pointer shrink-0"
+                      >
+                        <Trash className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2.5 mt-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1 text-[8px] font-mono font-bold uppercase tracking-wider text-outline">
+                      {e.isStaff ? <Users className="w-2.5 h-2.5" /> : <UserIcon className="w-2.5 h-2.5" />}
+                      {e.isStaff ? `Department · ${e.audience}` : 'Personal'}
+                    </span>
+                    {e.repeat && e.repeat !== 'none' && (
+                      <span className="inline-flex items-center gap-1 text-[8px] font-mono font-bold uppercase tracking-wider text-primary">
+                        <Repeat className="w-2.5 h-2.5" />
+                        {REPEAT_LABEL[e.repeat]}
+                        {e.repeatUntil ? ` until ${e.repeatUntil}` : ''}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {showForm ? (
+              <form onSubmit={addEvent} className="space-y-2.5 pt-1">
+                <input
+                  autoFocus
+                  value={title}
+                  onChange={(ev) => setTitle(ev.target.value)}
+                  placeholder="What is happening?"
+                  maxLength={120}
+                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+                />
+                <textarea
+                  value={description}
+                  onChange={(ev) => setDescription(ev.target.value)}
+                  placeholder="Notes (optional)"
+                  rows={2}
+                  maxLength={500}
+                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary resize-none"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="block">
+                    <span className="block text-[9px] font-mono text-outline mb-1">Repeat</span>
+                    <select
+                      value={repeat}
+                      onChange={(ev) => setRepeat(ev.target.value as RepeatRule)}
+                      className="w-full bg-surface-container border border-outline-variant rounded-lg px-2 py-1.5 text-[11px] text-on-surface focus:outline-none focus:border-primary cursor-pointer"
+                    >
+                      {REPEAT_RULES.map((r) => (
+                        <option key={r} value={r}>{REPEAT_LABEL[r]}</option>
+                      ))}
+                    </select>
+                  </label>
+                  {repeat !== 'none' && (
+                    <label className="block">
+                      <span className="block text-[9px] font-mono text-outline mb-1">Until (optional)</span>
+                      <input
+                        type="date"
+                        lang="en-GB"
+                        value={repeatUntil}
+                        min={selected}
+                        onChange={(ev) => setRepeatUntil(ev.target.value)}
+                        className="w-full bg-surface-container border border-outline-variant rounded-lg px-2 py-1.5 text-[11px] text-on-surface focus:outline-none focus:border-primary cursor-pointer"
+                      />
+                    </label>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={saving || !title.trim()}
+                    className="bg-primary hover:bg-primary/90 text-white rounded-lg px-3 py-1.5 text-xs font-mono font-bold transition cursor-pointer flex items-center gap-1.5 disabled:opacity-40"
+                  >
+                    {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                    Add
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowForm(false); setTitle(''); setDescription('');
+                      setRepeat('none'); setRepeatUntil('');
+                    }}
+                    className="border border-outline-variant hover:border-outline text-outline hover:text-on-surface rounded-lg px-3 py-1.5 text-xs font-mono transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <button
+                onClick={() => setShowForm(true)}
+                className="w-full flex items-center justify-center gap-1.5 border border-dashed border-outline-variant hover:border-primary text-outline hover:text-primary rounded-xl py-2.5 text-xs font-mono transition cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" /> Add an event
+              </button>
+            )}
+    </>
+  );
+
   return (
     <div className="space-y-6">
       <div className="border-b border-outline-variant pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -259,7 +397,7 @@ export default function EventsPage() {
                   return (
                     <button
                       key={key}
-                      onClick={() => { setSelected(key); setShowForm(false); }}
+                      onClick={() => { setSelected(key); setShowForm(false); setDaySheetOpen(true); }}
                       /* Every cell carries its own surface, in both themes —
                          dark mode used to leave the grid as bare text on the
                          page with no day boxes at all. */
@@ -333,140 +471,38 @@ export default function EventsPage() {
           )}
         </div>
 
-        {/* ---- Selected day ---- */}
-        <div className="glass-card rounded-2xl border border-outline-variant p-5 space-y-4">
-          <div className="border-b border-outline-variant pb-2">
-            <h3 className="text-xs font-mono font-bold tracking-wider text-primary">
-              {formatLongDate(selected)}
-            </h3>
-            <p className="text-[9px] font-mono text-outline mt-0.5">
-              {selectedEvents.length === 0
-                ? 'Nothing scheduled'
-                : `${selectedEvents.length} event${selectedEvents.length === 1 ? '' : 's'}`}
-            </p>
-          </div>
-
-          <div className="space-y-2.5">
-            {selectedEvents.map((e) => (
-              <div
-                key={e.id}
-                className={`p-3 rounded-xl border ${
-                  e.isStaff
-                    ? 'border-amber-500/25 bg-amber-950/15'
-                    : 'border-outline-variant bg-white/3'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-on-surface break-words">{e.title}</p>
-                    {e.description && (
-                      <p className="text-[10px] text-outline mt-1 leading-relaxed break-words">{e.description}</p>
-                    )}
-                  </div>
-                  {!e.isStaff && (
-                    <button
-                      onClick={() => removeEvent(e)}
-                      aria-label="Remove event"
-                      className="p-1 rounded text-outline hover:text-red-400 transition cursor-pointer shrink-0"
-                    >
-                      <Trash className="w-3 h-3" />
-                    </button>
-                  )}
-                </div>
-                <div className="flex items-center gap-2.5 mt-2 flex-wrap">
-                  <span className="inline-flex items-center gap-1 text-[8px] font-mono font-bold uppercase tracking-wider text-outline">
-                    {e.isStaff ? <Users className="w-2.5 h-2.5" /> : <UserIcon className="w-2.5 h-2.5" />}
-                    {e.isStaff ? `Department · ${e.audience}` : 'Personal'}
-                  </span>
-                  {e.repeat && e.repeat !== 'none' && (
-                    <span className="inline-flex items-center gap-1 text-[8px] font-mono font-bold uppercase tracking-wider text-primary">
-                      <Repeat className="w-2.5 h-2.5" />
-                      {REPEAT_LABEL[e.repeat]}
-                      {e.repeatUntil ? ` until ${e.repeatUntil}` : ''}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {showForm ? (
-            <form onSubmit={addEvent} className="space-y-2.5 pt-1">
-              <input
-                autoFocus
-                value={title}
-                onChange={(ev) => setTitle(ev.target.value)}
-                placeholder="What is happening?"
-                maxLength={120}
-                className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
-              />
-              <textarea
-                value={description}
-                onChange={(ev) => setDescription(ev.target.value)}
-                placeholder="Notes (optional)"
-                rows={2}
-                maxLength={500}
-                className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary resize-none"
-              />
-              <div className="grid grid-cols-2 gap-2">
-                <label className="block">
-                  <span className="block text-[9px] font-mono text-outline mb-1">Repeat</span>
-                  <select
-                    value={repeat}
-                    onChange={(ev) => setRepeat(ev.target.value as RepeatRule)}
-                    className="w-full bg-surface-container border border-outline-variant rounded-lg px-2 py-1.5 text-[11px] text-on-surface focus:outline-none focus:border-primary cursor-pointer"
-                  >
-                    {REPEAT_RULES.map((r) => (
-                      <option key={r} value={r}>{REPEAT_LABEL[r]}</option>
-                    ))}
-                  </select>
-                </label>
-                {repeat !== 'none' && (
-                  <label className="block">
-                    <span className="block text-[9px] font-mono text-outline mb-1">Until (optional)</span>
-                    <input
-                      type="date"
-                      lang="en-GB"
-                      value={repeatUntil}
-                      min={selected}
-                      onChange={(ev) => setRepeatUntil(ev.target.value)}
-                      className="w-full bg-surface-container border border-outline-variant rounded-lg px-2 py-1.5 text-[11px] text-on-surface focus:outline-none focus:border-primary cursor-pointer"
-                    />
-                  </label>
-                )}
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  disabled={saving || !title.trim()}
-                  className="bg-primary hover:bg-primary/90 text-white rounded-lg px-3 py-1.5 text-xs font-mono font-bold transition cursor-pointer flex items-center gap-1.5 disabled:opacity-40"
-                >
-                  {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
-                  Add
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForm(false); setTitle(''); setDescription('');
-                    setRepeat('none'); setRepeatUntil('');
-                  }}
-                  className="border border-outline-variant hover:border-outline text-outline hover:text-on-surface rounded-lg px-3 py-1.5 text-xs font-mono transition cursor-pointer"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          ) : (
-            <button
-              onClick={() => setShowForm(true)}
-              className="w-full flex items-center justify-center gap-1.5 border border-dashed border-outline-variant hover:border-primary text-outline hover:text-primary rounded-xl py-2.5 text-xs font-mono transition cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" /> Add an event
-            </button>
-          )}
+        {/* ---- Selected day: a column on wide screens, a sheet on a phone ---- */}
+        <div className="hidden lg:block glass-card rounded-2xl border border-outline-variant p-5 space-y-4">
+          {dayPanel}
         </div>
       </div>
+
+      {/*
+        On a phone the column stacks below the month, so tapping a date changed
+        something far off screen and looked like nothing happened. The same
+        panel comes up as a sheet instead.
+      */}
+      {daySheetOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 flex items-end">
+          <div
+            onClick={() => setDaySheetOpen(false)}
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          />
+          <div className="relative z-10 w-full max-h-[85vh] overflow-y-auto rounded-t-2xl border-t border-outline-variant bg-surface-container p-5 pb-8 space-y-4">
+            <div className="flex justify-center pb-1">
+              <span className="w-10 h-1 rounded-full bg-outline-variant" />
+            </div>
+            <button
+              onClick={() => setDaySheetOpen(false)}
+              aria-label="Close"
+              className="absolute top-4 right-4 p-1.5 rounded-lg border border-outline-variant text-outline hover:text-on-surface transition cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+            {dayPanel}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

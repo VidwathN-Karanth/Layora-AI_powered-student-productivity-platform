@@ -237,13 +237,13 @@ export default function SettingsPage() {
                   </span>
                   <span className="text-[9px] font-mono text-outline">
                     {notifPermission === 'unsupported'
-                      ? 'This browser cannot show desktop notifications'
+                      ? 'In-app only here — add Layora to your Home Screen for phone alerts'
                       : notifPermission === 'denied'
-                        ? 'Desktop alerts blocked — allow them in your browser settings'
+                        ? 'System alerts blocked — allow them in your browser settings'
                         : notifPermission === 'granted'
-                          ? store.notificationsEnabled ? 'On, including desktop alerts' : 'Switched off'
+                          ? store.notificationsEnabled ? 'On, including system alerts' : 'Switched off'
                           : store.notificationsEnabled
-                            ? 'On in the app — allow desktop alerts too'
+                            ? 'On in the app — allow system alerts too'
                             : 'Switched off'}
                   </span>
                 </div>
@@ -303,12 +303,25 @@ export default function SettingsPage() {
                       </span>
                     </div>
                   ))}
-                  {notifPermission !== 'granted' && (
+                  {/* Only ever one explanation at a time: the earlier version said
+                      "cannot show" and "not allowed yet" together, which is a
+                      contradiction. */}
+                  {notifPermission === 'unsupported' ? (
                     <p className="text-[9px] font-mono text-amber-400/80 leading-relaxed pt-1">
-                      Desktop alerts are {notifPermission === 'denied' ? 'blocked in your browser' : 'not allowed yet'} —
-                      reminders will still appear in the app.
+                      This browser has no system notifications. On iPhone, use Share → Add to Home
+                      Screen and open Layora from there. Reminders still appear inside the app.
                     </p>
-                  )}
+                  ) : notifPermission === 'denied' ? (
+                    <p className="text-[9px] font-mono text-amber-400/80 leading-relaxed pt-1">
+                      System alerts are blocked for this site in your browser settings. Reminders
+                      still appear inside the app.
+                    </p>
+                  ) : notifPermission !== 'granted' ? (
+                    <p className="text-[9px] font-mono text-amber-400/80 leading-relaxed pt-1">
+                      System alerts are not allowed yet — tap Allow above. Reminders still appear
+                      inside the app.
+                    </p>
+                  ) : null}
                 </div>
               )}
             </div>
@@ -331,7 +344,9 @@ export default function SettingsPage() {
               {/* LeetCode Field */}
               <div className="space-y-1">
                 <label className="block text-[10px] font-mono text-outline mb-1">LeetCode Username</label>
-                <div className="flex gap-2">
+                {/* Stacks on a phone: side by side, a 110px button left the
+                    username field too narrow to read what was typed. */}
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="text"
                     value={leetcodeUsername}
@@ -340,13 +355,13 @@ export default function SettingsPage() {
                       setLinkErrors(prev => ({ ...prev, leetcode: undefined }));
                     }}
                     placeholder="e.g. leetcode_user"
-                    className="flex-1 bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+                    className="flex-1 min-w-0 w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                   />
                   <button
                     type="button"
                     disabled={linkingField !== null}
                     onClick={() => handleLinkAccount('leetcode')}
-                    className="bg-primary hover:bg-primary-container text-on-surface rounded-lg px-3 py-1.5 text-xs font-mono font-bold transition cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 active:scale-[0.98] h-[34px] min-w-[110px]"
+                    className="bg-primary hover:bg-primary-container text-on-surface rounded-lg px-3 py-1.5 text-xs font-mono font-bold transition cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 active:scale-[0.98] h-[34px] shrink-0 whitespace-nowrap min-w-0 sm:min-w-[110px]"
                   >
                     {linkingField === 'leetcode' ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -366,7 +381,9 @@ export default function SettingsPage() {
               {/* CodeChef Field */}
               <div className="space-y-1">
                 <label className="block text-[10px] font-mono text-outline mb-1">CodeChef Username</label>
-                <div className="flex gap-2">
+                {/* Stacks on a phone: side by side, a 110px button left the
+                    username field too narrow to read what was typed. */}
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="text"
                     value={codechefUsername}
@@ -375,13 +392,13 @@ export default function SettingsPage() {
                       setLinkErrors(prev => ({ ...prev, codechef: undefined }));
                     }}
                     placeholder="e.g. codechef_user"
-                    className="flex-1 bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+                    className="flex-1 min-w-0 w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                   />
                   <button
                     type="button"
                     disabled={linkingField !== null}
                     onClick={() => handleLinkAccount('codechef')}
-                    className="bg-primary hover:bg-primary-container text-on-surface rounded-lg px-3 py-1.5 text-xs font-mono font-bold transition cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 active:scale-[0.98] h-[34px] min-w-[110px]"
+                    className="bg-primary hover:bg-primary-container text-on-surface rounded-lg px-3 py-1.5 text-xs font-mono font-bold transition cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 active:scale-[0.98] h-[34px] shrink-0 whitespace-nowrap min-w-0 sm:min-w-[110px]"
                   >
                     {linkingField === 'codechef' ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -401,7 +418,9 @@ export default function SettingsPage() {
               {/* GitHub Field */}
               <div className="space-y-1">
                 <label className="block text-[10px] font-mono text-outline mb-1">GitHub Username</label>
-                <div className="flex gap-2">
+                {/* Stacks on a phone: side by side, a 110px button left the
+                    username field too narrow to read what was typed. */}
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="text"
                     value={githubUsername}
@@ -410,13 +429,13 @@ export default function SettingsPage() {
                       setLinkErrors(prev => ({ ...prev, github: undefined }));
                     }}
                     placeholder="e.g. github_user"
-                    className="flex-1 bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+                    className="flex-1 min-w-0 w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                   />
                   <button
                     type="button"
                     disabled={linkingField !== null}
                     onClick={() => handleLinkAccount('github')}
-                    className="bg-primary hover:bg-primary-container text-on-surface rounded-lg px-3 py-1.5 text-xs font-mono font-bold transition cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 active:scale-[0.98] h-[34px] min-w-[110px]"
+                    className="bg-primary hover:bg-primary-container text-on-surface rounded-lg px-3 py-1.5 text-xs font-mono font-bold transition cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 active:scale-[0.98] h-[34px] shrink-0 whitespace-nowrap min-w-0 sm:min-w-[110px]"
                   >
                     {linkingField === 'github' ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -436,7 +455,9 @@ export default function SettingsPage() {
               {/* LinkedIn Field */}
               <div className="space-y-1">
                 <label className="block text-[10px] font-mono text-outline mb-1">LinkedIn Account URL</label>
-                <div className="flex gap-2">
+                {/* Stacks on a phone: side by side, a 110px button left the
+                    username field too narrow to read what was typed. */}
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="url"
                     value={linkedinUrl}
@@ -445,13 +466,13 @@ export default function SettingsPage() {
                       setLinkErrors(prev => ({ ...prev, linkedin: undefined }));
                     }}
                     placeholder="e.g. https://www.linkedin.com/in/username"
-                    className="flex-1 bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+                    className="flex-1 min-w-0 w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                   />
                   <button
                     type="button"
                     disabled={linkingField !== null}
                     onClick={() => handleLinkAccount('linkedin')}
-                    className="bg-primary hover:bg-primary-container text-on-surface rounded-lg px-3 py-1.5 text-xs font-mono font-bold transition cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 active:scale-[0.98] h-[34px] min-w-[110px]"
+                    className="bg-primary hover:bg-primary-container text-on-surface rounded-lg px-3 py-1.5 text-xs font-mono font-bold transition cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 active:scale-[0.98] h-[34px] shrink-0 whitespace-nowrap min-w-0 sm:min-w-[110px]"
                   >
                     {linkingField === 'linkedin' ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />

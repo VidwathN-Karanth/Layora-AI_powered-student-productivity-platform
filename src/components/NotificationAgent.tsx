@@ -6,7 +6,7 @@ import { apiFetch, readJson } from '@/lib/apiClient';
 import { occursOn, type RepeatRule } from '@/lib/recurrence';
 import { toDateKey } from '@/lib/dateFormat';
 import {
-  agendaAnnouncement, alreadyNotified, announce, dueCourseReminders,
+  agendaAnnouncement, alreadyNotified, announce, dueCourseReminders, ensureServiceWorker,
   markNotified, pruneNotificationMarks, requestPermissionOnFirstRun, timeToMinutes,
 } from '@/lib/notifications';
 
@@ -66,6 +66,14 @@ export default function NotificationAgent() {
   useEffect(() => { timetableRef.current = timetable; }, [timetable]);
   useEffect(() => { coursesRef.current = courses; }, [courses]);
   useEffect(() => { plannerRef.current = plannerEnabled; }, [plannerEnabled]);
+
+  // Register the notification worker regardless of the switch: a phone cannot
+  // show a notification without it, and registering early means the very first
+  // reminder after a student allows them already has a route.
+  useEffect(() => {
+    const id = setTimeout(() => { ensureServiceWorker(); }, 0);
+    return () => clearTimeout(id);
+  }, []);
 
   // 0. A brand-new student is asked for desktop permission once, on their
   //    first visit. Chrome prompts on load; Firefox and Safari refuse without a

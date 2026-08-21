@@ -130,6 +130,17 @@ export function getCohortForEmail(
 }
 
 /** Every roster address for one year, lowercased. Used to scope DB queries. */
+/**
+ * The one question every gate asks: may this address in?
+ *
+ * A student needs both a college address and a place on the roster. Kept here,
+ * beside the list itself, so the middleware, the API guards and the client gate
+ * cannot answer it three slightly different ways.
+ */
+export function isOnRoster(email: string | null | undefined): boolean {
+  return isCollegeEmail(email) && getCohortForEmail(email) !== null;
+}
+
 export function emailsForCohort(cohort: Cohort): string[] {
   return COHORT_ROSTER[cohort].map(normalizeEmail).filter(Boolean);
 }

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Inter, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
@@ -37,9 +37,26 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Layora - AI Student Productivity Platform",
   description: "A premium next-generation student productivity suite powered by artificial intelligence.",
+  // The manifest is what lets a phone install Layora to the Home Screen, which
+  // on iOS is the only way the Notification API exists at all.
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "Layora",
+    statusBarStyle: "black-translucent",
+  },
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
   }
+};
+
+export const viewport: Viewport = {
+  themeColor: "#16181C",
+  width: "device-width",
+  initialScale: 1,
+  // Pinch-zoom stays available; capping it at 5 keeps a mis-tap from leaving
+  // the student stranded at 10x on a phone.
+  maximumScale: 5,
 };
 
 export default function RootLayout({
