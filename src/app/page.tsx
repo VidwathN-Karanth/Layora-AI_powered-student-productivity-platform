@@ -13,60 +13,21 @@ import {
 } from 'framer-motion';
 
 /* ────────────────────────────────────────────────────────────────
-   The page is a Friday.
+   One feature per screen.
 
-   Layora is a timetable before it is anything else, so the scroll is
-   a day: every feature arrives at the hour a student would actually
-   reach for it, and the left rail is the planner's own time column.
-   That rail is the one loud idea here — everything around it is a
-   hairline, a mono label and a screenshot of the real workspace.
+   The tour is a pinned stage: the screenshot holds still while the
+   copy for each feature scrolls past it, and the left rail is a
+   running index of where you are. Zen mode goes first and takes the
+   page to black with it — everything after that is a hairline, a
+   mono label and a screenshot of the real workspace.
    ──────────────────────────────────────────────────────────────── */
 
 const INK = '#0A0B0D';
 const SLAB = '#14161A';
 
-/** The scroll story. `hour` is the rail readout, not decoration — it is
- *  when the block actually sits in the generated timetable. */
+/** The tour, in the order a student meets the product. */
 const STEPS = [
   {
-    hour: '06:30',
-    label: 'Weekly planner',
-    title: 'The week builds itself around your classes.',
-    body: 'Add your subjects once — code, credits, how hard they are. Layora fills the gaps between lectures with focus sessions sized to your Pomodoro rhythm, and calls out any deadline it could not find time for.',
-    src: '/images/landing/planner.webp',
-    alt: 'The weekly planner with Friday selected: a 5:00 PM Computer Networks revision block, a break, and two more study sessions.',
-    facts: ['Sized to your focus timer', 'Reorder or delete any block', 'Regenerates when subjects change'],
-  },
-  {
-    hour: '08:45',
-    label: 'Google Calendar',
-    title: 'It lands in the calendar you already check.',
-    body: 'One button writes the week into Google Calendar in your own time zone. Change a block and sync again — Layora clears the copies it wrote before, so a fortnight of edits never becomes a fortnight of duplicates.',
-    src: '/images/landing/sync-detail.webp',
-    alt: 'The planner action bar: planner alerts on, sync to Google Calendar, and wipe week from Google Calendar.',
-    panel: 'calendar',
-    facts: ['Writes with an IANA time zone', 'Wipe a day or the whole week', 'Course deadlines sync too'],
-  },
-  {
-    hour: '11:00',
-    label: 'Events',
-    title: 'Department notices and your own reminders, one calendar.',
-    body: 'Assessments, project reviews and placement drives are posted by the department to your year. Your own reminders sit on the same grid in a different colour, and repeat weekly if you tell them to.',
-    src: '/images/landing/events.webp',
-    alt: 'The events month grid for August with department events in amber and personal reminders in violet.',
-    facts: ['Posted to your year only', 'Daily, weekly or monthly repeats', 'Push notification on the day'],
-  },
-  {
-    hour: '17:30',
-    label: 'Tasks',
-    title: 'Every deadline, with the time it actually took.',
-    body: 'Give a task an estimate and start the timer when you sit down. The planner uses what you log to decide how much room the next one needs.',
-    src: '/images/landing/tasks.webp',
-    alt: 'The tasks page showing pending, in-progress and completed work with estimates and logged minutes.',
-    facts: ['Estimate vs. logged minutes', 'Grouped by subject', 'Feeds the next timetable'],
-  },
-  {
-    hour: '20:00',
     label: 'Zen mode',
     title: 'One black screen and a timer.',
     body: 'Everything else gets out of the way — sidebar, header, notifications, the lot. Space pauses, Esc leaves, and the session counts towards the streak on your dashboard.',
@@ -76,7 +37,39 @@ const STEPS = [
     facts: ['Space to pause · Esc to leave', 'Focus and break lengths are yours', 'Logs to your streak'],
   },
   {
-    hour: '22:00',
+    label: 'Weekly planner',
+    title: 'The week builds itself around your classes.',
+    body: 'Add your subjects once — code, credits, how hard they are. Layora fills the gaps between lectures with focus sessions sized to your Pomodoro rhythm, and calls out any deadline it could not find time for.',
+    src: '/images/landing/planner.webp',
+    alt: 'The weekly planner with Friday selected: a Computer Networks revision block, a break, and two more study sessions.',
+    facts: ['Sized to your focus timer', 'Reorder or delete any block', 'Regenerates when subjects change'],
+  },
+  {
+    label: 'Google Calendar',
+    title: 'It lands in the calendar you already check.',
+    body: 'One button writes the week into Google Calendar in your own time zone. Change a block and sync again — Layora clears the copies it wrote before, so a fortnight of edits never becomes a fortnight of duplicates.',
+    src: '/images/landing/sync-detail.webp',
+    alt: 'The planner action bar: planner alerts on, sync to Google Calendar, and wipe week from Google Calendar.',
+    panel: 'calendar',
+    facts: ['Writes with an IANA time zone', 'Wipe a day or the whole week', 'Course deadlines sync too'],
+  },
+  {
+    label: 'Tasks',
+    title: 'Every deadline, with the time it actually took.',
+    body: 'Give a task an estimate and start the timer when you sit down. The planner uses what you log to decide how much room the next one needs.',
+    src: '/images/landing/tasks.webp',
+    alt: 'The tasks page showing pending, in-progress and completed work with estimates and logged minutes.',
+    facts: ['Estimate vs. logged minutes', 'Grouped by subject', 'Feeds the next timetable'],
+  },
+  {
+    label: 'Events',
+    title: 'Department notices and your own reminders, one calendar.',
+    body: 'Assessments, project reviews and placement drives are posted by the department to your year. Your own reminders sit on the same grid in a different colour, and repeat weekly if you tell them to.',
+    src: '/images/landing/events.webp',
+    alt: 'The events month grid for August with department events in amber and personal reminders in violet.',
+    facts: ['Posted to your year only', 'Daily, weekly or monthly repeats', 'Push notification on the day'],
+  },
+  {
     label: 'Leaderboard',
     title: 'Your coding week, ranked inside your year.',
     body: 'Connect LeetCode, GitHub and CodeChef. Every night at 10 PM Layora reads the public profiles, scores solves and contributions, and ranks you against your own year group — nobody else.',
@@ -192,7 +185,7 @@ function Nav({ onSignIn }: { onSignIn: () => void }) {
         </a>
 
         <nav className="hidden items-center gap-8 font-jetbrains text-[11px] uppercase tracking-[0.15em] text-white/45 md:flex">
-          <a href="#day" className="transition hover:text-white">The day</a>
+          <a href="#features" className="transition hover:text-white">Features</a>
           <a href="#workspace" className="transition hover:text-white">Workspace</a>
           <a href="#access" className="transition hover:text-white">Access</a>
           <a href="/privacy" className="transition hover:text-white">Privacy</a>
@@ -249,10 +242,10 @@ function Hero({ onSignIn }: { onSignIn: () => void }) {
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
           </button>
           <a
-            href="#day"
+            href="#features"
             className="flex items-center gap-2 rounded-xl border border-white/12 px-6 py-3.5 text-sm font-semibold text-white/70 transition hover:border-white/25 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2E95FF]"
           >
-            Walk through a Friday
+            See what is inside
             <ArrowDown className="h-4 w-4" strokeWidth={2} />
           </a>
         </motion.div>
@@ -323,14 +316,13 @@ function Cinema() {
     setActive(i);
   });
 
-  // Zen mode is the one step that takes the page with it: the ground goes to
-  // true black as it arrives and comes back afterwards.
-  const zen = STEPS.findIndex((s) => 'black' in s && s.black);
+  // Zen mode opens the tour and takes the page with it: the stage starts at
+  // true black and only lifts to the page ground as the planner arrives.
   const band = 1 / STEPS.length;
   const bg = useTransform(
     scrollYProgress,
-    [(zen - 0.6) * band, zen * band + band * 0.25, (zen + 1) * band - band * 0.1, (zen + 1) * band + band * 0.35],
-    [INK, '#000000', '#000000', INK],
+    [0, band * 0.62, band * 0.96],
+    ['#000000', '#000000', INK],
   );
 
   const fill = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
@@ -341,7 +333,7 @@ function Cinema() {
 
       <div className="relative mx-auto max-w-[96rem] px-5 sm:px-8">
         {/* ── Desktop: rail · copy · pinned media ── */}
-        <div className="hidden lg:grid lg:grid-cols-[92px_minmax(0,23rem)_minmax(0,1fr)] lg:gap-x-14">
+        <div className="hidden lg:grid lg:grid-cols-[152px_minmax(0,22rem)_minmax(0,1fr)] lg:gap-x-12">
           {/* Rail */}
           <div>
             <div className="sticky top-0 flex h-screen flex-col py-24">
@@ -350,19 +342,19 @@ function Cinema() {
                 <motion.div className="absolute left-[3px] top-0 w-px bg-[#C56BF5]" style={{ height: fill }} aria-hidden />
                 <ol className="flex flex-1 flex-col justify-between">
                   {STEPS.map((s, i) => (
-                    <li key={s.hour} className="relative pl-6">
+                    <li key={s.label} className="relative pl-6">
                       <span
-                        className={`absolute left-0 top-[7px] block h-[7px] w-[7px] -translate-x-[2px] rounded-full transition-colors duration-500 ${
+                        className={`absolute left-0 top-[6px] block h-[7px] w-[7px] -translate-x-[2px] rounded-full transition-colors duration-500 ${
                           i === active ? 'bg-[#C56BF5]' : i < active ? 'bg-white/35' : 'bg-white/15'
                         }`}
                         aria-hidden
                       />
                       <span
-                        className={`font-jetbrains text-[12px] tabular-nums tracking-wider transition-colors duration-500 ${
+                        className={`font-jetbrains text-[10px] uppercase leading-[1.5] tracking-[0.12em] transition-colors duration-500 ${
                           i === active ? 'font-bold text-white' : 'text-white/30'
                         }`}
                       >
-                        {s.hour}
+                        {s.label}
                       </span>
                     </li>
                   ))}
@@ -381,7 +373,7 @@ function Cinema() {
                   viewport={{ once: true, margin: '-35% 0px -35% 0px' }}
                   transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                 >
-                  <Eyebrow tone={i === 4 ? 'blue' : 'violet'}>{s.label}</Eyebrow>
+                  <Eyebrow tone={'black' in s ? 'blue' : 'violet'}>{s.label}</Eyebrow>
                   <h3 className="mt-5 font-hanken text-3xl font-extrabold leading-[1.1] tracking-[-0.03em] text-white xl:text-[2.6rem]">
                     {s.title}
                   </h3>
@@ -435,10 +427,9 @@ function Cinema() {
               viewport={{ once: true, margin: '-10%' }}
               transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             >
-              <div className="flex items-center gap-3">
-                <span className="font-jetbrains text-[12px] font-bold tabular-nums text-white/80">{s.hour}</span>
+              <div className="flex items-center gap-4">
+                <Eyebrow tone={'black' in s ? 'blue' : 'violet'}>{s.label}</Eyebrow>
                 <span className="h-px flex-1 bg-white/10" aria-hidden />
-                <Eyebrow>{s.label}</Eyebrow>
               </div>
               <h3 className="mt-5 font-hanken text-[1.75rem] font-extrabold leading-[1.12] tracking-[-0.03em] text-white">
                 {s.title}
@@ -750,11 +741,11 @@ export default function RootPage() {
         <Nav onSignIn={goToLogin} />
         <Hero onSignIn={goToLogin} />
 
-        <section id="day" className="px-5 pb-6 pt-28 sm:px-8 sm:pt-36">
+        <section id="features" className="px-5 pb-6 pt-28 sm:px-8 sm:pt-36">
           <div className="mx-auto max-w-7xl">
-            <Eyebrow>A day in the workspace</Eyebrow>
+            <Eyebrow>Inside the workspace</Eyebrow>
             <h2 className="mt-5 max-w-2xl font-hanken text-3xl font-extrabold leading-[1.1] tracking-[-0.03em] text-white sm:text-[2.6rem]">
-              Six hours of a Friday, in the order they happen.
+              Six features, one screen at a time.
             </h2>
           </div>
         </section>

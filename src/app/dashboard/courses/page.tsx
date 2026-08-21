@@ -467,7 +467,7 @@ export default function CoursesPage() {
                         onChange={(e) => setReminderEnabled(e.target.checked)}
                         className="sr-only peer"
                       />
-                      <div className="w-8 h-4.5 bg-surface-container-high rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-outline after:border-outline-variant after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-purple-600 peer-checked:to-blue-500 peer-checked:after:bg-on-primary"></div>
+                      <div className="w-8 h-4.5 bg-surface-container-high rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-outline after:border-outline-variant after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-primary peer-checked:after:bg-on-primary"></div>
                     </label>
                   </div>
                   {reminderEnabled && (

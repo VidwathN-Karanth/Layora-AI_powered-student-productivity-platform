@@ -262,7 +262,7 @@ export default function OnboardingModal() {
         {/* Progress Bar */}
         <div className="w-full h-[2px] bg-surface-container">
           <div 
-            className="h-full bg-gradient-to-r from-purple-500 to-cyan-400 transition-all duration-300"
+            className="h-full bg-primary transition-all duration-300"
             style={{ width: `${(step / totalSteps) * 100}%` }}
           ></div>
         </div>
@@ -450,7 +450,7 @@ export default function OnboardingModal() {
                           <div>
                             <div className="flex items-center gap-2">
                               <span className="font-mono font-bold text-xs text-on-surface">{sub.name}</span>
-                              <span className="text-[9px] font-mono bg-primary-fixed text-primary px-2 py-0.5 rounded border border-primary">{sub.code}</span>
+                              <span className="text-[9px] font-mono bg-primary-fixed text-on-surface px-2 py-0.5 rounded border border-primary/50">{sub.code}</span>
                             </div>
                             <div className="flex gap-4 text-[9px] text-outline mt-1 font-mono">
                               <span>Credits: {sub.credits}</span>
@@ -818,7 +818,7 @@ export default function OnboardingModal() {
                               <span>Weekly Target: {c.weeklyGoal}h</span>
                             </div>
                             <div className="w-full bg-surface-container h-1 rounded-full overflow-hidden mt-1.5">
-                              <div className="bg-cyan-500 h-full" style={{ width: `${c.progress}%` }}></div>
+                              <div className="bg-primary h-full" style={{ width: `${c.progress}%` }}></div>
                             </div>
                           </div>
                           <div className="flex items-center gap-3">
@@ -886,14 +886,14 @@ export default function OnboardingModal() {
                 setStepErrors({});
                 setStep(Math.min(totalSteps, step + 1));
               }}
-              className="flex items-center gap-1 bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-black px-5 py-2 rounded-xl text-xs font-mono font-bold active:scale-95 transition cursor-pointer shadow-lg shadow-purple-500/10"
+              className="flex items-center gap-1 bg-primary hover:opacity-90 text-on-primary px-5 py-2 rounded-xl text-xs font-mono font-bold active:scale-95 transition cursor-pointer"
             >
               Next <ChevronRight className="w-4 h-4" />
             </button>
           ) : (
             <button
               onClick={handleSave}
-              className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-emerald-500 hover:from-purple-500 hover:to-emerald-400 text-on-surface px-6 py-2.5 rounded-xl text-xs font-mono font-bold active:scale-95 transition cursor-pointer shadow-lg shadow-purple-500/20"
+              className="flex items-center gap-1.5 bg-gradient-to-r from-primary to-emerald-500 hover:opacity-90 text-on-surface px-6 py-2.5 rounded-xl text-xs font-mono font-bold active:scale-95 transition cursor-pointer shadow-lg shadow-purple-500/20"
             >
               Finish <CheckCircle className="w-4 h-4" />
             </button>

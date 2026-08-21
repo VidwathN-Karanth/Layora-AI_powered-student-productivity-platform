@@ -20,14 +20,14 @@ html {
   --color-inverse-on-surface: #16181C;
   --color-outline: rgba(142, 142, 147, 0.25);
   --color-outline-variant: rgba(142, 142, 147, 0.14);
-  --color-surface-tint: #2E95FF;
+  --color-surface-tint: var(--cyber-primary);
 
-  /* ── Primary: Apple Blue ── */
+  /* ── Primary: the student's chosen accent ── */
   --color-primary: var(--cyber-primary);
   --color-on-primary: #000000;
-  --color-primary-container: rgba(0, 122, 255, 0.15);
-  --color-on-primary-container: #2E95FF;
-  --color-inverse-primary: #0055CC;
+  --color-primary-container: color-mix(in srgb, var(--cyber-primary) 18%, transparent);
+  --color-on-primary-container: var(--cyber-primary);
+  --color-inverse-primary: var(--cyber-primary);
 
   /* ── Secondary: Apple Grey ── */
   --color-secondary: var(--cyber-secondary);
@@ -51,13 +51,18 @@ html {
   --color-background: #16181C;
   --color-on-background: #F2F2F7;
 
-  --color-primary-fixed: #2E95FF;
-  --color-primary-fixed-dim: #0055CC;
+  /* Block fills, not brand colour: a solid #2E95FF panel behind white text was
+     the loudest thing on the planner. A 15% wash of the accent over the surface
+     keeps the colour coding and puts the label back at ~12:1. */
+  --color-primary-fixed: color-mix(in srgb, var(--cyber-primary) 15%, #1A1D21);
+  --color-primary-fixed-dim: color-mix(in srgb, var(--cyber-primary) 30%, #1A1D21);
   --color-on-primary-fixed: #FFFFFF;
   --color-on-primary-fixed-variant: #003A99;
 
-  --color-secondary-fixed: #8E8E93;
-  --color-secondary-fixed-dim: #636366;
+  /* Class blocks — a neutral slab, so they read as "not yours to move" next
+     to the accent-washed study blocks. Mid-grey held white text at 2.9:1. */
+  --color-secondary-fixed: #262A31;
+  --color-secondary-fixed-dim: #30353D;
   --color-on-secondary-fixed: #FFFFFF;
   --color-on-secondary-fixed-variant: #3A3A3C;
 
@@ -326,27 +331,6 @@ html.light-mode[data-theme="emerald"] {
 .light-mode [class*="shadow-[#00F0FF]"],
 .light-mode [class*="shadow-[0_0_10px_#00F0FF]"] {
   box-shadow: 0 0 10px rgba(var(--l-accent-rgb), 0.35) !important;
-}
-
-/* ── Hard-coded purple gradient buttons (onboarding, setup modal) ──
-   These carry Tailwind's purple-600 (#9333EA), the one dark purple no theme
-   token reaches, so light mode lifts the purple stop to the same lilac the
-   accent now uses and warms the far stop to match. Scoped to `button` so the
-   courses page's `peer-checked:from-purple-600` toggle keeps its off state,
-   and set on background-image so it also out-ranks the `hover:from-*`
-   utilities — the :hover pairs below put that feedback back. */
-.light-mode button[class*="from-purple-600"][class*="to-blue-500"] {
-  background-image: linear-gradient(to right, #B676ED, #5FA8F5) !important;
-}
-.light-mode button[class*="from-purple-600"][class*="to-blue-500"]:hover {
-  background-image: linear-gradient(to right, #A353E9, #3F97F0) !important;
-}
-
-.light-mode button[class*="from-purple-600"][class*="to-emerald-500"] {
-  background-image: linear-gradient(to right, #B676ED, #4FC08A) !important;
-}
-.light-mode button[class*="from-purple-600"][class*="to-emerald-500"]:hover {
-  background-image: linear-gradient(to right, #A353E9, #34B47C) !important;
 }
 
 /* ── Certificate category chips ──

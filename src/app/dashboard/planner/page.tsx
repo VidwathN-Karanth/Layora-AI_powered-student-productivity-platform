@@ -255,17 +255,16 @@ export default function PlannerPage() {
           <button
             onClick={handleGoogleSync}
             disabled={syncingCalendar || store.timetable.length === 0}
-            className="disabled:opacity-40 rounded-lg px-4 py-2.5 text-xs font-semibold flex items-center gap-2 active:scale-95 transition cursor-pointer"
-            style={{ backgroundColor: '#d4a76a', color: '#ffffff', border: '1px solid #c4975a' }}
+            className="disabled:opacity-40 rounded-lg px-4 py-2.5 text-xs font-mono font-bold flex items-center gap-2 active:scale-95 transition cursor-pointer border border-primary/40 bg-primary/10 hover:bg-primary/20 text-primary"
           >
             {syncingCalendar ? (
               <>
-                <RefreshCw className="w-4 h-4 animate-spin text-white" strokeWidth={1.5} />
+                <RefreshCw className="w-4 h-4 animate-spin" strokeWidth={1.5} />
                 Syncing Calendar...
               </>
             ) : (
               <>
-                <CalendarRange className="w-4 h-4 text-white" strokeWidth={1.5} />
+                <CalendarRange className="w-4 h-4" strokeWidth={1.5} />
                 Sync to Google Calendar
               </>
             )}
