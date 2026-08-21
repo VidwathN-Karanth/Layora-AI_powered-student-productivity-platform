@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useStore, Task } from '@/store/useStore';
+import { formatDate } from '@/lib/dateFormat';
 import { 
   CheckSquare, Plus, Clock, Play, Pause, Check, 
   Trash, Calendar, Sparkles, PlusCircle, AlertCircle 
@@ -300,7 +301,7 @@ export default function TasksPage() {
                     <div className="flex flex-col gap-0.5 text-[9px] font-mono text-white/40 text-left sm:text-right sm:pr-2">
                       <div className="flex items-center sm:justify-end gap-1.5">
                         <Calendar className="w-3 h-3 text-secondary/70" strokeWidth={1.5} />
-                        <span>Due: {task.deadline}</span>
+                        <span>Due: {formatDate(task.deadline)}</span>
                       </div>
                       <div className="flex items-center sm:justify-end gap-1.5">
                         <Clock className="w-3 h-3 text-primary/70" strokeWidth={1.5} />

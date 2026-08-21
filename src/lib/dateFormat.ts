@@ -86,3 +86,29 @@ export function toDateKey(value: DateInput): string {
   const d = toDate(value) || new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
+
+/**
+ * dd/mm/yyyy back to ISO 'YYYY-MM-DD', or null when it is not a real date.
+ *
+ * The counterpart to `formatDate`, for the typable date field. Kept here with
+ * the rest of the date handling rather than inside the component, so it can be
+ * tested without a DOM.
+ */
+export function parseTypedDate(text: string): string | null {
+  const match = text.trim().match(/^(\d{1,2})\s*\/\s*(\d{1,2})\s*\/\s*(\d{4})$/);
+  if (!match) return null;
+
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+
+  if (month < 1 || month > 12 || day < 1 || year < 1900 || year > 2999) return null;
+
+  // Rejects 31/09 outright rather than letting Date roll it into October.
+  const probe = new Date(year, month - 1, day);
+  if (probe.getFullYear() !== year || probe.getMonth() !== month - 1 || probe.getDate() !== day) {
+    return null;
+  }
+
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}

@@ -196,6 +196,18 @@ html.light-mode {
   --cyber-glow-primary: rgba(var(--l-accent-rgb), 0.10);
   --cyber-glow-secondary: rgba(138, 94, 26, 0.10);
 
+  /* Accent-derived roles. The accent is a FILL; these two keep it usable when
+     that fill is light: `ink` is the same hue held dark enough to read as text
+     or an icon on paper, `on-accent` is the label that sits on top of a fill.
+     Themes whose accent is already an ink inherit both unchanged. */
+  --l-accent-ink: var(--l-accent);
+  --l-on-accent: var(--l-card);
+
+  /* Every primary button is `bg-primary hover:bg-primary-container`, and the
+     container wash ships as Apple Blue at 15% — so hovering one flipped its
+     hue. Tie the wash to whichever accent is active. */
+  --color-primary-container: rgba(var(--l-accent-rgb), 0.16);
+
   --color-background: var(--l-paper);
   --color-on-background: var(--l-ink);
 
@@ -240,10 +252,17 @@ html.light-mode:not([data-theme]) {
   --l-accent-rgb: 30, 90, 168;
 }
 
+/* Purple is the app's default accent (SyncProvider falls back to it), so this
+   is the light-mode look most students get. It is a light lilac fill rather
+   than a deepened ink: white on #B676ED is only 3.0:1, so the label on top
+   flips to warm near-black (4.9:1) and accent-coloured text and icons drop to
+   the darker same-hue ink. */
 html.light-mode[data-theme="purple"] {
-  --l-accent: #6E43A3;
-  --l-accent-strong: #543080;
-  --l-accent-rgb: 110, 67, 163;
+  --l-accent: #B676ED;          /* hsl(272 77% 70%) — fills, borders, glows */
+  --l-accent-strong: #852DD2;   /* hover fill, and ink on the highlight wash */
+  --l-accent-rgb: 182, 118, 237;
+  --l-accent-ink: #852DD2;      /* 6.0:1 on paper — accent text and icons */
+  --l-on-accent: var(--l-ink);  /* 4.9:1 on the fill */
 }
 
 html.light-mode[data-theme="pink"] {
@@ -287,7 +306,7 @@ html.light-mode[data-theme="emerald"] {
 
 .light-mode .btn-neon {
   background: var(--l-accent) !important;
-  color: var(--l-card) !important;
+  color: var(--l-on-accent) !important;
   border-color: var(--l-accent) !important;
   box-shadow: 0 2px 8px rgba(var(--l-accent-rgb), 0.25) !important;
 }
@@ -295,6 +314,7 @@ html.light-mode[data-theme="emerald"] {
 .light-mode .btn-neon:hover:not(:disabled) {
   background: var(--l-accent-strong) !important;
   border-color: var(--l-accent-strong) !important;
+  color: var(--l-card) !important; /* the hover fill is an ink in every theme */
   box-shadow: 0 4px 12px rgba(var(--l-accent-rgb), 0.45) !important;
   transform: translateY(-1px) !important;
 }
@@ -306,6 +326,36 @@ html.light-mode[data-theme="emerald"] {
 .light-mode [class*="shadow-[#00F0FF]"],
 .light-mode [class*="shadow-[0_0_10px_#00F0FF]"] {
   box-shadow: 0 0 10px rgba(var(--l-accent-rgb), 0.35) !important;
+}
+
+/* ── Hard-coded purple gradient buttons (onboarding, setup modal) ──
+   These carry Tailwind's purple-600 (#9333EA), the one dark purple no theme
+   token reaches, so light mode lifts the purple stop to the same lilac the
+   accent now uses and warms the far stop to match. Scoped to `button` so the
+   courses page's `peer-checked:from-purple-600` toggle keeps its off state,
+   and set on background-image so it also out-ranks the `hover:from-*`
+   utilities — the :hover pairs below put that feedback back. */
+.light-mode button[class*="from-purple-600"][class*="to-blue-500"] {
+  background-image: linear-gradient(to right, #B676ED, #5FA8F5) !important;
+}
+.light-mode button[class*="from-purple-600"][class*="to-blue-500"]:hover {
+  background-image: linear-gradient(to right, #A353E9, #3F97F0) !important;
+}
+
+.light-mode button[class*="from-purple-600"][class*="to-emerald-500"] {
+  background-image: linear-gradient(to right, #B676ED, #4FC08A) !important;
+}
+.light-mode button[class*="from-purple-600"][class*="to-emerald-500"]:hover {
+  background-image: linear-gradient(to right, #A353E9, #34B47C) !important;
+}
+
+/* ── Certificate category chips ──
+   `text-purple-*` is exempted from the blanket ink rules further down so the
+   three categories stay distinguishable, which leaves purple-400 (#C084FC) at
+   2.4:1 on paper. Hold it at the accent ink instead — same hue, readable. */
+.light-mode .text-purple-400:not(.zen-overlay *),
+.light-mode .text-purple-300:not(.zen-overlay *) {
+  color: #852DD2 !important;
 }
 
 /* Wildcard selector to override ALL transparent white text classes to muted neutral (Light Mode) */
@@ -439,11 +489,19 @@ html.light-mode[data-theme="emerald"] {
 }
 
 .light-mode .text-cyber-blue {
-  color: var(--l-accent) !important; /* Keep Apple Blue */
+  color: var(--l-accent-ink) !important; /* Keep Apple Blue */
 }
 
 .light-mode .text-cyber-purple {
-  color: var(--l-accent) !important; /* Keep Apple Purple */
+  color: var(--l-accent-ink) !important; /* Keep Apple Purple */
+}
+
+/* `text-primary` is the app's accent-coloured text (21 files: links, values,
+   the collapsed sidebar mark). It resolves to --color-primary, i.e. the raw
+   fill, which on paper is 2.4:1 — hold it at the ink instead. */
+.light-mode .text-primary:not(.zen-overlay *),
+.light-mode .hover\:text-primary:hover:not(.zen-overlay *) {
+  color: var(--l-accent-ink) !important;
 }
 
 .light-mode .bg-surface-container {
@@ -591,14 +649,14 @@ html.light-mode[data-theme="emerald"] {
 /* ── Day tab buttons in planner ── */
 .light-mode button[class*="bg-cyber-purple"] {
   background-color: var(--l-accent) !important;
-  color: var(--l-card) !important;
+  color: var(--l-on-accent) !important;
 }
 
 /* ── "Start Session" & timer button in schedule rows ── */
 .light-mode [class*="bg-cyber-blue/10"][class*="border-cyber-blue"] {
   background-color: rgba(var(--l-accent-rgb), 0.08) !important;
   border-color: rgba(var(--l-accent-rgb), 0.35) !important;
-  color: var(--l-accent) !important;
+  color: var(--l-accent-ink) !important;
 }
 
 /* Time fields and inputs shadow DOM fields readability overrides */
@@ -708,7 +766,7 @@ html.light-mode[data-theme="emerald"] {
   ) !important;
   color: var(--l-ink) !important;
   border-color: transparent !important;
-  border-left: 3px solid var(--l-accent) !important;
+  border-left: 3px solid var(--l-accent-ink) !important;
   border-radius: 2px 8px 8px 2px !important;
   font-weight: 700 !important;
   box-shadow: none !important;
@@ -716,7 +774,7 @@ html.light-mode[data-theme="emerald"] {
 
 .light-mode aside button[class*="bg-gradient-to-r"] svg,
 .light-mode aside button[class*="bg-white/10"] svg {
-  color: var(--l-accent) !important;
+  color: var(--l-accent-ink) !important;
 }
 
 /* User identity card and logouts in sidebar */
@@ -744,12 +802,12 @@ html.light-mode[data-theme="emerald"] {
 }
 
 .light-mode header span[class*="text-cyber-blue"] {
-  color: var(--l-accent) !important;
+  color: var(--l-accent-ink) !important;
 }
 
 /* Digital clock */
 .light-mode span[class*="from-cyan-400"] {
-  background-image: linear-gradient(to right, var(--l-accent), var(--l-accent)) !important;
+  background-image: linear-gradient(to right, var(--l-accent-ink), var(--l-accent-ink)) !important;
   color: transparent !important;
   background-clip: text !important;
   -webkit-background-clip: text !important;
@@ -768,8 +826,8 @@ html.light-mode[data-theme="emerald"] {
 .light-mode th:not(.zen-overlay *),
 .light-mode code:not(.zen-overlay *),
 .light-mode label:not(.zen-overlay *),
-.light-mode span:not(.text-primary):not([class*="text-cyber-"]):not([class*="text-purple"]):not([class*="text-red-"]):not([class*="text-rose-"]):not([class*="text-emerald-"]):not([class*="text-blue-"]):not(.text-on-surface):not(.text-white):not(.hud-label):not([class*="tracking-widest"]):not(.zen-overlay *),
-.light-mode div:not(.bg-primary):not(.bg-primary *):not([class*="text-red-"]):not([class*="text-rose-"]):not(.btn-neon):not(.bg-primary-fixed):not([class*="text-cyber-"]):not([class*="text-purple"]):not(.glass-card):not(.glass-panel-neon):not(.hud-label):not([class*="tracking-widest"]):not(.zen-overlay):not(.zen-overlay *) {
+.light-mode span:not(.text-primary):not(.bg-primary-fixed):not([class*="text-cyber-"]):not([class*="text-purple"]):not([class*="text-red-"]):not([class*="text-rose-"]):not([class*="text-emerald-"]):not([class*="text-blue-"]):not(.text-on-surface):not(.text-white):not(.hud-label):not([class*="tracking-widest"]):not(.zen-overlay *),
+.light-mode div:not(.bg-primary):not(.bg-primary *):not(.text-primary):not([class*="text-red-"]):not([class*="text-rose-"]):not(.btn-neon):not(.bg-primary-fixed):not([class*="text-cyber-"]):not([class*="text-purple"]):not(.glass-card):not(.glass-panel-neon):not(.hud-label):not([class*="tracking-widest"]):not(.zen-overlay):not(.zen-overlay *) {
   color: var(--l-ink-soft) !important;
 }
 
@@ -786,7 +844,10 @@ html.light-mode[data-theme="emerald"] {
 }
 
 /* Fix overall text colors */
-.light-mode .text-white:not(.zen-overlay):not(.zen-overlay *) {
+/* Destructive buttons are excluded here rather than out-specified below: the
+   :not() chain gives this four class-levels, which no scoped override can
+   beat without resorting to an ID hack. */
+.light-mode .text-white:not(.zen-overlay):not(.zen-overlay *):not(button[class*="bg-red-"]):not(button[class*="bg-red-"] *) {
   color: var(--l-ink) !important;
 }
 
@@ -794,12 +855,18 @@ html.light-mode[data-theme="emerald"] {
   color: var(--l-ink) !important;
 }
 
-/* Buttons and primary badge text color guards */
+/* Buttons and primary badge text color guards. These labels all sit on an
+   accent fill, so they follow --l-on-accent: still white wherever the accent
+   is an ink, warm near-black on the light purple. Destructive buttons stay
+   white — their fill is red in either case. */
 .light-mode button.btn-neon,
 .light-mode button.bg-primary,
 .light-mode .bg-primary *,
 .light-mode button.text-on-surface,
-.light-mode button .text-on-surface,
+.light-mode button .text-on-surface {
+  color: var(--l-on-accent) !important;
+}
+
 .light-mode button[class*="bg-red-600"],
 .light-mode button[class*="bg-red-600"] * {
   color: var(--l-card) !important;
@@ -807,7 +874,7 @@ html.light-mode[data-theme="emerald"] {
 
 .light-mode .bg-primary-fixed {
   background-color: rgba(var(--l-accent-rgb), 0.08) !important;
-  color: var(--l-accent) !important;
+  color: var(--l-accent-ink) !important;
 }
 
 body {
@@ -1506,7 +1573,7 @@ html.light-mode .cl-badge {
 /* The dark accents the console uses for section headings and chips are far too
    light against paper; hold them at the readable end of their own hue. */
 .light-mode .text-cyber-purple {
-  color: #6D3BC9 !important;
+  color: #852DD2 !important;
 }
 
 .light-mode .text-cyber-blue {
@@ -1592,4 +1659,104 @@ html.light-mode .zen-overlay button {
 
 .light-mode .layora-toast {
   background-color: var(--l-card) !important;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   LIGHT MODE — destructive buttons keep their white label
+
+   A solid red button is white-on-red by design. The broad light-mode text
+   sweeps repaint the label to dark ink, which measured 1.6:1 against the red
+   — a dark smudge on a red block. Hold the label (and its icon) white.
+   ──────────────────────────────────────────────────────────────── */
+/* The extra [class*="text-white"] is deliberate: without it this sits at two
+   class-levels and loses to `.light-mode .text-white:not(…):not(…)`, which has
+   three. Matching the utility itself out-ranks the sweep. */
+.light-mode button[class*="bg-red-6"][class*="text-white"],
+.light-mode button[class*="bg-red-5"][class*="text-white"],
+.light-mode button[class*="bg-red-6"][class*="text-white"] *,
+.light-mode button[class*="bg-red-5"][class*="text-white"] * {
+  color: #FFFFFF !important;
+}
+
+/* Disabled destructive buttons wash out instead, so the label must follow. */
+.light-mode button[class*="bg-red-6"]:disabled,
+.light-mode button[class*="bg-red-6"]:disabled * {
+  color: var(--l-bad-ink) !important;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   Switches stay visible in light mode
+
+   An "off" switch was `bg-surface-container-high`, which on a light card is
+   very nearly the card itself — the control disappeared. Give the track a
+   real edge and a tint it can be seen against in both themes.
+   ──────────────────────────────────────────────────────────────── */
+.layora-switch {
+  border-width: 1px;
+}
+
+.layora-switch[data-on="false"] {
+  background-color: #32373E;
+  border-color: rgba(142, 142, 147, 0.35);
+}
+
+/* --l-stone is the same value several card surfaces use, so the track vanished
+   into whatever it sat on. A darker face plus an ink-weight edge reads as a
+   control on white and on tinted rows alike. */
+.light-mode .layora-switch[data-on="false"] {
+  background-color: #CBC1B4 !important;
+  border-color: #7A7065 !important;
+}
+
+.layora-switch[data-on="false"] .layora-switch-knob {
+  background-color: #E8E2DA;
+}
+
+.light-mode .layora-switch[data-on="false"] .layora-switch-knob {
+  background-color: #FFFFFF !important;
+  box-shadow: 0 1px 2px rgba(74, 58, 42, 0.35);
+}
+
+/* ────────────────────────────────────────────────────────────────
+   The destructive button
+
+   Stated outright rather than assembled from utilities the light-mode sweeps
+   then repaint. Deep rose ground, red rule, red label and icon — legible in
+   both themes, and unmistakably the dangerous one.
+   ──────────────────────────────────────────────────────────────── */
+.layora-danger-btn {
+  background-color: #4A1420 !important;
+  border: 1px solid #E5484D !important;
+  color: #FF9AA0 !important;
+}
+
+.layora-danger-btn * {
+  color: #FF9AA0 !important;
+}
+
+.layora-danger-btn:hover:not(:disabled) {
+  background-color: #631B2A !important;
+  border-color: #FF6369 !important;
+}
+
+.light-mode .layora-danger-btn {
+  background-color: #F7D9DE !important;
+  border-color: #C0303A !important;
+  color: #8E1F28 !important;
+}
+
+.light-mode .layora-danger-btn * {
+  color: #8E1F28 !important;
+}
+
+.light-mode .layora-danger-btn:hover:not(:disabled) {
+  background-color: #F2C3CB !important;
+  border-color: #8E1F28 !important;
+}
+
+/* Disabled reads as "not yet", not as a second colour scheme. */
+.layora-danger-btn:disabled,
+.layora-danger-btn:disabled * {
+  opacity: 0.45;
+  cursor: not-allowed;
 }

@@ -2421,7 +2421,7 @@ export default function AdminPage() {
                           <div key={task.id} className="p-3 border border-white/5 rounded-xl bg-white/2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div className="min-w-0">
                               <h4 className={`text-xs font-bold text-white truncate ${task.status === 'completed' ? 'line-through text-white/40' : ''}`}>{task.title}</h4>
-                              <div className="text-[9px] text-white/40 mt-1 font-mono truncate">Subject: {task.subjectName || 'General'} | Due: {task.deadline}</div>
+                              <div className="text-[9px] text-white/40 mt-1 font-mono truncate">Subject: {task.subjectName || 'General'} | Due: {formatDate(task.deadline)}</div>
                             </div>
 
                             <div className="flex items-center gap-3 shrink-0">
@@ -2457,7 +2457,7 @@ export default function AdminPage() {
                                 <h4 className="text-xs font-bold text-white">{course.name}</h4>
                                 <div className="flex items-center gap-2 mt-0.5">
                                   <span className="text-[10px] text-white/40 font-mono">
-                                    {getPlatformDisplay(course.platform)} • Due {course.deadline}
+                                    {getPlatformDisplay(course.platform)} • Due {formatDate(course.deadline)}
                                   </span>
                                   {course.platform && course.platform.startsWith('http') && (
                                     <a

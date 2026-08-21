@@ -1,4 +1,4 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware, createRouteMatcher, clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { isOnRoster } from "@/lib/roster";
 import { isAdminEmail } from "@/lib/admin";
@@ -11,15 +11,11 @@ const isProtectedRoute = createRouteMatcher([
 ]);
 
 /**
- * The signed-in email, if the session token carries it.
+ * The signed-in email as carried in the session token, when it is there.
  *
- * Clerk only puts the address in the session token when the instance is
- * configured to — Dashboard → Sessions → Customize session token, with
- * `{"email": "{{user.primary_email_address}}"}`. Several key names are tried
- * because that claim can be named by whoever set it up.
- *
- * Returning null is not a failure: it means the roster is checked one step
- * later instead, by SyncProvider before it renders anything.
+ * Clerk only includes the address if the instance is configured to (Dashboard →
+ * Sessions → Customize session token). Several key names are tried because
+ * whoever configured it chose the name. Free, when it works.
  */
 function emailFromClaims(claims: Record<string, unknown> | null | undefined): string | null {
   if (!claims) return null;
@@ -29,6 +25,33 @@ function emailFromClaims(claims: Record<string, unknown> | null | undefined): st
     if (typeof value === 'string' && value.includes('@')) return value;
   }
   return null;
+}
+
+/**
+ * The signed-in email, whatever it takes.
+ *
+ * Falls back to the Clerk Backend API when the session token has no address.
+ * That costs one request per protected navigation, which is the price of this
+ * gate needing no Dashboard configuration to work — and the alternative was an
+ * account seeing onboarding and the dashboard before being told no.
+ */
+async function resolveEmail(
+  claims: Record<string, unknown> | null | undefined,
+  userId: string | null | undefined
+): Promise<string | null> {
+  const fromToken = emailFromClaims(claims);
+  if (fromToken) return fromToken;
+  if (!userId) return null;
+
+  try {
+    const client = await clerkClient();
+    const user = await client.users.getUser(userId);
+    return user.primaryEmailAddress?.emailAddress || user.emailAddresses[0]?.emailAddress || null;
+  } catch {
+    // Clerk unreachable. Returning null hands the decision to SyncProvider,
+    // which now denies rather than renders on a protected route.
+    return null;
+  }
 }
 
 export default clerkMiddleware(async (auth, req) => {
@@ -43,14 +66,14 @@ export default clerkMiddleware(async (auth, req) => {
       unauthenticatedUrl: new URL('/login', req.url).toString(),
     });
 
-    // Roster check, as early as it can happen.
+    // Roster check, before a single byte of the workspace is sent.
     //
-    // Every API route already enforces this, and SyncProvider gates the shell,
-    // but both of those run after the browser has been handed a page. Doing it
-    // here means an address that is not on the roster never reaches /dashboard
-    // at all — no flash of a workspace it is not entitled to.
-    const { sessionClaims } = await auth();
-    const email = emailFromClaims(sessionClaims as Record<string, unknown> | null);
+    // Every API route already enforces this and SyncProvider gates the shell,
+    // but both run after the browser has been handed a page — which is why a
+    // non-college account used to see onboarding and the dashboard first and
+    // only then be told no.
+    const { userId, sessionClaims } = await auth();
+    const email = await resolveEmail(sessionClaims as Record<string, unknown> | null, userId);
 
     if (email) {
       const allowed = isAdminEmail(email) || isOnRoster(email);

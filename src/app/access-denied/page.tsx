@@ -51,8 +51,11 @@ export default function AccessDeniedPage() {
 
   const handleSignOut = async () => {
     store.logout();
+    // Back to sign-in, not the landing page: the only useful next step from
+    // here is signing in with a college account, and leaving the blocked
+    // session alive would just bounce them back to this screen.
     await signOut();
-    router.replace('/');
+    router.replace('/login');
   };
 
   const [secondsLeft, setSecondsLeft] = useState(10);

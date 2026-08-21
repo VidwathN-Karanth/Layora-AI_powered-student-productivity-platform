@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { apiFetch, readJson, errorMessage } from '@/lib/apiClient';
 import { clearNotificationMark } from '@/lib/notifications';
-import { toDateKey } from '@/lib/dateFormat';
+import { formatDate, toDateKey } from '@/lib/dateFormat';
 import { 
   BookMarked, PlusCircle, Trash, Award, 
   BookOpen, Calendar, HelpCircle, GraduationCap, Clock, ExternalLink,
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getPlatformDisplay, formatCourseLink } from '@/lib/courseUtils';
+import DateField from '@/components/DateField';
 
 /** What the card shows when a course has no reminder time of its own. */
 const DEFAULT_REMINDER_TIME = '09:00';
@@ -83,6 +84,9 @@ export default function CoursesPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            // Google needs a zone for a recurring timed event, and the browser
+            // is the only thing that knows where the student is.
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             courses: store.courses.map((c) => ({
               id: c.id,
               name: c.name,
@@ -95,7 +99,7 @@ export default function CoursesPage() {
         })
       );
 
-      const skippedNote = data.skippedNames?.length ? ` Skipped: ${data.skippedNames.join(', ')}.` : '';
+      const skippedNote = data.skippedNames?.length ? ` Skipped — ${data.skippedNames.join('; ')}.` : '';
       setSyncMessage({
         ok: data.syncedCount > 0,
         text: data.syncedCount > 0
@@ -317,24 +321,32 @@ export default function CoursesPage() {
                     <span className="text-[10px] font-mono text-outline flex items-center gap-1.5">
                       <Bell className="w-3.5 h-3.5 text-primary" /> Daily Notification
                     </span>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={course.reminderEnabled || false}
-                        onChange={(e) => {
-                          store.updateCourse(course.id, {
-                            reminderEnabled: e.target.checked,
-                            // Without this the switch turned the reminder on but left
-                            // reminderTime undefined, so it never fired — while the row
-                            // below happily displayed the 09:00 fallback as if it were set.
-                            reminderTime: course.reminderTime || DEFAULT_REMINDER_TIME,
-                          });
-                          rearmReminder(course.id);
-                        }}
-                        className="sr-only peer"
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={!!course.reminderEnabled}
+                      aria-label="Daily Notification"
+                      data-on={course.reminderEnabled ? 'true' : 'false'}
+                      onClick={() => {
+                        store.updateCourse(course.id, {
+                          reminderEnabled: !course.reminderEnabled,
+                          // Without this the switch turned the reminder on but left
+                          // reminderTime undefined, so it never fired — while the row
+                          // below happily displayed the 09:00 fallback as if it were set.
+                          reminderTime: course.reminderTime || DEFAULT_REMINDER_TIME,
+                        });
+                        rearmReminder(course.id);
+                      }}
+                      className={`layora-switch relative flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 cursor-pointer ${
+                        course.reminderEnabled ? 'bg-primary border-primary' : ''
+                      }`}
+                    >
+                      <span
+                        className={`layora-switch-knob h-3.5 w-3.5 rounded-full bg-white transition-transform duration-200 ${
+                          course.reminderEnabled ? 'translate-x-[1.15rem]' : 'translate-x-0.5'
+                        }`}
                       />
-                      <div className="w-8 h-4.5 bg-surface-container-high rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-outline after:border-outline-variant after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-purple-600 peer-checked:to-blue-500 peer-checked:after:bg-on-primary"></div>
-                    </label>
+                    </button>
                   </div>
                   {course.reminderEnabled && (
                     <div className="flex items-center justify-between gap-2 bg-surface-container-low/50 p-2 rounded-xl border border-outline-variant/20">
@@ -350,7 +362,7 @@ export default function CoursesPage() {
               <div className="flex justify-between items-center pt-2 border-t border-outline-variant gap-4 mt-auto">
                 <div className="flex flex-col gap-1 text-[10px] font-mono text-outline">
                   <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Target: {course.weeklyGoal}h/wk</span>
-                  <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> Due: {course.deadline}</span>
+                  <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> Due: {formatDate(course.deadline)}</span>
                 </div>
 
                 {course.platform && course.platform.startsWith('http') && (
@@ -435,14 +447,11 @@ export default function CoursesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-mono text-outline mb-1">Deadline</label>
-                  <input
-                    type="date"
-                    lang="en-GB"
-                    value={deadline}
-                    onChange={(e) => setDeadline(e.target.value)}
-                    className="w-full bg-surface-container border border-outline-variant rounded-lg px-2 py-1 text-xs text-on-surface"
-                  />
+                  <label htmlFor="course-deadline" className="block text-[10px] font-mono text-outline mb-1">Deadline</label>
+                  {/* Chrome renders <input type="date"> in the browser's own
+                      locale whatever lang says, so this is a dd/mm/yyyy text
+                      field with the native picker behind the calendar button. */}
+                  <DateField id="course-deadline" value={deadline} onChange={setDeadline} />
                 </div>
 
                 {/* Daily notification fields */}
@@ -545,15 +554,23 @@ export default function CoursesPage() {
                     <span className="text-xs text-outline flex items-center gap-1.5">
                       <Bell className="w-3.5 h-3.5 text-primary" /> Daily Notification
                     </span>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={editReminderEnabled}
-                        onChange={(e) => setEditReminderEnabled(e.target.checked)}
-                        className="sr-only peer"
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={editReminderEnabled}
+                      aria-label="Daily Notification"
+                      onClick={() => setEditReminderEnabled((v) => !v)}
+                      data-on={editReminderEnabled ? 'true' : 'false'}
+                      className={`layora-switch relative flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 cursor-pointer ${
+                        editReminderEnabled ? 'bg-primary border-primary' : ''
+                      }`}
+                    >
+                      <span
+                        className={`layora-switch-knob h-3.5 w-3.5 rounded-full bg-white shadow transition-transform duration-200 ${
+                          editReminderEnabled ? 'translate-x-[1.15rem]' : 'translate-x-0.5'
+                        }`}
                       />
-                      <div className="w-8 h-4.5 bg-surface-container-high rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-outline after:border-outline-variant after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-primary"></div>
-                    </label>
+                    </button>
                   </div>
                   
                   {editReminderEnabled && (
@@ -613,9 +630,9 @@ export default function CoursesPage() {
                         type="button"
                         disabled={deleteConfirmation !== 'Delete'}
                         onClick={handleDeleteCourse}
-                        className="bg-red-600 hover:bg-red-700 text-white disabled:bg-red-950/40 disabled:text-red-300/50 disabled:border-red-500/10 border border-red-500/30 hover:border-red-500 rounded-lg px-3 py-1.5 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer"
+                        className="layora-danger-btn rounded-lg px-3 py-1.5 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer shrink-0"
                       >
-                        <Trash className="w-3.5 h-3.5" /> Delete
+                        <Trash className="w-3.5 h-3.5 shrink-0" /> Delete
                       </button>
                     </div>
                   </div>

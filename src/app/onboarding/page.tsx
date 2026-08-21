@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/store/useStore';
+import { formatDate } from '@/lib/dateFormat';
 import ResumePanel from '@/components/ResumePanel';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
 import { 
@@ -815,7 +816,7 @@ export default function OnboardingPage() {
                                 </a>
                               )}
                               <span>Weekly Target: {c.weeklyGoal}h</span>
-                              <span>Ends: {c.deadline}</span>
+                              <span>Ends: {formatDate(c.deadline)}</span>
                             </div>
                             {/* Simple Progress Bar */}
                             <div className="w-full bg-surface-container h-1 rounded-full overflow-hidden mt-2">

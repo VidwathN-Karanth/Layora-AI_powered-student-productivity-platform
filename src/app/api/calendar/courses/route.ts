@@ -28,6 +28,19 @@ const DURATION_MINUTES = 30;
 /** Guard against a runaway payload. */
 const MAX_COURSES = 50;
 
+/**
+ * Where the department is, used when the browser does not say.
+ *
+ * Google rejects a *recurring* timed event that has no `timeZone` — a plain
+ * UTC instant is ambiguous once a rule repeats it across days, so it refuses
+ * with "Missing time zone definition for start time". A one-off event would
+ * have been accepted, which is why this only appeared here.
+ */
+const FALLBACK_TIME_ZONE = 'Asia/Kolkata';
+
+/** Loose IANA shape check — "Region/City", or a plain zone like "UTC". */
+const TIME_ZONE_PATTERN = /^[A-Za-z][A-Za-z0-9_+-]*(\/[A-Za-z0-9_+-]+)*$/;
+
 interface CoursePayload {
   id?: string;
   name?: string;
@@ -42,6 +55,19 @@ function at(date: string, time: string): Date {
   const [y, m, d] = date.split('-').map(Number);
   const [hh, mm] = time.split(':').map(Number);
   return new Date(y, m - 1, d, hh, mm, 0, 0);
+}
+
+/**
+ * Wall-clock time with no offset, e.g. "2026-08-21T10:22:00".
+ *
+ * Deliberately not `toISOString()`: that converts to UTC, and a daily rule
+ * anchored to a UTC instant drifts off the hour the student chose whenever the
+ * offset changes. Google pairs this with `timeZone` and keeps 10:22 at 10:22.
+ */
+function wallClock(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
+    `T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
 }
 
 function toDateKey(d: Date): string {
@@ -73,6 +99,12 @@ export async function POST(request: Request) {
     const body = await request.json();
     const courses: CoursePayload[] = Array.isArray(body?.courses) ? body.courses.slice(0, MAX_COURSES) : [];
 
+    // The browser knows where the student actually is; fall back to the
+    // department's zone when it does not say.
+    const timeZone = typeof body?.timeZone === 'string' && TIME_ZONE_PATTERN.test(body.timeZone)
+      ? body.timeZone
+      : FALLBACK_TIME_ZONE;
+
     const todayKey = toDateKey(new Date());
     let synced = 0;
     let skipped = 0;
@@ -88,9 +120,20 @@ export async function POST(request: Request) {
         : null;
 
       // Only courses the student actually asked to be reminded about.
-      if (!course.reminderEnabled || !name || !time) {
+      if (!name) {
         skipped += 1;
-        if (name) skippedNames.push(name);
+        continue;
+      }
+
+      if (!course.reminderEnabled) {
+        skipped += 1;
+        skippedNames.push(`${name} — Daily Notification is off`);
+        continue;
+      }
+
+      if (!time) {
+        skipped += 1;
+        skippedNames.push(`${name} — no reminder time set`);
         continue;
       }
 
@@ -118,8 +161,8 @@ export async function POST(request: Request) {
             summary: `Study: ${name}`,
             description:
               `Daily study reminder${course.platform ? ` · ${course.platform}` : ''}\n\n(Synced from Layora)`,
-            start: { dateTime: start.toISOString() },
-            end: { dateTime: end.toISOString() },
+            start: { dateTime: wallClock(start), timeZone },
+            end: { dateTime: wallClock(end), timeZone },
             recurrence: [`RRULE:FREQ=DAILY;UNTIL=${untilStamp(deadline)}`],
             reminders: {
               useDefault: false,
@@ -133,9 +176,26 @@ export async function POST(request: Request) {
       if (response.ok) {
         synced += 1;
       } else {
+        // Say what Google actually objected to. The usual answer is a missing
+        // Calendar scope on the Google connection, which no amount of retrying
+        // here will fix — and which the student can do nothing about unless
+        // they are told.
+        const raw = await response.text();
+        let detail = `HTTP ${response.status}`;
+        try {
+          const parsed = JSON.parse(raw);
+          detail = parsed?.error?.message || detail;
+        } catch {
+          // Not JSON; the status is the best we have.
+        }
+
+        if (response.status === 401 || response.status === 403) {
+          detail = 'Layora is not allowed to write to your Google Calendar. Sign out and back in with Google to grant calendar access.';
+        }
+
         skipped += 1;
-        skippedNames.push(name);
-        console.error('Google Calendar course insert failed:', await response.text());
+        skippedNames.push(`${name} — ${detail}`);
+        console.error('Google Calendar course insert failed:', raw);
       }
     }
 

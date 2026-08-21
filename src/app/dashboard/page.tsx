@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
+import { formatDate } from '@/lib/dateFormat';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Flame, Globe, ExternalLink, ChevronRight, AlertCircle, Sparkles, Check, Plus, Trash
@@ -494,7 +495,7 @@ export default function DashboardHome() {
 
                     <div className="flex justify-between text-[9px] font-mono text-white/40">
                       <span>Target: {course.weeklyGoal} hrs/wk</span>
-                      <span>Ends: {course.deadline}</span>
+                      <span>Ends: {formatDate(course.deadline)}</span>
                     </div>
                   </div>
                 ))
