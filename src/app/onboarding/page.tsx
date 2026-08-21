@@ -895,7 +895,7 @@ export default function OnboardingPage() {
             ) : (
               <button
                 onClick={handleSaveAndRedirect}
-                className="flex items-center gap-1.5 bg-gradient-to-r from-primary to-emerald-500 hover:opacity-90 text-on-surface px-6 py-2.5 rounded-xl text-xs font-mono font-bold active:scale-95 transition cursor-pointer shadow-lg shadow-purple-500/20"
+                className="flex items-center gap-1.5 bg-green-700 hover:bg-green-800 text-white px-6 py-2.5 rounded-xl text-xs font-mono font-bold active:scale-95 transition cursor-pointer shadow-lg shadow-green-900/30"
               >
                 Complete Onboarding <ShieldCheck className="w-4 h-4" />
               </button>

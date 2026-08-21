@@ -828,10 +828,10 @@ html.light-mode[data-theme="emerald"] {
 }
 
 /* Fix overall text colors */
-/* Destructive buttons are excluded here rather than out-specified below: the
-   :not() chain gives this four class-levels, which no scoped override can
-   beat without resorting to an ID hack. */
-.light-mode .text-white:not(.zen-overlay):not(.zen-overlay *):not(button[class*="bg-red-"]):not(button[class*="bg-red-"] *) {
+/* Buttons that carry their own dark fill are excluded here rather than
+   out-specified below: the :not() chain gives this rule several class-levels,
+   which no scoped override can beat without resorting to an ID hack. */
+.light-mode .text-white:not(.zen-overlay):not(.zen-overlay *):not(button[class*="bg-red-"]):not(button[class*="bg-red-"] *):not(button[class*="bg-green-"]):not(button[class*="bg-green-"] *) {
   color: var(--l-ink) !important;
 }
 
