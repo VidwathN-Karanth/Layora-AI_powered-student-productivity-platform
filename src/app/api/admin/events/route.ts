@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { Event, isStaffAudience, STAFF_AUDIENCES } from '@/lib/models/Event';
 import { requireAdmin, requireAdminCohort } from '@/lib/authz';
+import { AdminLog } from '@/lib/models/AdminLog';
 import { REPEAT_RULES, isDateKey, isRepeatRule } from '@/lib/recurrence';
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -72,6 +73,14 @@ export async function POST(request: Request) {
       isStaff: true,
     });
 
+    await AdminLog.record({
+      actor: guard.requester,
+      action: 'event.create',
+      summary: `Posted the event "${event.title}" for ${event.audience} on ${event.eventDate}`,
+      target: event.title,
+      cohort: event.audience,
+    });
+
     return NextResponse.json({ success: true, event }, { status: 201 });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);
@@ -103,6 +112,15 @@ export async function DELETE(request: Request) {
     }
 
     await Event.remove(id);
+
+    await AdminLog.record({
+      actor: guard.requester,
+      action: 'event.delete',
+      summary: `Deleted the event "${event.title}" (${event.audience}, ${event.eventDate})`,
+      target: event.title,
+      cohort: event.audience,
+    });
+
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);

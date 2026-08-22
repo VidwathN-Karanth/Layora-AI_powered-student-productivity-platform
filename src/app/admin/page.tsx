@@ -10,7 +10,8 @@ import { useStore } from '@/store/useStore';
 import { 
   Users, Clock, Flame, Search, 
   Trash2, Settings, Activity, Calendar, 
-  Building2, LogOut, X, FileText, RefreshCw, Eye, AlertTriangle, ExternalLink, Download, Plus, Sun, Moon
+  Building2, LogOut, X, FileText, RefreshCw, Eye, AlertTriangle, ExternalLink, Download, Plus, Sun, Moon,
+  ScrollText
 } from 'lucide-react';
 import { getPlatformDisplay } from '@/lib/courseUtils';
 import { isAdminEmail } from '@/lib/admin';
@@ -64,6 +65,47 @@ const ADMIN_SECTIONS = [
   { key: 'resumes' as const, label: '📄 Resumes' },
   { key: 'events' as const, label: '🗓 Events' },
 ];
+
+/** How each action reads in the table, and how loud it looks. Anything not
+ *  listed falls back to its raw key in neutral grey — a new action type shows
+ *  up as itself rather than disappearing. */
+const ACTION_LABEL: Record<string, string> = {
+  'admin.access': 'Sign-in',
+  'event.create': 'Event added',
+  'event.delete': 'Event deleted',
+  'student.update': 'Student edited',
+  'student.delete': 'Student deleted',
+  'library.create': 'File shared',
+  'library.delete': 'File removed',
+  'users.export': 'Data export',
+  'stats.sync': 'Stats sync',
+};
+
+const ACTION_TONE: Record<string, string> = {
+  'admin.access': 'bg-white/5 border-white/10 text-white/50',
+  'event.create': 'bg-violet-500/10 border-violet-500/30 text-violet-300',
+  'library.create': 'bg-violet-500/10 border-violet-500/30 text-violet-300',
+  'event.delete': 'bg-rose-500/10 border-rose-500/30 text-rose-300',
+  'library.delete': 'bg-rose-500/10 border-rose-500/30 text-rose-300',
+  'student.delete': 'bg-rose-500/10 border-rose-500/30 text-rose-300',
+  'student.update': 'bg-amber-500/10 border-amber-500/30 text-amber-300',
+  'users.export': 'bg-amber-500/10 border-amber-500/30 text-amber-300',
+  'stats.sync': 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300',
+  default: 'bg-white/5 border-white/10 text-white/50',
+};
+
+/** One line of the admin trail. The summary arrives already written — the
+ *  console renders it, it does not compose it. */
+interface AdminLogEntry {
+  id: string;
+  actorEmail: string;
+  actorName: string | null;
+  action: string;
+  summary: string;
+  target: string | null;
+  cohort: string | null;
+  createdAt: string;
+}
 
 interface StaffEvent {
   id: string;
@@ -343,6 +385,29 @@ export default function AdminPage() {
   const [resumesError, setResumesError] = useState('');
   const [activeResume, setActiveResume] = useState<ResumeEntry | null>(null);
 
+  const [adminLogs, setAdminLogs] = useState<AdminLogEntry[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [logsError, setLogsError] = useState('');
+  const [logRetentionDays, setLogRetentionDays] = useState(30);
+  const [showLogs, setShowLogs] = useState(false);
+
+  const fetchAdminLogs = async () => {
+    setLoadingLogs(true);
+    setLogsError('');
+    try {
+      const data = await readJson<{ logs?: AdminLogEntry[]; retentionDays?: number }>(
+        await apiFetch('/api/admin/logs')
+      );
+      setAdminLogs(data.logs || []);
+      if (data.retentionDays) setLogRetentionDays(data.retentionDays);
+    } catch (err) {
+      console.error(err);
+      setLogsError(errorMessage(err, 'Could not load the activity log.'));
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
   const fetchResumes = async () => {
     setLoadingResumes(true);
     setResumesError('');
@@ -547,6 +612,20 @@ export default function AdminPage() {
   }, [authorized, adminView, selectedCohort]);
 
   useEffect(() => {
+    if (authorized && showLogs) {
+      fetchAdminLogs();
+    }
+  }, [authorized, showLogs]);
+
+  // Esc closes the log the way it closes every other overlay in the console.
+  useEffect(() => {
+    if (!showLogs) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowLogs(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showLogs]);
+
+  useEffect(() => {
     if (authorized && adminView === 'events') {
       fetchStaffEvents();
     }
@@ -634,6 +713,9 @@ export default function AdminPage() {
       if (isAdminEmail(email)) {
         setAuthorized(true);
         fetchTelemetry();
+        // Records "opened the console", de-duplicated server-side to once per
+        // half hour so a refresh does not become a line.
+        apiFetch('/api/admin/logs', { method: 'POST' }).catch(() => {});
       } else {
         router.replace('/dashboard');
       }
@@ -973,6 +1055,14 @@ export default function AdminPage() {
                 </div>
               )}
             </div>
+            <button
+              onClick={() => setShowLogs(true)}
+              title="Who opened the console and what they changed"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:border-violet-400/60 text-white/70 hover:text-violet-300 transition cursor-pointer text-xs"
+            >
+              <ScrollText className="w-3.5 h-3.5" />
+              ACTIVITY LOG
+            </button>
             <button
               onClick={handleDownloadCsv}
               disabled={isDownloadingCsv}
@@ -1990,9 +2080,140 @@ export default function AdminPage() {
               )}
             </div>
           )}
+
         </section>
 
       </div>
+
+      {/* Activity log: an overlay rather than a year tab, because the trail is
+          about admins and is not scoped to a cohort like everything below. */}
+      <AnimatePresence>
+        {showLogs && (
+          <div className="fixed inset-0 z-[60] flex items-start justify-center p-4 sm:p-8">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowLogs(false)}
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            />
+
+            <motion.div
+              initial={{ scale: 0.98, opacity: 0, y: 8 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.98, opacity: 0, y: 8 }}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="admin-log-title"
+              className="glass-panel border border-white/15 rounded-2xl w-full max-w-5xl relative z-10 bg-[#1E2126] flex flex-col max-h-[85vh] overflow-hidden"
+            >
+              <div className="flex items-center justify-between gap-4 border-b border-white/10 p-5 shrink-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <ScrollText className="w-5 h-5 text-violet-300 shrink-0" />
+                  <div className="min-w-0">
+                    <h3 id="admin-log-title" className="text-base font-black tracking-wider uppercase text-white">
+                      Activity log
+                    </h3>
+                    <p className="text-[10px] font-mono uppercase tracking-wider text-white/40 mt-0.5">
+                      {adminLogs.length} entries · last {logRetentionDays} days
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={fetchAdminLogs}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:border-white/30 text-white/70 transition cursor-pointer text-[10px] uppercase font-bold tracking-wider"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${loadingLogs ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </button>
+                  <button
+                    onClick={() => setShowLogs(false)}
+                    aria-label="Close the activity log"
+                    className="p-2 rounded-lg border border-white/10 hover:border-white/30 text-white/50 hover:text-white transition cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="overflow-y-auto">
+                {loadingLogs ? (
+                <div className="p-12 text-center text-white/40 text-xs flex flex-col items-center gap-3">
+                  <RefreshCw className="w-6 h-6 animate-spin text-violet-300" />
+                  Loading the activity log...
+                </div>
+              ) : logsError ? (
+                <div className="p-12 text-center text-rose-300 text-xs flex flex-col items-center gap-2">
+                  <AlertTriangle className="w-6 h-6 text-rose-400" />
+                  <span>{logsError}</span>
+                  <button
+                    onClick={fetchAdminLogs}
+                    className="mt-3 px-3 py-1.5 bg-rose-950/30 border border-rose-500/25 hover:bg-rose-950/50 text-rose-300 rounded-lg text-[10px] font-bold transition cursor-pointer"
+                  >
+                    TRY AGAIN
+                  </button>
+                </div>
+              ) : adminLogs.length === 0 ? (
+                <div className="p-12 text-center text-white/30 text-xs leading-relaxed">
+                  Nothing recorded yet.
+                  <br />
+                  Console sign-ins, events, student edits and shared-library changes appear here.
+                </div>
+              ) : (
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="border-b border-white/10 bg-white/2 text-white/40 font-bold uppercase tracking-wider">
+                          <th className="p-4 font-normal w-52">When</th>
+                          <th className="p-4 font-normal w-64">Admin</th>
+                          <th className="p-4 font-normal w-36">Action</th>
+                          <th className="p-4 font-normal">What happened</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {adminLogs.map((entry) => (
+                          <tr key={entry.id} className="hover:bg-white/3 transition align-top">
+                            <td className="p-4 text-white/50 font-mono text-[10px] whitespace-nowrap">
+                              {formatDateTime(entry.createdAt, { hour12: true })}
+                            </td>
+                            <td className="p-4">
+                              <div className="font-bold text-white truncate max-w-[220px]">
+                                {entry.actorName || entry.actorEmail.split('@')[0]}
+                              </div>
+                              <div className="text-white/40 font-mono text-[10px] truncate max-w-[220px]">
+                                {entry.actorEmail}
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              <span
+                                className={`inline-block px-2 py-0.5 rounded border font-mono text-[9px] uppercase tracking-wider whitespace-nowrap ${ACTION_TONE[entry.action] || ACTION_TONE.default}`}
+                              >
+                                {ACTION_LABEL[entry.action] || entry.action}
+                              </span>
+                            </td>
+                            <td className="p-4 text-white/70 leading-relaxed">
+                              {entry.summary}
+                              {entry.cohort && (
+                                <span className="ml-2 text-white/35 font-mono text-[10px]">· {entry.cohort}</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="border-t border-white/5 p-4 text-[10px] font-mono text-white/30">
+                    Kept for {logRetentionDays} days. Anything older is deleted automatically on the nightly run.
+                  </p>
+                </>
+              )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Sign-out confirmation */}
       <AnimatePresence>

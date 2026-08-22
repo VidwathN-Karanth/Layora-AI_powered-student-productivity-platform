@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { runSyncForDate } from '@/lib/syncLogic';
+import { AdminLog, RETENTION_DAYS } from '@/lib/models/AdminLog';
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get('Authorization');
@@ -21,10 +22,24 @@ export async function GET(request: Request) {
     console.log(`[Cron Route] Starting cron sync run for: ${todayStr}`);
     const stats = await runSyncForDate(todayStr);
 
+    // The admin trail is swept on the same nightly run rather than by a cron of
+    // its own: one schedule is one thing to keep working, and a day of extra
+    // lines is harmless — the reader never shows past the retention window.
+    let purgedLogs = 0;
+    try {
+      purgedLogs = await AdminLog.purgeExpired();
+      console.log(`[Cron Route] Purged ${purgedLogs} admin log line(s) older than ${RETENTION_DAYS} days`);
+    } catch (purgeError: unknown) {
+      // A failed sweep must not fail the sync that students depend on.
+      const msg = purgeError instanceof Error ? purgeError.message : String(purgeError);
+      console.error('[Cron Route] Admin log purge failed:', msg);
+    }
+
     return NextResponse.json({
       success: true,
       message: `Cron sync completed for date: ${todayStr}`,
-      stats
+      stats,
+      purgedLogs
     });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);

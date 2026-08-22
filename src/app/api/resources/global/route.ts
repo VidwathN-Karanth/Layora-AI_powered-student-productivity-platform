@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
 import { getRequester, requireAdminCohort } from '@/lib/authz';
+import { AdminLog } from '@/lib/models/AdminLog';
 import {
   SHARED_RESOURCE_TAG,
   cohortCanSeeResource,
@@ -162,6 +163,16 @@ export async function POST(request: Request) {
 
     const visible = isCohort(viewingCohort) ? visibleTo(viewingCohort, updatedList) : [];
 
+    if (requester.isAdmin) {
+      await AdminLog.record({
+        actor: requester,
+        action: 'library.create',
+        summary: `Published "${newResource.name}" to the ${year} shared library`,
+        target: newResource.name,
+        cohort: year,
+      });
+    }
+
     return NextResponse.json({ success: true, resource: newResource, resources: visible });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);
@@ -228,6 +239,16 @@ export async function DELETE(request: Request) {
       : requester.cohort;
 
     const visible = isCohort(viewingCohort) ? visibleTo(viewingCohort, updatedList) : [];
+
+    if (requester.isAdmin) {
+      await AdminLog.record({
+        actor: requester,
+        action: 'library.delete',
+        summary: `Removed "${itemToDelete.name}" from the ${itemToDelete.year} shared library`,
+        target: itemToDelete.name,
+        cohort: itemToDelete.year,
+      });
+    }
 
     return NextResponse.json({ success: true, resources: visible });
   } catch (error: unknown) {

@@ -157,3 +157,30 @@ alter table public.events enable row level security;
 
 create index if not exists idx_events_date on public.events(event_date);
 create index if not exists idx_events_audience on public.events(audience);
+
+-- 12. Admin audit log
+-- Who opened the console, and the handful of actions that change what a
+-- student sees. Deliberately not a record of reads: the value of the trail is
+-- that every line in it matters. Rows live for 30 days and are swept by the
+-- nightly cron (/api/cron/daily-sync), so this table never grows without end.
+create table if not exists public.admin_logs (
+  id uuid primary key default gen_random_uuid(),
+  actor_id text not null,
+  actor_email text not null,
+  actor_name text,
+  -- A closed set, mirrored in src/lib/models/AdminLog.ts.
+  action text not null,
+  -- One finished sentence, written server-side at the time of the action.
+  summary text not null,
+  -- What it happened to (an event title, a student's name), for the detail column.
+  target text,
+  -- The year group affected, when the action is scoped to one.
+  cohort text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.admin_logs enable row level security;
+
+-- Reads are always "newest first, last 30 days", and the purge deletes by the
+-- same column.
+create index if not exists idx_admin_logs_created on public.admin_logs(created_at desc);

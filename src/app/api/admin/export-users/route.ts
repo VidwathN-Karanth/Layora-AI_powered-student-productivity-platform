@@ -3,6 +3,7 @@ import { User } from '@/lib/models/User';
 import { DailyActivity } from '@/lib/models/DailyActivity';
 import { requireAdminCohort } from '@/lib/authz';
 import { emailsForCohort } from '@/lib/roster';
+import { AdminLog } from '@/lib/models/AdminLog';
 
 /** CSV export for one academic year, matching whichever year the console shows. */
 export async function GET(request: Request) {
@@ -41,6 +42,13 @@ export async function GET(request: Request) {
         codechefSolvedTotal: u.codechefSolvedTotal || 0,
         githubContributions: githubContributionsMap.get(u.id) || 0
       };
+    });
+
+    await AdminLog.record({
+      actor: guard.requester,
+      action: 'users.export',
+      summary: `Exported ${exportData.length} ${cohort} student records to CSV`,
+      cohort,
     });
 
     return NextResponse.json(exportData);

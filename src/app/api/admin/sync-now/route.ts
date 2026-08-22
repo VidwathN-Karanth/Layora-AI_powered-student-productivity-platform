@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { runSyncForDate } from '@/lib/syncLogic';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { isAdminEmail } from '@/lib/admin';
+import { AdminLog } from '@/lib/models/AdminLog';
 
 export async function POST(request: Request) {
   try {
@@ -31,6 +32,14 @@ export async function POST(request: Request) {
     }
 
     const stats = await runSyncForDate(targetDate);
+
+    await AdminLog.record({
+      actor: { userId, email, name: user?.fullName ?? null },
+      action: 'stats.sync',
+      summary: `Ran the coding-stats sync by hand for ${targetDate}`,
+      target: targetDate,
+    });
+
     return NextResponse.json({
       success: true,
       message: `Manually triggered sync completed for date: ${targetDate}`,

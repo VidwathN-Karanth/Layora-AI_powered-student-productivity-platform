@@ -1,14 +1,18 @@
 import { NextResponse } from 'next/server';
-import { auth, currentUser } from '@clerk/nextjs/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { isAdminEmail } from '@/lib/admin';
+import { requireAdmin } from '@/lib/authz';
+import { User } from '@/lib/models/User';
+import { AdminLog } from '@/lib/models/AdminLog';
 
-// Helper to check admin access
-async function verifyAdminAccess() {
-  const { userId: authedUserId } = await auth();
-  const user = await currentUser();
-  const email = user?.primaryEmailAddress?.emailAddress || '';
-  return authedUserId && isAdminEmail(email);
+/** How a student appears in the audit trail: a name, not a Clerk id. */
+async function describeStudent(userId: string): Promise<string> {
+  try {
+    const user = await User.findById(userId);
+    if (!user) return userId;
+    return user.name ? `${user.name} (${user.email})` : user.email || userId;
+  } catch {
+    return userId;
+  }
 }
 
 export async function POST(
@@ -17,10 +21,8 @@ export async function POST(
 ) {
   try {
     const { id: userId } = await params;
-    const isAuthorized = await verifyAdminAccess();
-    if (!isAuthorized) {
-      return NextResponse.json({ error: 'Unauthorized admin access' }, { status: 401 });
-    }
+    const guard = await requireAdmin();
+    if (!guard.ok) return guard.response;
 
     const { state } = await req.json();
 
@@ -34,10 +36,18 @@ export async function POST(
 
     if (error) throw error;
 
+    await AdminLog.record({
+      actor: guard.requester,
+      action: 'student.update',
+      summary: `Edited the workspace of ${await describeStudent(userId)}`,
+      target: userId,
+    });
+
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    console.error(`Admin update user ${err.message}`);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error(`Admin update user failed: ${errMsg}`);
+    return NextResponse.json({ error: errMsg }, { status: 500 });
   }
 }
 
@@ -47,10 +57,12 @@ export async function DELETE(
 ) {
   try {
     const { id: userId } = await params;
-    const isAuthorized = await verifyAdminAccess();
-    if (!isAuthorized) {
-      return NextResponse.json({ error: 'Unauthorized admin access' }, { status: 401 });
-    }
+    const guard = await requireAdmin();
+    if (!guard.ok) return guard.response;
+
+    // Read the name before the row goes — afterwards there is nothing left to
+    // identify them by, and "deleted 3f9a…" is not an audit trail.
+    const description = await describeStudent(userId);
 
     // 1. Delete from user_states
     const { error: stateError } = await supabaseAdmin
@@ -73,10 +85,18 @@ export async function DELETE(
       .eq('id', userId);
     if (userError) throw userError;
 
+    await AdminLog.record({
+      actor: guard.requester,
+      action: 'student.delete',
+      summary: `Deleted ${description} and all of their activity history`,
+      target: userId,
+    });
+
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    console.error(`Admin delete user failed: ${err.message}`);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error(`Admin delete user failed: ${errMsg}`);
+    return NextResponse.json({ error: errMsg }, { status: 500 });
   }
 }
 
