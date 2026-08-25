@@ -846,7 +846,9 @@ export default function OnboardingPage() {
                   <div className="text-center max-w-md space-y-2">
                     <h3 className="text-xl font-mono font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-emerald-400">Setup Complete</h3>
                     <p className="text-xs text-on-surface-variant leading-relaxed font-mono">
-                      Our local scheduling engines are primed. Clicking save will organize your classes, distribute your {subjects.length} subjects based on credits, inject break intervals to avoid cognitive burnout, and construct your interactive timetable.
+                      {subjects.length > 0
+                        ? `Clicking save distributes your ${subjects.length} subject${subjects.length === 1 ? '' : 's'} across the week by credits and difficulty, with break intervals between sittings, and builds your timetable from them.`
+                        : 'Clicking save sets up your workspace. Your planner starts empty — add subjects, tasks or courses whenever you like and the week builds itself around them.'}
                     </p>
                   </div>
 

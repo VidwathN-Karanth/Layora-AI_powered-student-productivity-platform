@@ -341,8 +341,9 @@ export default function PlannerPage() {
               <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-outline-variant rounded-xl p-6">
                 <AlertCircle className="w-10 h-10 text-on-surface/20 mb-3" strokeWidth={1.5} />
                 <h3 className="text-sm font-bold text-on-surface/70">Planner is empty</h3>
-                <p className="text-xs text-outline max-w-sm mt-1">
-                  Click the **Add Custom Block** link to build your weekly schedule and push it to Google Calendar.
+                <p className="text-xs text-outline max-w-sm mt-1 leading-relaxed">
+                  Add subjects, tasks or courses and the week builds itself around them — or use
+                  Add Custom Block above to place something yourself.
                 </p>
               </div>
             ) : activeDayBlocks.length === 0 ? (

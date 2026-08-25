@@ -184,3 +184,38 @@ alter table public.admin_logs enable row level security;
 -- Reads are always "newest first, last 30 days", and the purge deletes by the
 -- same column.
 create index if not exists idx_admin_logs_created on public.admin_logs(created_at desc);
+
+-- ── One-off data migration: clear_default_preset_timetable_blocks (2026-08-25)
+--
+-- Recorded here for history, not to be re-run: on a fresh database it is a
+-- no-op, and it was applied once to the live project.
+--
+-- The scheduler used to load a 25-block template into any planner whose owner
+-- had no subjects and no tasks, and to inject a daily "Solve 1 LeetCode
+-- Problem" block and a Sunday "Weekly AI Recap & Planning" block into everyone
+-- else's. None of it came from the student. src/lib/scheduler.ts no longer
+-- produces any of the three; this cleared what was already stored.
+--
+-- Blocks a student placed by hand (custom-block-*, ai-block-*) were never
+-- touched, and neither was any block derived from their own subjects, tasks,
+-- activities or courses. Signature matching rather than id matching, because
+-- block ids collide between the template and the personalised path.
+--
+-- update public.user_states us
+-- set state = jsonb_set(us.state, '{timetable}', coalesce((
+--       select jsonb_agg(b)
+--       from jsonb_array_elements(coalesce(us.state->'timetable', '[]'::jsonb)) b
+--       where not (
+--         (b->>'title' in ('Study: Review today''s lecture notes',
+--                          'Study: Work on pending assignment',
+--                          'Night Work / Self-study',
+--                          'Study: Weekend Review',
+--                          'Online Course Study'))
+--         or (b->>'title' = 'Break' and b->>'details' = 'Afternoon rest break (30 min)')
+--         or (b->>'title' in ('Solve 1 LeetCode Problem', 'Weekly AI Recap & Planning'))
+--         or ((select jsonb_array_length(coalesce(us.state->'subjects', '[]'::jsonb))) = 0
+--             and (select count(*) from jsonb_array_elements(coalesce(us.state->'tasks', '[]'::jsonb)) t
+--                    where t->>'status' is distinct from 'completed') = 0
+--             and b->>'id' not like 'custom-block-%' and b->>'id' not like 'ai-block-%')
+--       )), '[]'::jsonb)), updated_at = now()
+-- where jsonb_array_length(coalesce(us.state->'timetable', '[]'::jsonb)) > 0;

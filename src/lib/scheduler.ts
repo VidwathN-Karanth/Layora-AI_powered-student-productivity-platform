@@ -162,120 +162,23 @@ export function generateLocalWeeklySchedule(
     break: 'border-l-4 border-emerald-500 bg-emerald-950/20 text-emerald-200',
   };
 
-  // Rule 4: Default schedule template if no user data exists yet
-  if (subjects.length === 0 && (!tasks || tasks.length === 0)) {
-    insights.push("No subjects or tasks found. Loaded default template.");
-    insights.push("Add your subjects and tasks so I can personalize this further.");
-
-    days.forEach((day) => {
-      let blockIdCounter = 0;
-      // Monday to Friday
-      if (day >= 1 && day <= 5) {
-        // The college-hours bar is gone from the template too — see the
-        // weekday note in the personalised path below.
-        schedule.push({
-          id: `block-${day}-break-${blockIdCounter++}`,
-          day,
-          start: '16:00',
-          end: '16:30',
-          title: 'Break',
-          type: 'break',
-          color: colors.break,
-          details: 'Afternoon rest break (30 min)'
-        });
-
-        schedule.push({
-          id: `block-${day}-study-1-${blockIdCounter++}`,
-          day,
-          start: '17:00',
-          end: '18:00',
-          title: 'Study: Review today\'s lecture notes',
-          type: 'study',
-          color: colors.study,
-          details: 'Review lecture highlights and notes (60 min)'
-        });
-
-        schedule.push({
-          id: `block-${day}-study-2-${blockIdCounter++}`,
-          day,
-          start: '18:30',
-          end: '19:30',
-          title: 'Study: Work on pending assignment',
-          type: 'study',
-          color: colors.study,
-          details: 'Address homework or projects (60 min)'
-        });
-
-        schedule.push({
-          id: `block-${day}-study-3-${blockIdCounter++}`,
-          day,
-          start: '20:00',
-          end: '22:00',
-          title: 'Night Work / Self-study',
-          type: 'study',
-          color: colors.study,
-          details: 'Open hours for extra learning or revision'
-        });
-      } else if (day === 6) { // Saturday
-        schedule.push({
-          id: `block-${day}-study-1`,
-          day,
-          start: '10:00',
-          end: '12:00',
-          title: 'Study: Weekend Review',
-          type: 'study',
-          color: colors.study,
-          details: 'Revise topics from the week'
-        });
-        schedule.push({
-          id: `block-${day}-study-2`,
-          day,
-          start: '14:00',
-          end: '14:45',
-          title: 'Solve 1 LeetCode Problem',
-          type: 'study',
-          color: colors.study,
-          details: 'Practice logic and coding tasks'
-        });
-      } else if (day === 0) { // Sunday
-        schedule.push({
-          id: `block-${day}-study-1`,
-          day,
-          start: '10:00',
-          end: '12:00',
-          title: 'Online Course Study',
-          type: 'study',
-          color: colors.study,
-          details: 'Advance your active online courses'
-        });
-        schedule.push({
-          id: `block-${day}-study-2`,
-          day,
-          start: '14:00',
-          end: '14:45',
-          title: 'Solve 1 LeetCode Problem',
-          type: 'study',
-          color: colors.study,
-          details: 'Sundays logic practice'
-        });
-        schedule.push({
-          id: `block-${day}-break-recap`,
-          day,
-          start: '16:00',
-          end: '17:00',
-          title: 'Weekly AI Recap & Planning',
-          type: 'break',
-          color: colors.break,
-          details: 'Plan upcoming milestones and review hours'
-        });
-      }
-    });
-
-    return { schedule: resolveScheduleOverlaps(schedule), insights };
-  }
-
   // 1. Filter active tasks and sort by priority order (Rule 3)
   const activeTasks = (tasks || []).filter(t => t.status !== 'completed');
+
+  // Nothing of the student's to place means an empty week, and an empty week is
+  // shown as one. This used to load a template of invented study blocks, which
+  // put someone else's evening on their planner and had to be deleted by hand
+  // before it was theirs.
+  if (
+    subjects.length === 0 &&
+    activeTasks.length === 0 &&
+    (activities || []).length === 0 &&
+    (courses || []).length === 0
+  ) {
+    insights.push('Nothing scheduled yet.');
+    insights.push('Add your subjects, tasks, activities or courses and the week builds itself around them.');
+    return { schedule: [], insights };
+  }
 
   const todayMs = new Date().setHours(0, 0, 0, 0);
   const getDaysUntil = (deadlineStr: string) => {
@@ -416,53 +319,6 @@ export function generateLocalWeeklySchedule(
       }
     });
 
-    // C. Daily LeetCode/coding practice session (Rule 3 point 3)
-    let leetcodeScheduled = false;
-    routine.freeBlocks.forEach((freeBlock) => {
-      if (leetcodeScheduled) return;
-      const freeStart = timeToMin(freeBlock.start);
-      const freeEnd = timeToMin(freeBlock.end);
-      const unoccupiedSegments = getUnoccupiedSegments(freeStart, freeEnd, occupiedIntervals);
-      
-      for (const segment of unoccupiedSegments) {
-        const segStart = segment.start;
-        const segEnd = segment.end;
-        if (segEnd - segStart >= 45) {
-          const leetcodeEnd = segStart + 45;
-          schedule.push({
-            id: `block-${day}-leetcode`,
-            day,
-            start: minToTime(segStart),
-            end: minToTime(leetcodeEnd),
-            title: 'Solve 1 LeetCode Problem',
-            type: 'study',
-            color: colors.study,
-            details: 'AI Mentor: Daily coding practice keeps your technical problem-solving sharp. Solve at least 1 problem!'
-          });
-          occupiedIntervals.push({ start: segStart, end: leetcodeEnd });
-          leetcodeScheduled = true;
-          break;
-        }
-      }
-    });
-
-    if (!leetcodeScheduled) {
-      const sleepMin = timeToMin(routine.sleepTime || '22:00');
-      const startMin = Math.min(1200, sleepMin - 60);
-      const endMin = startMin + 45;
-      schedule.push({
-        id: `block-${day}-leetcode-fallback`,
-        day,
-        start: minToTime(startMin),
-        end: minToTime(endMin),
-        title: 'Solve 1 LeetCode Problem',
-        type: 'study',
-        color: colors.study,
-        details: 'AI Mentor: Daily coding practice. Maintain your study streak!'
-      });
-      occupiedIntervals.push({ start: startMin, end: endMin });
-    }
-
     // D. Daily Study blocks in Free slots
     const wakeMin = timeToMin(routine.wakeTime || '06:00');
     const sleepMin = timeToMin(routine.sleepTime || '22:00');
@@ -472,7 +328,7 @@ export function generateLocalWeeklySchedule(
     
     // Daily study limit (Rule 5: available hours after class * 0.75)
     const maxStudyMins = Math.floor(availableMins * 0.75);
-    let dayStudyMins = 45; // baseline starting with LeetCode
+    let dayStudyMins = 0;
     let studyBlocksScheduled = 0;
 
     routine.freeBlocks.forEach((freeBlock) => {
@@ -646,17 +502,6 @@ export function generateLocalWeeklySchedule(
           color: colors.study,
           details: `Online course review on ${course.platform}. Current Progress: ${course.progress}%`
         });
-      });
-    } else if (day === 0) { // Sunday
-      schedule.push({
-        id: `block-0-prep`,
-        day: 0,
-        start: '16:00',
-        end: '17:00',
-        title: 'Weekly AI Recap & Planning',
-        type: 'break',
-        color: colors.break,
-        details: 'Review study hours stats and set active goals for next week.'
       });
     }
   });

@@ -844,7 +844,9 @@ export default function OnboardingModal() {
                   <div className="text-center max-w-md space-y-1">
                     <h3 className="text-lg font-mono font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-emerald-400">Setup Ready</h3>
                     <p className="text-[11px] text-on-surface-variant leading-relaxed font-mono">
-                      Click save to write changes, configure your weekly classes, distribute your {subjects.length} subjects, and set up your study timetable.
+                      {subjects.length > 0
+                        ? `Click save to distribute your ${subjects.length} subject${subjects.length === 1 ? '' : 's'} across the week and build your timetable from them.`
+                        : 'Click save to set up your workspace. Your planner starts empty — add subjects, tasks or courses whenever you like.'}
                     </p>
                   </div>
 
