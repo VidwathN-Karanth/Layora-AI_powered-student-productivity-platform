@@ -11,7 +11,7 @@ import {
   FolderLock, Settings, LogOut, ChevronLeft, 
   ChevronRight, Clock, 
   Check, Menu, X, Trophy, Award,
-  Globe, Sun, Moon, Timer
+  Globe, Sun, Moon, Timer, LineChart
 } from 'lucide-react';
 import { formatShortDate } from '@/lib/dateFormat';
 import { UserButton, useUser, useAuth } from '@clerk/nextjs';
@@ -163,6 +163,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Weekly Planner', path: '/dashboard/planner', icon: CalendarRange },
+    { name: 'Activity', path: '/dashboard/activity', icon: LineChart },
     { name: 'Tasks', path: '/dashboard/tasks', icon: CheckSquare },
     { name: 'Events', path: '/dashboard/events', icon: CalendarDays },
     { name: 'Courses', path: '/dashboard/courses', icon: BookMarked },

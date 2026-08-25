@@ -4,6 +4,7 @@ import {
   DEFAULT_POMODORO_SETTINGS, normalizeSettings, recordSession,
   type PomodoroDay, type PomodoroSettings,
 } from '@/lib/pomodoro';
+import { recordActivity, mergeActivityLogs, type ActivityDay, type ActivityDelta } from '@/lib/activityLog';
 import { 
   Subject, 
   Activity, 
@@ -148,6 +149,16 @@ interface AppState {
   /** One row per day of completed focus sessions, trimmed to the last 60 days. */
   pomodoroLog: PomodoroDay[];
   recordPomodoroSession: (focusMinutes: number) => void;
+
+  /**
+   * One row per day of finished work — tasks, blocks and logged minutes.
+   *
+   * Kept because the workspace forgets on purpose: completed tasks are pruned
+   * the next day and block flags are overwritten when the week regenerates, so
+   * without this there is nothing left to report a week from.
+   */
+  activityLog: ActivityDay[];
+  recordActivityEvent: (delta: ActivityDelta) => void;
 
   /**
    * Whether timetable blocks announce themselves on this device.
@@ -701,6 +712,7 @@ export const useStore = create<AppState>()(
 
           const exists = state.tasks.some((t) => t.id === id);
           let updatedTasks;
+          let activityDelta: ActivityDelta | null = null;
 
           if (!exists && blockIdToUpdate) {
             const block = state.timetable.find((b) => b.id === blockIdToUpdate);
@@ -758,9 +770,28 @@ export const useStore = create<AppState>()(
             ? state.timetable.map((b) => b.id === blockIdToUpdate ? { ...b, completed: isBlockCompleted } : b)
             : state.timetable;
 
+          // Only a transition INTO completed counts. Un-ticking leaves the
+          // record alone: the work did happen, and a report that could be
+          // driven down by toggling a checkbox would be worth nothing.
+          if (isBlockCompleted) {
+            const finished = updatedTasks.find((t) => t.id === id);
+            activityDelta = {
+              tasksCompleted: 1,
+              blocksCompleted: blockIdToUpdate ? 1 : 0,
+              // A block ticked without ever starting the timer still bought its
+              // own length; a normal task's minutes are logged by the timer when
+              // it stops, so they are not counted twice here.
+              taskMinutes: !exists && blockIdToUpdate ? (finished?.actualMinutesSpent || 0) : 0,
+              subject: finished?.subjectName || null,
+            };
+          }
+
           return {
             tasks: updatedTasks,
-            timetable: updatedTimetable
+            timetable: updatedTimetable,
+            activityLog: activityDelta
+              ? recordActivity(state.activityLog, activityDelta)
+              : state.activityLog,
           };
         });
         get().generateSchedule();
@@ -827,7 +858,7 @@ export const useStore = create<AppState>()(
       },
 
       stopTaskTimer: (saveProgress = true, markCompleted = false) => {
-        const { activeTaskId, activeTimerElapsed, tasks, timetable, user } = get();
+        const { activeTaskId, activeTimerElapsed, tasks, timetable, user, activityLog } = get();
         if (!activeTaskId) return;
 
         const minutesElapsed = Math.round(activeTimerElapsed / 60);
@@ -855,12 +886,25 @@ export const useStore = create<AppState>()(
           ? timetable.map((b) => b.id === blockIdToUpdate ? { ...b, completed: true } : b)
           : timetable;
 
+        // Minutes count whenever the sitting is kept, whether or not the task
+        // was finished — the report is about time spent, not only wins. The
+        // completion is counted on the same event when they ticked done, so a
+        // finished session never has to be reconciled with the tick later.
+        const finishedTask = tasks.find((t) => t.id === activeTaskId);
+        const nextActivityLog = recordActivity(activityLog, {
+          taskMinutes: saveProgress || markCompleted ? minutesElapsed : 0,
+          tasksCompleted: markCompleted ? 1 : 0,
+          blocksCompleted: blockIdToUpdate ? 1 : 0,
+          subject: finishedTask?.subjectName || null,
+        });
+
         set({
           activeTaskId: null,
           activeTimerStart: null,
           activeTimerElapsed: 0,
           tasks: updatedTasks,
           timetable: updatedTimetable,
+          activityLog: nextActivityLog,
           user: user ? {
             ...user,
             totalStudyHours: parseFloat((user.totalStudyHours + (activeTimerElapsed / 3600)).toFixed(2))
@@ -880,6 +924,13 @@ export const useStore = create<AppState>()(
       timetable: [],
       setTimetable: (blocks) => set({ timetable: blocks }),
       updateTimetableBlock: (id, updatedFields) => set((state) => ({
+        // A block being ticked here is the same event as ticking it on the
+        // dashboard, so it is recorded the same way — and only on the way in.
+        activityLog:
+          updatedFields.completed === true &&
+          state.timetable.find((b) => b.id === id)?.completed !== true
+            ? recordActivity(state.activityLog, { blocksCompleted: 1 })
+            : state.activityLog,
         timetable: state.timetable.map((b) => b.id === id ? { ...b, ...updatedFields } : b)
       })),
       generateSchedule: async () => {
@@ -937,6 +988,10 @@ export const useStore = create<AppState>()(
       recordPomodoroSession: (focusMinutes) =>
         set((state) => ({ pomodoroLog: recordSession(state.pomodoroLog, focusMinutes) })),
 
+      activityLog: [],
+      recordActivityEvent: (delta) =>
+        set((state) => ({ activityLog: recordActivity(state.activityLog, delta) })),
+
       // On by default: a student who signs in should get their reminders without
       // hunting for a switch. It still does nothing until the browser permission
       // is granted, which Settings asks for.
@@ -990,6 +1045,7 @@ export const useStore = create<AppState>()(
           is24HourFormat: false,
           pomodoroSettings: DEFAULT_POMODORO_SETTINGS,
           pomodoroLog: [],
+          activityLog: [],
           notificationsEnabled: true,
           plannerNotificationsEnabled: true
         });
@@ -1066,7 +1122,12 @@ export const useStore = create<AppState>()(
           ...newState,
           user: mergedUser,
           tasks,
-          timetable
+          timetable,
+          // The report's record is merged, not replaced: a day recorded on this
+          // device before the cloud state arrived would otherwise vanish.
+          activityLog: newState.activityLog !== undefined
+            ? mergeActivityLogs(state.activityLog, newState.activityLog)
+            : state.activityLog,
         };
       })
     })

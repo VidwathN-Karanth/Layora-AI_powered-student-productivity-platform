@@ -237,6 +237,12 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         courses: localState.courses,
         tasks: localState.tasks,
         timetable: localState.timetable,
+        // The two day logs the reports are built from. Left out of this list
+        // they never reach the row, so a reload wiped every focus session and
+        // every completed task the student had banked.
+        pomodoroLog: localState.pomodoroLog || [],
+        activityLog: localState.activityLog || [],
+        pomodoroSettings: localState.pomodoroSettings,
         themeAccent: localState.themeAccent || 'purple',
         themeMode: localState.themeMode || 'dark',
         calendarSynced: localState.calendarSynced || false,
@@ -474,7 +480,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
       const {
         user: storeUser, subjects, resources, activities, websites, courses, tasks,
-        timetable, themeAccent, themeMode, calendarSynced, is24HourFormat
+        timetable, pomodoroLog, activityLog, pomodoroSettings,
+        themeAccent, themeMode, calendarSynced, is24HourFormat
       } = state;
 
       const writeTimestamp = Date.now();
@@ -483,7 +490,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       const stateToSave = {
         user: storeUser,
         subjects, resources, activities, websites, courses, tasks,
-        timetable, themeAccent, themeMode, calendarSynced, is24HourFormat, clientTimestamp: writeTimestamp
+        timetable, pomodoroLog, activityLog, pomodoroSettings,
+        themeAccent, themeMode, calendarSynced, is24HourFormat, clientTimestamp: writeTimestamp
       };
 
       const serialized = JSON.stringify(stateToSave);
