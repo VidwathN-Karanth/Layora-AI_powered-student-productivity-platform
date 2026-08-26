@@ -204,8 +204,9 @@ export default function OnboardingModal() {
       courses: newCourses
     });
 
-    // Generate the initial study schedule blocks
-    store.generateSchedule();
+    // Put the courses they entered on the planner. Nothing else is placed:
+    // the week is theirs to fill.
+    store.placeCoursesOnPlanner();
   };
 
   if (typeof window !== 'undefined') {

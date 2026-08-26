@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useStore } from '@/store/useStore';
-import { TimetableBlock } from '@/lib/scheduler';
+import { TimetableBlock, isBlockForCourse } from '@/lib/scheduler';
 import { apiFetch } from '@/lib/apiClient';
 import { 
   CalendarRange, Sparkles, CalendarDays, Plus, Trash, 
@@ -73,6 +73,58 @@ export default function PlannerPage() {
   const activeDayBlocks = store.timetable
     .filter((b) => b.day === activeDay)
     .sort((a, b) => a.start.localeCompare(b.start));
+
+  /** Courses the student added that have no block on the planner yet. */
+  const unplacedCourses = useMemo(
+    () => store.courses.filter((c) => !store.timetable.some((b) => isBlockForCourse(b, c.id))).length,
+    [store.courses, store.timetable]
+  );
+
+  /**
+   * The guide, from what is actually on the planner.
+   *
+   * Nothing fills this week automatically any more, so the useful thing to say
+   * is what is missing — deadlines with no time set aside, courses not placed —
+   * rather than a description of an algorithm that no longer runs.
+   */
+  const planningGuide = useMemo(() => {
+    const lines: string[] = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const dueSoon = store.tasks
+      .filter((t) => t.status !== 'completed' && t.deadline)
+      .map((t) => ({
+        title: t.title,
+        days: Math.ceil((new Date(t.deadline).setHours(0, 0, 0, 0) - today.getTime()) / 86_400_000),
+      }))
+      .filter((t) => t.days >= 0 && t.days <= 7)
+      .sort((a, b) => a.days - b.days)
+      .slice(0, 3);
+
+    for (const task of dueSoon) {
+      const when = task.days === 0 ? 'today' : task.days === 1 ? 'tomorrow' : `in ${task.days} days`;
+      lines.push(`"${task.title}" is due ${when}. Add a block for it if you want the reminder.`);
+    }
+
+    if (unplacedCourses > 0) {
+      lines.push(
+        `${unplacedCourses} of your courses ${unplacedCourses === 1 ? 'is' : 'are'} not on the planner. ` +
+        'Use "Add my courses" above to place them.'
+      );
+    }
+
+    if (store.timetable.length === 0) {
+      lines.push('Your week is empty. Add a block whenever you want one — nothing is placed here without you.');
+    }
+
+    if (lines.length === 0) {
+      lines.push('Planner alerts notify you a few minutes before each block starts. Turn them on in Settings.');
+      lines.push('Sync to Google Calendar writes this week into your own calendar, and re-syncing replaces what it wrote.');
+    }
+
+    return lines;
+  }, [store.tasks, store.timetable, unplacedCourses]);
 
   const handleDeleteDaySchedule = async () => {
     try {
@@ -327,6 +379,16 @@ export default function PlannerPage() {
               >
                 <Plus className="w-3.5 h-3.5" strokeWidth={1.5} /> Add Custom Block
               </button>
+              {unplacedCourses > 0 && (
+                <button
+                  onClick={() => store.placeCoursesOnPlanner()}
+                  title="Adds a weekly block for each course that has none"
+                  className="text-primary hover:underline text-xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" strokeWidth={1.5} />
+                  Add my {unplacedCourses === 1 ? 'course' : `${unplacedCourses} courses`}
+                </button>
+              )}
               <button 
                 onClick={() => setShowDeleteDayConfirm(true)} 
                 className="text-red-400 hover:text-red-300 text-xs flex items-center gap-1.5 cursor-pointer border-l border-white/10 pl-4"
@@ -342,8 +404,8 @@ export default function PlannerPage() {
                 <AlertCircle className="w-10 h-10 text-on-surface/20 mb-3" strokeWidth={1.5} />
                 <h3 className="text-sm font-bold text-on-surface/70">Planner is empty</h3>
                 <p className="text-xs text-outline max-w-sm mt-1 leading-relaxed">
-                  Add subjects, tasks or courses and the week builds itself around them — or use
-                  Add Custom Block above to place something yourself.
+                  Nothing is placed here without you. Use Add Custom Block above to add one,
+                  or Add my courses to drop in a weekly slot for each course you are taking.
                 </p>
               </div>
             ) : activeDayBlocks.length === 0 ? (
@@ -405,29 +467,12 @@ export default function PlannerPage() {
             <h4 className="text-xs font-bold text-primary border-b border-outline-variant pb-2 uppercase">Planning Guide</h4>
             
             <ul className="space-y-3 text-xs font-sans text-on-surface/70">
-              {store.planningGuideInsights && store.planningGuideInsights.length > 0 ? (
-                store.planningGuideInsights.map((insight, idx) => (
-                  <li key={idx} className="flex items-start gap-2">
-                    <span className="text-primary font-mono font-bold">{(idx + 1).toString().padStart(2, '0')}.</span>
-                    <span>{insight}</span>
-                  </li>
-                ))
-              ) : (
-                <>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary font-mono font-bold">01.</span>
-                    <span>Formulate study routines, college lectures, and gym breaks on your timeline.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary font-mono font-bold">02.</span>
-                    <span>Planner alerts notify you a few minutes before each block starts. Notifications are switched on for the whole site in Settings.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary font-mono font-bold">03.</span>
-                    <span>Wipe day schedules or the entire week sync directly if you need to reorganize your calendar.</span>
-                  </li>
-                </>
-              )}
+              {planningGuide.map((line, idx) => (
+                <li key={line} className="flex items-start gap-2">
+                  <span className="text-primary font-mono font-bold">{(idx + 1).toString().padStart(2, '0')}.</span>
+                  <span>{line}</span>
+                </li>
+              ))}
             </ul>
           </div>
         </div>

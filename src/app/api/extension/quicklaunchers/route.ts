@@ -3,6 +3,7 @@ import {
 } from '@/lib/extensionAuth';
 import {
   addQuickLauncher, listQuickLaunchers, normaliseUrl, removeQuickLauncher,
+  reorderQuickLaunchers,
 } from '@/lib/extensionData';
 
 /** The student's quick launchers, favicons resolved. */
@@ -41,6 +42,27 @@ export async function POST(request: Request) {
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error('Extension POST quicklauncher failed:', message);
+    return extensionJson({ error: message }, 500);
+  }
+}
+
+/** Saves the order the student dragged their launchers into. */
+export async function PATCH(request: Request) {
+  const guard = await requireExtensionUser(request);
+  if (!guard.ok) return guard.response;
+
+  try {
+    const body = await request.json().catch(() => ({}));
+    const order = Array.isArray(body?.order) ? body.order.filter((id: unknown) => typeof id === 'string') : null;
+    if (!order || order.length === 0) {
+      return extensionJson({ error: 'Send the launcher ids in their new order.' }, 400);
+    }
+
+    const launchers = await reorderQuickLaunchers(guard.requester.userId, order);
+    return extensionJson({ launchers });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('Extension PATCH quicklaunchers failed:', message);
     return extensionJson({ error: message }, 500);
   }
 }

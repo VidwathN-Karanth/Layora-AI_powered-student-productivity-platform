@@ -4,15 +4,14 @@ import {
   DEFAULT_POMODORO_SETTINGS, normalizeSettings, recordSession,
   type PomodoroDay, type PomodoroSettings,
 } from '@/lib/pomodoro';
-import { 
-  Subject, 
-  Activity, 
-  Course, 
-  Routine, 
-  TimetableBlock, 
-  generateLocalWeeklySchedule,
+import {
+  Subject,
+  Activity,
+  Course,
+  TimetableBlock,
+  courseBlockFor,
+  isBlockForCourse,
   resolveScheduleOverlaps,
-  DEFAULT_ROUTINE
 } from '@/lib/scheduler';
 
 export interface Task {
@@ -102,6 +101,8 @@ interface AppState {
   websites: Website[];
   addWebsite: (site: Omit<Website, 'id'>) => void;
   removeWebsite: (id: string) => void;
+  /** Stores the launcher order the student dragged them into. */
+  reorderWebsites: (orderedIds: string[]) => void;
 
   // Active Courses
   courses: Course[];
@@ -127,7 +128,7 @@ interface AppState {
   timetable: TimetableBlock[];
   setTimetable: (blocks: TimetableBlock[]) => void;
   updateTimetableBlock: (id: string, updatedFields: Partial<TimetableBlock>) => void;
-  generateSchedule: () => Promise<void>;
+  placeCoursesOnPlanner: () => void;
 
   // Settings
   themeAccent: 'purple' | 'blue' | 'pink' | 'emerald';
@@ -171,8 +172,6 @@ interface AppState {
   removeGlobalResource: (id: string) => void;
 
   // Dynamic planning guide insights
-  planningGuideInsights: string[];
-  setPlanningGuideInsights: (insights: string[]) => void;
   resetStore: () => void;
   setFullState: (state: Partial<AppState>) => void;
   hasHydrated: boolean;
@@ -589,8 +588,6 @@ export const useStore = create<AppState>()(
           alert("Error removing subject: " + error.message);
         }
         
-        // Asynchronously regenerate the schedule to fill the gaps
-        get().generateSchedule();
       },
       resources: {},
       uploadResource: (subjectId, res) => set((state) => {
@@ -630,11 +627,27 @@ export const useStore = create<AppState>()(
         websites: state.websites.filter((w) => w.id !== id)
       })),
 
+      reorderWebsites: (orderedIds) => set((state) => {
+        const byId = new Map(state.websites.map((w) => [w.id, w]));
+        const moved = orderedIds
+          .map((id) => byId.get(id))
+          .filter((w): w is Website => Boolean(w));
+        const untouched = state.websites.filter((w) => !orderedIds.includes(w.id));
+        return { websites: [...moved, ...untouched] };
+      }),
+
       // Active Courses
       courses: [],
-      addCourse: (course) => set((state) => ({
-        courses: [...state.courses, { ...course, id: `course-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` }]
-      })),
+      addCourse: (course) => set((state) => {
+        const created = { ...course, id: `course-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` };
+        // Placed once, here. Nothing re-places it later, so if the student
+        // deletes the block it stays deleted.
+        const block = courseBlockFor(created, state.timetable);
+        return {
+          courses: [...state.courses, created],
+          timetable: block ? resolveScheduleOverlaps([...state.timetable, block]) : state.timetable,
+        };
+      }),
       updateCourseProgress: (id, progress) => set((state) => ({
         courses: state.courses.map((c) => c.id === id ? { ...c, progress } : c)
       })),
@@ -653,7 +666,9 @@ export const useStore = create<AppState>()(
         };
       }),
       removeCourse: (id) => set((state) => ({
-        courses: state.courses.filter((c) => c.id !== id)
+        courses: state.courses.filter((c) => c.id !== id),
+        // The block came with the course, so it leaves with it.
+        timetable: state.timetable.filter((b) => !isBlockForCourse(b, id)),
       })),
 
       // Task items
@@ -663,7 +678,6 @@ export const useStore = create<AppState>()(
         set((state) => ({
           tasks: [...state.tasks, { ...task, id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`, actualMinutesSpent: 0, status: 'pending' }]
         }));
-        get().generateSchedule();
       },
       removeTask: (id) => {
         set((state) => {
@@ -682,13 +696,11 @@ export const useStore = create<AppState>()(
             timetable: updatedTimetable
           };
         });
-        get().generateSchedule();
       },
       updateTask: (id, updatedFields) => {
         set((state) => ({
           tasks: state.tasks.map((t) => t.id === id ? { ...t, ...updatedFields } : t)
         }));
-        get().generateSchedule();
       },
       toggleTaskStatus: (id) => {
         set((state) => {
@@ -763,7 +775,6 @@ export const useStore = create<AppState>()(
             timetable: updatedTimetable
           };
         });
-        get().generateSchedule();
       },
 
       // Timer variables
@@ -866,7 +877,6 @@ export const useStore = create<AppState>()(
             totalStudyHours: parseFloat((user.totalStudyHours + (activeTimerElapsed / 3600)).toFixed(2))
           } : null
         });
-        get().generateSchedule();
       },
 
       updateTimerSecond: () => {
@@ -882,41 +892,24 @@ export const useStore = create<AppState>()(
       updateTimetableBlock: (id, updatedFields) => set((state) => ({
         timetable: state.timetable.map((b) => b.id === id ? { ...b, ...updatedFields } : b)
       })),
-      generateSchedule: async () => {
-        try {
-          const { user, subjects, activities, courses, timetable, tasks } = get();
-          if (!user) return;
-          
-          // The four routine questions are gone from onboarding and Settings;
-          // one department on one timetable shares the same day.
-          const routine: Routine = {
-            wakeTime: DEFAULT_ROUTINE.wakeTime,
-            sleepTime: DEFAULT_ROUTINE.sleepTime,
-            collegeTimings: {
-              start: DEFAULT_ROUTINE.collegeStart,
-              end: DEFAULT_ROUTINE.collegeEnd
-            },
-            freeBlocks: user.freeBlocks || []
-          };
-
-          // Preserve manually placed blocks (and any left over from the
-          // removed AI planner) across a regeneration.
-          const customBlocks = timetable.filter(
-            (b) => b.id && (b.id.startsWith('custom-block-') || b.id.startsWith('ai-block-'))
-          );
-
-          const result = generateLocalWeeklySchedule(routine, subjects, activities, courses, tasks, get().pomodoroSettings);
-          
-          // Merge base schedule with custom/AI blocks and resolve overlaps
-          const combined = [...customBlocks, ...result.schedule];
-          set({ 
-            timetable: resolveScheduleOverlaps(combined),
-            planningGuideInsights: result.insights || []
-          });
-        } catch (error) {
-          console.error("Failed to generate weekly schedule:", error);
+      /**
+       * Places a block for any course that has none yet.
+       *
+       * Explicit only — onboarding calls it after the student presses Complete,
+       * and the planner offers it as a button. Nothing calls it on a timer or
+       * on render, so it can never resurrect a block the student deleted
+       * unless they ask for it again.
+       */
+      placeCoursesOnPlanner: () => set((state) => {
+        const placed: TimetableBlock[] = [];
+        for (const course of state.courses) {
+          if (state.timetable.some((b) => isBlockForCourse(b, course.id))) continue;
+          const block = courseBlockFor(course, [...state.timetable, ...placed]);
+          if (block) placed.push(block);
         }
-      },
+        if (placed.length === 0) return {};
+        return { timetable: resolveScheduleOverlaps([...state.timetable, ...placed]) };
+      }),
 
       // Accent settings & API Keys
       themeAccent: 'purple',
@@ -952,13 +945,6 @@ export const useStore = create<AppState>()(
 
       // Proactive recommendations
 
-      // Dynamic planning guide insights
-      planningGuideInsights: [
-        'Allocated college class hours as mandatory locked blocks.',
-        'Balanced self-study slots around your extracurricular activities.',
-        'Synced algorithmic study blocks to ensure daily coding consistency.'
-      ],
-      setPlanningGuideInsights: (insights) => set({ planningGuideInsights: insights }),
 
       resetStore: () => {
         const { user, registeredUsers } = get();

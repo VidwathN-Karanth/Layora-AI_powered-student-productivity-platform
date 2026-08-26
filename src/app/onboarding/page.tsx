@@ -220,8 +220,9 @@ export default function OnboardingPage() {
       courses: newCourses
     });
 
-    // Generate the initial study schedule blocks
-    store.generateSchedule();
+    // Put the courses they entered on the planner. Nothing else is placed:
+    // the week is theirs to fill.
+    store.placeCoursesOnPlanner();
 
     // 3. Wait a brief moment for Supabase sync to complete (including the debounced write)
     await new Promise(resolve => setTimeout(resolve, 800));
