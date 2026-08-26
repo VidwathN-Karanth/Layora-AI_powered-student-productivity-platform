@@ -31,7 +31,10 @@ export interface QuickLauncher {
 export interface ExtensionCourse {
   id: string;
   name: string;
+  /** Display label — the host of the link, or a plain word like "Self-Study". */
   platform: string;
+  /** The course itself, when the student saved a link for it. */
+  url: string | null;
   progress: number;
   deadline: string | null;
 }
@@ -191,14 +194,42 @@ export async function reorderQuickLaunchers(
   return next.map(mapLauncher);
 }
 
+/**
+ * The host of a course link, for the label under its title.
+ *
+ * `platform` holds whichever the student typed: a full course URL, or a plain
+ * word like "Self-Study" when they had no link. Mirrors getPlatformDisplay on
+ * the website so both read the same.
+ */
+function platformLabel(raw: string): string {
+  const trimmed = (raw || '').trim();
+  if (!trimmed) return 'Self-Study';
+  if (!trimmed.includes('.') && !trimmed.includes('/')) return trimmed.slice(0, 40);
+
+  try {
+    const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    return new URL(withScheme).hostname.replace(/^www\./i, '').slice(0, 40);
+  } catch {
+    return trimmed.slice(0, 40);
+  }
+}
+
 export async function listCourses(userId: string): Promise<ExtensionCourse[]> {
   const state = await readState(userId);
 
-  return (state?.courses || []).map((course, index) => ({
-    id: String(course.id || `course-${index}`),
-    name: String(course.name || 'Untitled course').slice(0, 120),
-    platform: String(course.platform || '').slice(0, 40),
-    progress: Math.max(0, Math.min(100, Math.round(Number(course.progress) || 0))),
-    deadline: typeof course.deadline === 'string' ? course.deadline : null,
-  }));
+  return (state?.courses || []).map((course, index) => {
+    const platform = String(course.platform || '');
+    // Same rule the website's "Continue Course" button uses, and normaliseUrl
+    // keeps a javascript: link from ever reaching chrome.tabs.create.
+    const url = platform.startsWith('http') ? normaliseUrl(platform) : null;
+
+    return {
+      id: String(course.id || `course-${index}`),
+      name: String(course.name || 'Untitled course').slice(0, 120),
+      platform: platformLabel(platform),
+      url,
+      progress: Math.max(0, Math.min(100, Math.round(Number(course.progress) || 0))),
+      deadline: typeof course.deadline === 'string' ? course.deadline : null,
+    };
+  });
 }

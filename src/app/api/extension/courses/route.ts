@@ -4,12 +4,12 @@ import {
 import { listCourses } from '@/lib/extensionData';
 
 /**
- * The student's courses.
+ * The student's courses, each with the link they saved for it.
  *
- * Layora stores a course as a name, a platform and a progress figure — it never
- * held a link to the course itself, because the course lives on NPTEL or
- * Coursera, not here. So there is no per-course URL to return; the popup opens
- * the Layora courses page, which is the page that can actually act on them.
+ * The link lives in `platform` — the course form labels that field "Course Link
+ * (URL)" — so it is returned as `url` here, already validated. A course saved
+ * without a link has `url: null`, and the popup falls back to Layora's courses
+ * page for those.
  */
 export async function GET(request: Request) {
   const guard = await requireExtensionUser(request);

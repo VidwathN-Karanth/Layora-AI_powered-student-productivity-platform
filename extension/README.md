@@ -69,10 +69,11 @@ The origin appears in three places and all three must agree:
 
 ## Known limits
 
-- **No per-course link.** Layora stores a course as a name, platform and
-  progress — the course itself lives on NPTEL or Coursera. Clicking a course
-  opens Layora's courses page. Add a `url` field to the course model and the
-  popup can deep-link instead.
+- **A course without a link opens Layora instead.** The link lives in a
+  course's `platform` field — the course form labels it "Course Link (URL)" —
+  so clicking a course goes straight to it. Courses saved with a plain label
+  like "Self-Study" have no link, and those fall back to Layora's courses page
+  where one can be added.
 - **A launcher added here can be overwritten.** Launchers live inside the one
   JSON blob the web app syncs wholesale. The write is a server-side
   read-modify-write and bumps `clientTimestamp` so an open tab picks it up, but

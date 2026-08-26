@@ -192,10 +192,14 @@ function hostOf(url) {
 function courseRow(course) {
   const li = document.createElement('li');
 
+  // The course itself, not our page about it. Only a course saved without a
+  // link falls back to Layora, where they can add one.
+  const target = course.url || COURSES_URL;
+
   const row = document.createElement('button');
   row.className = 'row';
-  row.title = `Open ${course.name} in Layora`;
-  row.addEventListener('click', () => openTab(COURSES_URL));
+  row.title = course.url ? `Continue ${course.name} at ${course.platform}` : `Open ${course.name} in Layora`;
+  row.addEventListener('click', () => openTab(target));
 
   row.append(fallbackIcon(course.platform || course.name));
 
@@ -208,7 +212,9 @@ function courseRow(course) {
 
   const sub = document.createElement('span');
   sub.className = 'row-sub';
-  sub.textContent = `${course.platform || 'Course'} · ${course.progress}%`;
+  sub.textContent = course.url
+    ? `${course.platform} · ${course.progress}%`
+    : `No link saved · ${course.progress}%`;
 
   const meter = document.createElement('span');
   meter.className = 'meter';
