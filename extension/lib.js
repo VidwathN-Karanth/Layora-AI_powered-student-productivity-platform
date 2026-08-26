@@ -8,6 +8,7 @@
 /** The Layora deployment this extension talks to. Must match host_permissions. */
 export const LAYORA_ORIGIN = 'https://layora239.vercel.app';
 
+export const DASHBOARD_URL = `${LAYORA_ORIGIN}/dashboard`;
 export const CONNECT_URL = `${LAYORA_ORIGIN}/extension`;
 export const COURSES_URL = `${LAYORA_ORIGIN}/dashboard/courses`;
 
