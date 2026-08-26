@@ -219,3 +219,26 @@ create index if not exists idx_admin_logs_created on public.admin_logs(created_a
 --             and b->>'id' not like 'custom-block-%' and b->>'id' not like 'ai-block-%')
 --       )), '[]'::jsonb)), updated_at = now()
 -- where jsonb_array_length(coalesce(us.state->'timetable', '[]'::jsonb)) > 0;
+
+-- 13. Extension pairing tokens
+-- The browser extension cannot ride on the Clerk session cookie: a request from
+-- a chrome-extension:// popup is cross-site and that cookie is SameSite=Lax, so
+-- the browser drops it. A student presses Connect on /extension instead, which
+-- mints one token the extension stores and sends as a bearer header.
+--
+-- Only the SHA-256 hash is kept, so this table is worthless to anyone who reads
+-- it, and the roster is re-checked on every request the token is used for.
+create table if not exists public.extension_tokens (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null,
+  token_hash text not null unique,
+  label text,                -- e.g. "Chrome on Windows", shown in the UI
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  last_used_at timestamp with time zone,
+  revoked_at timestamp with time zone  -- a timestamp, not a delete, so it stays visible
+);
+
+alter table public.extension_tokens enable row level security;
+
+create index if not exists idx_extension_tokens_user on public.extension_tokens(user_id);
+create index if not exists idx_extension_tokens_hash on public.extension_tokens(token_hash);

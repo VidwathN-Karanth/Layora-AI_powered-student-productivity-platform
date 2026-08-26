@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Layora Quick Access</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="brand">
+      <span class="mark">L</span>
+      <span class="wordmark">LAYORA</span>
+    </div>
+    <span class="who" id="who"></span>
+  </header>
+
+  <!-- Shown until we know whether this extension is connected. -->
+  <div class="state" id="loading">
+    <div class="spinner" aria-hidden="true"></div>
+    <p class="muted">Loading…</p>
+  </div>
+
+  <!-- Not connected yet. -->
+  <div class="state" id="gate" hidden>
+    <p class="gate-title">Connect to Layora</p>
+    <p class="muted gate-body">
+      Sign in on the Layora site and press Connect. Your launchers and courses
+      then open from here, one click from any tab.
+    </p>
+    <button class="primary" id="connect">Open Layora</button>
+  </div>
+
+  <!-- Connected. -->
+  <main id="app" hidden>
+    <nav class="tabs" role="tablist">
+      <button class="tab" id="tab-launchers" role="tab" aria-selected="true">Quicklaunch</button>
+      <button class="tab" id="tab-courses" role="tab" aria-selected="false">Courses</button>
+    </nav>
+
+    <section class="panel" id="panel-launchers" role="tabpanel">
+      <ul class="list" id="launchers"></ul>
+
+      <p class="empty" id="launchers-empty" hidden>
+        No quick launchers yet. Add your first one below.
+      </p>
+
+      <form class="add" id="add-form">
+        <input
+          type="text" id="add-url" name="url" required
+          placeholder="Paste a link, e.g. leetcode.com"
+          autocomplete="off" spellcheck="false"
+        />
+        <input
+          type="text" id="add-name" name="name"
+          placeholder="Name (optional)" autocomplete="off"
+        />
+        <div class="add-row">
+          <button type="submit" class="primary small" id="add-submit">Add</button>
+          <button type="button" class="ghost small" id="add-cancel">Cancel</button>
+        </div>
+      </form>
+
+      <button class="fab" id="add-open" title="Add a quick launcher">+ Add a link</button>
+    </section>
+
+    <section class="panel" id="panel-courses" role="tabpanel" hidden>
+      <ul class="list" id="courses"></ul>
+      <p class="empty" id="courses-empty" hidden>
+        No courses yet. Add one in Layora and it shows up here.
+      </p>
+      <button class="ghost wide" id="open-courses">Open courses in Layora</button>
+    </section>
+
+    <p class="notice" id="notice" hidden></p>
+  </main>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
