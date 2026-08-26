@@ -7,7 +7,7 @@
  */
 
 import {
-  CONNECT_URL, COURSES_URL, api, fetchAll, getLastTab, getToken,
+  CONNECT_URL, COURSES_URL, DASHBOARD_URL, api, fetchAll, getLastTab, getToken,
   readCache, setLastTab, writeCache,
 } from './lib.js';
 
@@ -219,6 +219,7 @@ async function addLauncher(event) {
 /* ── boot ────────────────────────────────────────────────────── */
 
 async function boot() {
+  el('brand').addEventListener('click', () => openTab(DASHBOARD_URL));
   ui.tabs.launchers.addEventListener('click', () => showTab('launchers'));
   ui.tabs.courses.addEventListener('click', () => showTab('courses'));
   el('connect').addEventListener('click', () => openTab(CONNECT_URL));
