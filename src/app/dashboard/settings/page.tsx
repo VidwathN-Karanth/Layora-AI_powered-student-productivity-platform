@@ -494,7 +494,35 @@ export default function SettingsPage() {
           {/* --- PANEL 3: RESUME / CV --- */}
           <ResumePanel />
 
-          {/* --- PANEL 4: VISUAL THEMING --- */}
+          {/* --- PANEL 4: BROWSER EXTENSION --- */}
+          <div className="glass-card rounded-2xl p-5 space-y-4">
+            <div className="flex items-center gap-2.5 border-b border-outline-variant pb-2">
+              <Puzzle className="w-4 h-4 text-primary" />
+              <h3 className="text-xs font-mono font-bold tracking-wider text-primary">Browser Extension</h3>
+            </div>
+
+            <p className="text-xs text-on-surface-variant leading-relaxed">
+              Put your quick launchers and courses one click from any tab. Install it once,
+              press Connect, and add links straight from the popup.
+            </p>
+
+            <a
+              href="/extension"
+              className="flex items-center justify-between gap-3 rounded-xl border border-outline-variant bg-white/2 p-3.5 transition hover:border-primary hover:bg-surface-container cursor-pointer group"
+            >
+              <span className="min-w-0">
+                <span className="block text-xs font-mono font-bold text-on-surface">
+                  Install &amp; connect the extension
+                </span>
+                <span className="block text-[10px] font-mono text-outline mt-0.5">
+                  Chrome, Edge and other Chromium browsers
+                </span>
+              </span>
+              <ArrowRight className="w-4 h-4 shrink-0 text-outline transition group-hover:text-primary group-hover:translate-x-0.5" />
+            </a>
+          </div>
+
+          {/* --- PANEL 5: VISUAL THEMING --- */}
           <div className="glass-card rounded-2xl p-5 space-y-4">
             <div className="flex items-center gap-2.5 border-b border-outline-variant pb-2">
               <Sparkles className="w-4 h-4 text-primary" />
@@ -561,34 +589,6 @@ export default function SettingsPage() {
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* --- PANEL 5: BROWSER EXTENSION --- */}
-          <div className="glass-card rounded-2xl p-5 space-y-4">
-            <div className="flex items-center gap-2.5 border-b border-outline-variant pb-2">
-              <Puzzle className="w-4 h-4 text-primary" />
-              <h3 className="text-xs font-mono font-bold tracking-wider text-primary">Browser Extension</h3>
-            </div>
-
-            <p className="text-xs text-on-surface-variant leading-relaxed">
-              Put your quick launchers and courses one click from any tab. Install it once,
-              press Connect, and add links straight from the popup.
-            </p>
-
-            <a
-              href="/extension"
-              className="flex items-center justify-between gap-3 rounded-xl border border-outline-variant bg-white/2 p-3.5 transition hover:border-primary hover:bg-surface-container cursor-pointer group"
-            >
-              <span className="min-w-0">
-                <span className="block text-xs font-mono font-bold text-on-surface">
-                  Install &amp; connect the extension
-                </span>
-                <span className="block text-[10px] font-mono text-outline mt-0.5">
-                  Chrome, Edge and other Chromium browsers
-                </span>
-              </span>
-              <ArrowRight className="w-4 h-4 shrink-0 text-outline transition group-hover:text-primary group-hover:translate-x-0.5" />
-            </a>
           </div>
 
       </div>
