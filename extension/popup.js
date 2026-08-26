@@ -99,8 +99,6 @@ function launcherRow(launcher) {
   });
 
   li.append(row, remove);
-  li.style.display = 'flex';
-  li.style.alignItems = 'center';
   return li;
 }
 

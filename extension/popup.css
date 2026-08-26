@@ -167,6 +167,37 @@ input:focus-visible,
   min-height: 0;
 }
 
+/* Launchers are short, recognisable names, so two to a row fits twice as many
+   on screen without scrolling. Courses stay one per row — their titles are
+   sentences and would truncate to nothing at half width. */
+.list-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  align-content: start;
+}
+
+.list-grid li { position: relative; min-width: 0; }
+
+.list-grid .row {
+  height: 100%;
+  padding: 9px 8px;
+  background: var(--slab);
+  border-color: var(--line);
+}
+
+.list-grid .row:hover { border-color: rgba(197, 107, 245, 0.4); }
+
+/* In a tile there is no room beside the label, so the control sits over the
+   corner and only appears when that tile is hovered. */
+.list-grid .remove {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  background: var(--ink);
+  border: 1px solid var(--line);
+}
+
 .list::-webkit-scrollbar { width: 6px; }
 .list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
 
