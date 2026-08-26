@@ -5,7 +5,8 @@ import { useStore } from '@/store/useStore';
 import { formatDate } from '@/lib/dateFormat';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Flame, Globe, ExternalLink, ChevronRight, AlertCircle, Sparkles, Check, Plus, Trash
+  Flame, Globe, ExternalLink, ChevronRight, AlertCircle, Sparkles, Check, Plus, Trash,
+  MoreVertical, GripVertical
 } from 'lucide-react';
 import Link from 'next/link';
 import { formatTimeStr } from '@/lib/timeUtils';
@@ -33,6 +34,36 @@ export default function DashboardHome() {
   const [launcherName, setLauncherName] = useState('');
   const [launcherUrl, setLauncherUrl] = useState('');
   const [launcherError, setLauncherError] = useState('');
+
+  /** Which launcher's options menu is open, the one being dragged, and the
+   *  one it is hovering over. */
+  const [launcherMenu, setLauncherMenu] = useState<string | null>(null);
+  const [draggingLauncher, setDraggingLauncher] = useState<string | null>(null);
+  const [dragOverLauncher, setDragOverLauncher] = useState<string | null>(null);
+
+  // A click anywhere else closes the menu, which is what people expect of one.
+  useEffect(() => {
+    if (!launcherMenu) return;
+    const close = () => setLauncherMenu(null);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [launcherMenu]);
+
+  /** Moves the dragged launcher in front of the one it was dropped on. */
+  const handleLauncherDrop = (targetId: string) => {
+    const sourceId = draggingLauncher;
+    setDraggingLauncher(null);
+    setDragOverLauncher(null);
+    if (!sourceId || sourceId === targetId) return;
+
+    const ids = store.websites.map((w) => w.id);
+    const from = ids.indexOf(sourceId);
+    const to = ids.indexOf(targetId);
+    if (from === -1 || to === -1) return;
+
+    ids.splice(to, 0, ids.splice(from, 1)[0]);
+    store.reorderWebsites(ids);
+  };
 
   const handleAddLauncher = () => {
     setLauncherError('');
@@ -569,8 +600,13 @@ export default function DashboardHome() {
             </AnimatePresence>
 
             {/* Launchers wrap as compact pills rather than stacking full-width,
-                so several fit across before the list grows downwards. */}
-            <div className="flex flex-wrap gap-2 max-h-[260px] overflow-y-auto pr-1 content-start">
+                so several fit across before the list grows downwards. Order is
+                the student's: drag one onto another to move it. */}
+            <div
+              className={`flex flex-wrap gap-2 max-h-[260px] pr-1 content-start ${
+                launcherMenu ? 'overflow-visible' : 'overflow-y-auto'
+              }`}
+            >
               {websites.length === 0 ? (
                 <p className="text-xs text-white/40 font-mono text-center py-6">No launchers configured</p>
               ) : (
@@ -592,7 +628,30 @@ export default function DashboardHome() {
                     <div 
                       key={site.id}
                       title={site.url}
-                      className="relative flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 hover:border-cyber-blue/40 transition group max-w-[11rem]"
+                      draggable
+                      onDragStart={(e) => {
+                        setDraggingLauncher(site.id);
+                        e.dataTransfer.effectAllowed = 'move';
+                      }}
+                      onDragEnd={() => { setDraggingLauncher(null); setDragOverLauncher(null); }}
+                      onDragOver={(e) => {
+                        // Without preventDefault the browser refuses the drop.
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                        if (site.id !== dragOverLauncher) setDragOverLauncher(site.id);
+                      }}
+                      onDragLeave={() => setDragOverLauncher((current) => (current === site.id ? null : current))}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        handleLauncherDrop(site.id);
+                      }}
+                      className={`relative flex items-center gap-2 pl-1.5 pr-1 py-1.5 rounded-full border transition group max-w-[11rem] cursor-grab active:cursor-grabbing ${
+                        draggingLauncher === site.id
+                          ? 'opacity-40 border-white/10 bg-white/5'
+                          : dragOverLauncher === site.id
+                            ? 'border-cyber-blue bg-white/10'
+                            : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-cyber-blue/40'
+                      }`}
                     >
                       <a
                         href={site.url.startsWith('http') ? site.url : `https://${site.url}`}
@@ -616,19 +675,43 @@ export default function DashboardHome() {
                         </span>
                       </a>
 
+                      {/* Delete lives behind this menu rather than sitting in the
+                          open: a stray click on a bin icon used to be enough to
+                          lose a launcher. */}
                       <button
-                        onClick={() => {
-                          // Deleting a launcher is one click and not undoable,
-                          // so name the one about to go.
-                          if (confirm(`Are you sure you want to delete ${site.name}?`)) {
-                            store.removeWebsite(site.id);
-                          }
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setLauncherMenu((current) => (current === site.id ? null : site.id));
                         }}
-                        className="text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition duration-200 shrink-0 cursor-pointer"
-                        title="Delete Launcher"
+                        aria-haspopup="menu"
+                        aria-expanded={launcherMenu === site.id}
+                        aria-label={`Options for ${site.name}`}
+                        className="p-1 rounded-full text-white/40 hover:text-white hover:bg-white/10 transition shrink-0 cursor-pointer"
                       >
-                        <Trash className="w-3 h-3" />
+                        <MoreVertical className="w-3 h-3" />
                       </button>
+
+                      {launcherMenu === site.id && (
+                        <div
+                          role="menu"
+                          className="absolute right-0 top-full mt-1 z-30 w-40 rounded-xl border border-white/12 bg-[#1E2126] p-1 shadow-xl"
+                        >
+                          <span className="flex items-center gap-2 whitespace-nowrap px-2.5 py-1.5 text-[10px] font-mono text-white/35">
+                            <GripVertical className="w-3 h-3 shrink-0" /> Drag to reorder
+                          </span>
+                          <button
+                            role="menuitem"
+                            onClick={() => {
+                              store.removeWebsite(site.id);
+                              setLauncherMenu(null);
+                            }}
+                            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-mono text-red-400 hover:bg-red-950/40 transition cursor-pointer"
+                          >
+                            <Trash className="w-3 h-3" /> Delete
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })

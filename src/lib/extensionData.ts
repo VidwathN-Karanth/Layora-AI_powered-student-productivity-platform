@@ -167,6 +167,30 @@ export async function removeQuickLauncher(userId: string, id: string): Promise<Q
   return remaining.map(mapLauncher);
 }
 
+/**
+ * Stores a new launcher order.
+ *
+ * Ids the caller did not mention keep their place at the end, so a stale list
+ * from one device cannot silently drop a launcher another device just added.
+ */
+export async function reorderQuickLaunchers(
+  userId: string,
+  orderedIds: string[]
+): Promise<QuickLauncher[]> {
+  const state = (await readState(userId)) || {};
+  const websites = Array.isArray(state.websites) ? state.websites : [];
+
+  const byId = new Map(websites.map((w) => [String(w.id), w]));
+  const moved = orderedIds
+    .map((id) => byId.get(String(id)))
+    .filter((w): w is StoredWebsite => Boolean(w));
+  const untouched = websites.filter((w) => !orderedIds.includes(String(w.id)));
+  const next = [...moved, ...untouched];
+
+  await writeState(userId, { ...state, websites: next });
+  return next.map(mapLauncher);
+}
+
 export async function listCourses(userId: string): Promise<ExtensionCourse[]> {
   const state = await readState(userId);
 

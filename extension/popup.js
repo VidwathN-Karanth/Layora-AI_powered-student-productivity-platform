@@ -34,6 +34,12 @@ const ui = {
 };
 
 let state = { launchers: [], courses: [] };
+/** The launcher currently being dragged, if any. */
+let dragId = null;
+
+function closeMenus() {
+  for (const menu of document.querySelectorAll('.menu')) menu.hidden = true;
+}
 
 /* ── chrome helpers ──────────────────────────────────────────── */
 
@@ -87,18 +93,84 @@ function launcherRow(launcher) {
   main.append(title, sub);
   row.append(main);
 
-  const remove = document.createElement('button');
-  remove.className = 'remove';
-  remove.type = 'button';
-  remove.textContent = '×';
-  remove.title = `Remove ${launcher.name}`;
-  remove.setAttribute('aria-label', `Remove ${launcher.name}`);
-  remove.addEventListener('click', (event) => {
+  // Delete sits behind a menu rather than in the open: a bin icon on every
+  // tile is one stray click away from losing a link.
+  const menuButton = document.createElement('button');
+  menuButton.className = 'menu-button';
+  menuButton.type = 'button';
+  menuButton.textContent = '⋮';
+  menuButton.title = `Options for ${launcher.name}`;
+  menuButton.setAttribute('aria-label', `Options for ${launcher.name}`);
+  menuButton.setAttribute('aria-haspopup', 'menu');
+
+  const menu = document.createElement('div');
+  menu.className = 'menu';
+  menu.setAttribute('role', 'menu');
+  menu.hidden = true;
+
+  const hint = document.createElement('span');
+  hint.className = 'menu-hint';
+  hint.textContent = 'Drag to reorder';
+
+  const del = document.createElement('button');
+  del.className = 'menu-item danger';
+  del.type = 'button';
+  del.setAttribute('role', 'menuitem');
+  del.textContent = 'Delete';
+  del.addEventListener('click', (event) => {
     event.stopPropagation();
+    closeMenus();
     void removeLauncher(launcher);
   });
 
-  li.append(row, remove);
+  menu.append(hint, del);
+
+  menuButton.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const open = !menu.hidden;
+    closeMenus();
+    if (open) return;
+
+    // The list scrolls, so a menu hanging off a bottom tile would be clipped.
+    const listBox = ui.launchers.getBoundingClientRect();
+    const tileBox = li.getBoundingClientRect();
+    menu.classList.toggle('menu-up', tileBox.bottom + 84 > listBox.bottom);
+    menu.hidden = false;
+  });
+
+  // ── drag to reorder ──
+  li.draggable = true;
+  li.dataset.id = launcher.id;
+
+  li.addEventListener('dragstart', (event) => {
+    dragId = launcher.id;
+    li.classList.add('dragging');
+    event.dataTransfer.effectAllowed = 'move';
+    // Firefox refuses to start a drag without payload.
+    event.dataTransfer.setData('text/plain', launcher.id);
+  });
+
+  li.addEventListener('dragend', () => {
+    dragId = null;
+    li.classList.remove('dragging');
+    for (const el of ui.launchers.children) el.classList.remove('drag-over');
+  });
+
+  li.addEventListener('dragover', (event) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    if (dragId && dragId !== launcher.id) li.classList.add('drag-over');
+  });
+
+  li.addEventListener('dragleave', () => li.classList.remove('drag-over'));
+
+  li.addEventListener('drop', (event) => {
+    event.preventDefault();
+    li.classList.remove('drag-over');
+    void moveLauncher(dragId, launcher.id);
+  });
+
+  li.append(row, menuButton, menu);
   return li;
 }
 
@@ -189,6 +261,35 @@ async function removeLauncher(launcher) {
   }
 }
 
+async function moveLauncher(sourceId, targetId) {
+  dragId = null;
+  if (!sourceId || sourceId === targetId) return;
+
+  const ids = state.launchers.map((l) => l.id);
+  const from = ids.indexOf(sourceId);
+  const to = ids.indexOf(targetId);
+  if (from === -1 || to === -1) return;
+
+  const previous = state.launchers;
+  ids.splice(to, 0, ids.splice(from, 1)[0]);
+  state.launchers = ids.map((id) => previous.find((l) => l.id === id));
+  render();
+
+  try {
+    const body = await api('/api/extension/quicklaunchers/', {
+      method: 'PATCH',
+      body: JSON.stringify({ order: ids }),
+    });
+    state.launchers = body.launchers || state.launchers;
+    render();
+    await writeCache({ launchers: state.launchers });
+  } catch (error) {
+    state.launchers = previous;
+    render();
+    notice(error.message || 'Could not save that order.', 'error');
+  }
+}
+
 async function addLauncher(event) {
   event.preventDefault();
   const url = ui.url.value.trim();
@@ -219,7 +320,7 @@ async function addLauncher(event) {
 /* ── boot ────────────────────────────────────────────────────── */
 
 async function boot() {
-  el('brand').addEventListener('click', () => openTab(DASHBOARD_URL));
+  el('open-dashboard').addEventListener('click', () => openTab(DASHBOARD_URL));
   ui.tabs.launchers.addEventListener('click', () => showTab('launchers'));
   ui.tabs.courses.addEventListener('click', () => showTab('courses'));
   el('connect').addEventListener('click', () => openTab(CONNECT_URL));
@@ -237,6 +338,7 @@ async function boot() {
     notice('');
   });
   ui.form.addEventListener('submit', addLauncher);
+  document.addEventListener('click', closeMenus);
 
   const token = await getToken();
   const cache = await readCache();
