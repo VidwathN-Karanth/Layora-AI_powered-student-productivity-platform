@@ -9,20 +9,22 @@
  *    rather than waiting on a network round trip.
  */
 
-import { LAYORA_ORIGIN, clearToken, fetchAll, setToken, writeCache } from './lib.js';
+import {
+  IS_GECKO, LAYORA_ORIGIN, clearToken, ext, fetchAll, setToken, writeCache,
+} from './lib.js';
 
 const REFRESH_ALARM = 'layora-refresh';
 
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.alarms.create(REFRESH_ALARM, { periodInMinutes: 15 });
+ext.runtime.onInstalled.addListener(() => {
+  ext.alarms.create(REFRESH_ALARM, { periodInMinutes: 15 });
   void refresh();
 });
 
-chrome.runtime.onStartup.addListener(() => {
+ext.runtime.onStartup.addListener(() => {
   void refresh();
 });
 
-chrome.alarms.onAlarm.addListener((alarm) => {
+ext.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === REFRESH_ALARM) void refresh();
 });
 
@@ -33,7 +35,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
  * restricts it — belt and braces, because this handler writes the credential
  * everything else depends on.
  */
-chrome.runtime.onMessageExternal.addListener(handleMessage);
+if (ext.runtime.onMessageExternal) ext.runtime.onMessageExternal.addListener(handleMessage);
 
 /**
  * The same messages, relayed by the content script on Layora's /extension page.
@@ -42,46 +44,49 @@ chrome.runtime.onMessageExternal.addListener(handleMessage);
  * `externally_connectable` alone would leave Connect broken for anyone testing
  * before the Web Store listing exists. The sender's url is still checked.
  */
-chrome.runtime.onMessage.addListener(handleMessage);
+ext.runtime.onMessage.addListener(handleMessage);
 
-function handleMessage(message, sender, sendResponse) {
+/** What to reply, independent of how this browser wants it delivered. */
+async function respond(message, sender) {
   const from = (sender && (sender.origin || sender.url)) || '';
-  if (!from.startsWith(LAYORA_ORIGIN)) {
-    sendResponse({ ok: false, error: 'Unrecognised origin.' });
-    return false;
-  }
+  if (!from.startsWith(LAYORA_ORIGIN)) return { ok: false, error: 'Unrecognised origin.' };
 
   if (message && message.type === 'layora:connect' && typeof message.token === 'string') {
-    (async () => {
-      await setToken(message.token);
-      try {
-        const data = await fetchAll();
-        await writeCache(data);
-        sendResponse({ ok: true, name: data.me && data.me.name });
-      } catch (error) {
-        // The token stored but the first fetch failed — keep the token, let the
-        // popup retry, and tell the page it is connected.
-        sendResponse({ ok: true, warning: String(error.message || error) });
-      }
-    })();
-    return true; // keep the channel open for the async reply
+    await setToken(message.token);
+    try {
+      const data = await fetchAll();
+      await writeCache(data);
+      return { ok: true, name: data.me && data.me.name };
+    } catch (error) {
+      // The token stored but the first fetch failed — keep the token, let the
+      // popup retry, and tell the page it is connected.
+      return { ok: true, warning: String(error.message || error) };
+    }
   }
 
   if (message && message.type === 'layora:disconnect') {
-    (async () => {
-      await clearToken();
-      sendResponse({ ok: true });
-    })();
-    return true;
+    await clearToken();
+    return { ok: true };
   }
 
-  if (message && message.type === 'layora:ping') {
-    sendResponse({ ok: true, installed: true });
-    return false;
-  }
+  if (message && message.type === 'layora:ping') return { ok: true, installed: true };
 
-  sendResponse({ ok: false, error: 'Unknown message.' });
-  return false;
+  return { ok: false, error: 'Unknown message.' };
+}
+
+/**
+ * The one place the two engines genuinely disagree.
+ *
+ * Firefox takes an asynchronous reply as a promise returned from the listener
+ * and ignores sendResponse. Chromium ignores a returned promise and needs
+ * sendResponse plus a synchronous `true` to hold the channel open. Doing both
+ * at once is not possible, so it branches.
+ */
+function handleMessage(message, sender, sendResponse) {
+  const reply = respond(message, sender);
+  if (IS_GECKO) return reply;
+  void reply.then(sendResponse);
+  return true;
 }
 
 async function refresh() {

@@ -1,7 +1,8 @@
 # Layora Quick Access — browser extension
 
 A Manifest V3 popup that puts a student's quick launchers and course list one
-click from any tab. Chrome, Edge, Brave and any other Chromium browser.
+click from any tab. Chrome, Edge, Brave and any other Chromium browser, and
+Firefox.
 
 ## What it does
 
@@ -14,11 +15,18 @@ click from any tab. Chrome, Edge, Brave and any other Chromium browser.
 
 There is no build step. Load the folder as-is:
 
+**Chromium:**
+
 1. Open `chrome://extensions` and turn on **Developer mode**.
 2. **Load unpacked** → pick this `extension/` folder.
 3. Open Layora's `/extension` page while signed in and press **Connect**.
 
 Change a file, press the reload arrow on the extension card, done.
+
+**Firefox** needs the generated manifest, so run `python extension/build-zip.py`
+first and load `public/layora-extension-firefox.zip` through `about:debugging`
+→ **This Firefox** → **Load Temporary Add-on…**. Firefox drops a temporary
+add-on when it closes.
 
 ## Packaging
 
@@ -26,9 +34,16 @@ Change a file, press the reload arrow on the extension card, done.
 python extension/build-zip.py
 ```
 
-Writes `public/layora-extension.zip` — what the `/extension` page offers for
-download, and what gets uploaded to the Chrome Web Store. Re-run it after any
-change here, or the download will be stale.
+Writes both packages from this one folder:
+
+- `public/layora-extension.zip` — Chrome, Edge, Brave, any Chromium
+- `public/layora-extension-firefox.zip` — Firefox
+
+Every script is byte-identical between them; only the manifest differs. The
+Firefox one swaps the background service worker for an event page
+(`background.scripts`), drops the Chromium-only `externally_connectable`, and
+adds `browser_specific_settings.gecko`. Re-run after any change here, or the
+downloads will be stale.
 
 ## How it authenticates
 
@@ -52,12 +67,34 @@ on every request, and can be revoked per browser from the same page.
 
 | File | Job |
 |---|---|
-| `manifest.json` | MV3 config. `storage` + `alarms`, host permission for the Layora origin only |
+| `manifest.json` | MV3 config for Chromium. `storage` + `alarms`, host permission for the Layora origin only. The Firefox manifest is generated from it by `build-zip.py` |
 | `popup.html/.css/.js` | The 360×480 popup: two tabs, add form, cache-first rendering |
 | `lib.js` | Storage helpers and the API wrapper, shared by popup and worker |
 | `background.js` | Receives the pairing token, refreshes the cache every 15 min |
 | `connect.js` | Content script on Layora's `/extension` page; relays the token |
 | `build-zip.py` | Packages the folder for distribution |
+
+## Cross-browser notes
+
+The two engines differ in exactly three places, all handled:
+
+- **Namespace.** `lib.js` exports `ext`, bound to `browser` where it exists and
+  `chrome` otherwise, and everything goes through it. Firefox 153 does return
+  promises from its `chrome.*` alias, so this is belt-and-braces rather than a
+  bug fix — but `browser.*` is the documented promise API and worth binding to
+  explicitly.
+- **Async message replies.** Firefox takes the reply as a promise returned from
+  the listener; Chromium ignores that and needs `sendResponse` plus a
+  synchronous `true`. `background.js` branches on `IS_GECKO` for this one line.
+  Nothing else in the codebase cares which engine it is on.
+- **Background context.** Service worker on Chromium, event page on Firefox —
+  a manifest difference only. The listeners were already registered
+  synchronously at top level, which is what an event page requires.
+
+One trap worth remembering: every content script listed for the same document
+shares one scope, so a top-level `const` in `connect.js` would collide with an
+identically named one in any sibling script and silently abort both. That is
+why `connect.js` is wrapped in an IIFE.
 
 ## Pointing it at another deployment
 
@@ -79,5 +116,6 @@ The origin appears in three places and all three must agree:
   read-modify-write and bumps `clientTimestamp` so an open tab picks it up, but
   a tab that had already staged a write can still land it afterwards and drop
   the new launcher. Moving launchers to their own table would close it.
-- **Firefox** needs its own listing and a `browser_specific_settings` block;
-  the code is otherwise portable.
+- **A temporary Firefox add-on disappears on restart.** That is Firefox's rule
+  for anything loaded through `about:debugging`, not something this can fix.
+  An AMO listing removes it.

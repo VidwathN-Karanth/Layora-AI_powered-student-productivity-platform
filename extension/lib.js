@@ -5,6 +5,25 @@
  * mean the folder could not be loaded unpacked as-is.
  */
 
+/**
+ * The extension API namespace, under whichever name this browser gives it.
+ *
+ * Chromium exposes `chrome` and returns promises from MV3 APIs. Firefox exposes
+ * `browser` for the promise-based API and keeps `chrome` as a callback-style
+ * alias, so awaiting `chrome.storage.local.get()` there can hand back undefined
+ * instead of the stored value. Binding once, here, is the whole difference.
+ */
+export const ext = globalThis.browser ?? globalThis.chrome;
+
+/**
+ * True on Firefox.
+ *
+ * Chromium does not define `browser` at all, which makes this the standard
+ * test. Only the message plumbing needs it: the two engines disagree about how
+ * a listener returns an asynchronous reply.
+ */
+export const IS_GECKO = typeof globalThis.browser !== 'undefined';
+
 /** The Layora deployment this extension talks to. Must match host_permissions. */
 export const LAYORA_ORIGIN = 'https://layora239.vercel.app';
 
@@ -19,38 +38,38 @@ const TAB_KEY = 'layora.tab';
 /* ── storage ─────────────────────────────────────────────────── */
 
 export async function getToken() {
-  const stored = await chrome.storage.local.get(TOKEN_KEY);
+  const stored = await ext.storage.local.get(TOKEN_KEY);
   return stored[TOKEN_KEY] || null;
 }
 
 export async function setToken(token) {
-  await chrome.storage.local.set({ [TOKEN_KEY]: token });
+  await ext.storage.local.set({ [TOKEN_KEY]: token });
 }
 
 export async function clearToken() {
-  await chrome.storage.local.remove([TOKEN_KEY, CACHE_KEY]);
+  await ext.storage.local.remove([TOKEN_KEY, CACHE_KEY]);
 }
 
 /** Last good payload, so an opening popup has something to draw immediately. */
 export async function readCache() {
-  const stored = await chrome.storage.local.get(CACHE_KEY);
+  const stored = await ext.storage.local.get(CACHE_KEY);
   return stored[CACHE_KEY] || null;
 }
 
 export async function writeCache(patch) {
   const current = (await readCache()) || {};
-  await chrome.storage.local.set({
+  await ext.storage.local.set({
     [CACHE_KEY]: { ...current, ...patch, fetchedAt: Date.now() },
   });
 }
 
 export async function getLastTab() {
-  const stored = await chrome.storage.local.get(TAB_KEY);
+  const stored = await ext.storage.local.get(TAB_KEY);
   return stored[TAB_KEY] || 'launchers';
 }
 
 export async function setLastTab(tab) {
-  await chrome.storage.local.set({ [TAB_KEY]: tab });
+  await ext.storage.local.set({ [TAB_KEY]: tab });
 }
 
 /* ── api ─────────────────────────────────────────────────────── */

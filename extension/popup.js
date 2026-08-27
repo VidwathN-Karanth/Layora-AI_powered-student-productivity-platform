@@ -7,8 +7,8 @@
  */
 
 import {
-  CONNECT_URL, COURSES_URL, DASHBOARD_URL, api, fetchAll, getLastTab, getToken,
-  readCache, setLastTab, writeCache,
+  CONNECT_URL, COURSES_URL, DASHBOARD_URL, api, ext, fetchAll, getLastTab,
+  getToken, readCache, setLastTab, writeCache,
 } from './lib.js';
 
 const el = (id) => document.getElementById(id);
@@ -44,7 +44,7 @@ function closeMenus() {
 /* ── chrome helpers ──────────────────────────────────────────── */
 
 const openTab = (url) => {
-  chrome.tabs.create({ url });
+  ext.tabs.create({ url });
   window.close();
 };
 
