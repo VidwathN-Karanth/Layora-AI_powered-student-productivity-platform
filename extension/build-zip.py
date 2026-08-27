@@ -39,7 +39,13 @@ ROOT = os.path.dirname(HERE)
 OUT = os.path.join(ROOT, "public", "layora-extension.zip")
 OUT_FIREFOX = os.path.join(ROOT, "public", "layora-extension-firefox.zip")
 
-GECKO_ID = "layora-quick-access@layora239.vercel.app"
+# AMO reserves an add-on id permanently on first submission — deleting the
+# listing does not release it, so a failed attempt burns that id for good. This
+# is a fresh UUID rather than another readable string, because a UUID cannot
+# collide with anything already reserved. If a submission ever has to be
+# abandoned again, generate a new one here rather than reusing this.
+#     python -c "import uuid; print('{' + str(uuid.uuid4()) + '}')"
+GECKO_ID = "{c9dabe0e-ccb1-4199-84a2-06c779076970}"
 
 # Everything the browser loads, and nothing else. The zip's root must be the
 # manifest itself: Chrome rejects a zip whose manifest sits in a subfolder.
