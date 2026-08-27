@@ -515,7 +515,7 @@ export default function SettingsPage() {
                   Install &amp; connect the extension
                 </span>
                 <span className="block text-[10px] font-mono text-outline mt-0.5">
-                  Chrome, Edge and other Chromium browsers
+                  Firefox, Chrome, Edge and other Chromium browsers
                 </span>
               </span>
               <ArrowRight className="w-4 h-4 shrink-0 text-outline transition group-hover:text-primary group-hover:translate-x-0.5" />
