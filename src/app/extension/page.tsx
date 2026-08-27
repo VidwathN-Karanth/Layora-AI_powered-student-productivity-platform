@@ -2,12 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useUser } from '@clerk/nextjs';
-import {
-  Check, Download, Link2, Loader2, Plug, Puzzle, ShieldCheck, Trash2,
-} from 'lucide-react';
+import { Check, Link2, Loader2, Plug, ShieldCheck, Trash2 } from 'lucide-react';
 
 import { apiFetch, readJson, errorMessage } from '@/lib/apiClient';
 import { formatDateTime } from '@/lib/dateFormat';
+import ExtensionInstall from '@/components/ExtensionInstall';
 
 /* ────────────────────────────────────────────────────────────────
    Install and connect the browser extension.
@@ -18,9 +17,6 @@ import { formatDateTime } from '@/lib/dateFormat';
    the fiddly half: pair the installed extension with the signed-in account in
    one press, with no ids to copy.
    ──────────────────────────────────────────────────────────────── */
-
-/** Set once the Web Store listing exists; until then the button explains itself. */
-const WEB_STORE_URL = process.env.NEXT_PUBLIC_EXTENSION_STORE_URL || '';
 
 interface Connection {
   id: string;
@@ -171,36 +167,8 @@ export default function ExtensionPage() {
             </h2>
           </div>
 
-          {WEB_STORE_URL ? (
-            <a
-              href={WEB_STORE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-on-primary transition hover:opacity-90"
-            >
-              <Puzzle className="h-4 w-4" /> Add to Chrome
-            </a>
-          ) : (
-            <div className="mt-5 space-y-4">
-              <p className="text-sm leading-relaxed text-on-surface-variant">
-                The Chrome Web Store listing is not live yet, so it installs by hand for now.
-                It takes about a minute.
-              </p>
-              <a
-                href="/layora-extension.zip"
-                download
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-on-primary transition hover:opacity-90"
-              >
-                <Download className="h-4 w-4" /> Download the extension
-              </a>
-              <ol className="space-y-2 border-t border-outline-variant pt-4 font-mono text-[11px] leading-relaxed text-on-surface-variant">
-                <li>1. Unzip the folder somewhere you will not delete it.</li>
-                <li>2. Open <span className="text-on-surface">chrome://extensions</span> and turn on <span className="text-on-surface">Developer mode</span>, top right.</li>
-                <li>3. Press <span className="text-on-surface">Load unpacked</span> and pick the unzipped folder.</li>
-                <li>4. Pin Layora to your toolbar, then come back here for step 2.</li>
-              </ol>
-            </div>
-          )}
+          <ExtensionInstall />
+
         </section>
 
         {/* ── Step 2: connect ── */}

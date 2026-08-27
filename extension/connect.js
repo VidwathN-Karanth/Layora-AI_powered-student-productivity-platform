@@ -13,7 +13,20 @@
  *
  * Only messages from this page's own window are accepted, so another frame
  * cannot inject a token or ask for ours.
+ *
+ * A content script cannot import, so the namespace is resolved inline here.
+ * sendMessage is used in its promise form, which both engines support — the
+ * callback form is Chromium-only and would be read as an options bag by
+ * Firefox.
+ *
+ * Everything is wrapped in an IIFE because every content script listed for the
+ * same document shares one scope: a bare `const` here would collide with an
+ * identically named one in a sibling script, and a redeclaration aborts them
+ * all — silently, with the page looking perfectly fine.
  */
+
+(() => {
+const ext = globalThis.browser ?? globalThis.chrome;
 
 window.addEventListener('message', (event) => {
   if (event.source !== window) return;
@@ -23,16 +36,27 @@ window.addEventListener('message', (event) => {
   if (!data || typeof data !== 'object') return;
 
   if (data.type === 'layora:connect' && typeof data.token === 'string') {
-    chrome.runtime.sendMessage({ type: 'layora:connect', token: data.token }, (reply) => {
-      window.postMessage(
-        {
-          type: 'layora:connect:result',
-          ok: Boolean(reply && reply.ok),
-          error: (reply && reply.error) || (chrome.runtime.lastError && chrome.runtime.lastError.message) || null,
-        },
-        window.location.origin
-      );
-    });
+    ext.runtime.sendMessage({ type: 'layora:connect', token: data.token })
+      .then((reply) => {
+        window.postMessage(
+          {
+            type: 'layora:connect:result',
+            ok: Boolean(reply && reply.ok),
+            error: (reply && reply.error) || null,
+          },
+          window.location.origin
+        );
+      })
+      .catch((error) => {
+        window.postMessage(
+          {
+            type: 'layora:connect:result',
+            ok: false,
+            error: String((error && error.message) || error),
+          },
+          window.location.origin
+        );
+      });
   }
 
   if (data.type === 'layora:ping') {
@@ -43,3 +67,4 @@ window.addEventListener('message', (event) => {
 
 // Announce on load too, so a page that renders after us still learns we exist.
 window.postMessage({ type: 'layora:pong', installed: true }, window.location.origin);
+})();
