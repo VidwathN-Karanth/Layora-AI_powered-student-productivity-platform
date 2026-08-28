@@ -143,8 +143,18 @@ export class DailyActivity {
     range: 'today' | 'week' | 'all',
     opts: { restrictToEmails?: string[] } = {}
   ): Promise<LeaderboardUser[]> {
-    // 1. Fetch all users and filter out those who haven't entered LeetCode, GitHub, or CodeChef usernames
-    const allUsers = await User.findAll();
+    // 1. Fetch the candidates and drop anyone without a linked handle.
+    //
+    // findLinkedUsers applies the has-a-handle test in Postgres, which is the
+    // same test the filter below used to apply in Node after pulling every
+    // single account in the department. The emptiness checks stay here because
+    // the query can only ask for "not null", and an empty string is not null.
+    //
+    // The cohort filter deliberately stays in Node: it compares trimmed and
+    // lowercased addresses, and an `in` clause against the raw column would be
+    // case-sensitive — quietly dropping any student whose stored address is
+    // capitalised differently from the roster's.
+    const allUsers = await User.findLinkedUsers();
 
     // Scope to a cohort before any points are summed, so no other year's
     // numbers can reach the caller even by accident.
@@ -279,5 +289,30 @@ export class DailyActivity {
     }
 
     return (data || []).map((row) => mapActivityRow(row as DatabaseDailyActivityRow)).filter((a): a is DailyActivityRow => a !== null);
+  }
+
+  /**
+   * How big the points ledger has grown.
+   *
+   * Read-only, and deliberately not a purge. This table gains one row per
+   * student per day — about 300,000 rows a year at 800 students, which is
+   * comfortably inside Supabase's free tier for several years. The trap is
+   * that trimming it later is not free: getLeaderboard('all') sums the whole
+   * history, so deleting old rows would quietly shrink every student's
+   * all-time score with nothing to show it happened. Retention needs a
+   * per-student rollup written first, which is a change of its own.
+   *
+   * So this reports rather than acts, and the nightly job logs it. The number
+   * to watch against is Supabase's 500 MB database limit.
+   */
+  static async footprint(): Promise<{ rows: number }> {
+    const { count, error } = await supabaseAdmin
+      .from('daily_activities')
+      .select('*', { count: 'exact', head: true });
+
+    if (error) {
+      throw new Error(`Failed to measure the activity ledger: ${error.message}`);
+    }
+    return { rows: count ?? 0 };
   }
 }
