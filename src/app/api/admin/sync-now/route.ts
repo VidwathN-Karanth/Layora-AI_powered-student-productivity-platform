@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { runSyncForDate } from '@/lib/syncLogic';
+import { runSyncSlice } from '@/lib/syncLogic';
 import { requireAdmin } from '@/lib/authz';
 import { AdminLog } from '@/lib/models/AdminLog';
 
@@ -12,8 +12,20 @@ export async function POST(request: Request) {
     const { userId, email, name } = guard.requester;
 
     const body = await request.json().catch(() => ({}));
-    const { date } = body;
+    const { date, offset: rawOffset } = body;
     let targetDate = date;
+
+    // Same slicing as the nightly cron, for the same reason: the whole
+    // department no longer fits in one request. The console posts again with
+    // the returned nextOffset until it comes back null, so the admin sees
+    // progress instead of a button that appears to hang and then fails.
+    const offset = rawOffset === undefined ? 0 : Number(rawOffset);
+    if (!Number.isFinite(offset) || offset < 0) {
+      return NextResponse.json(
+        { error: 'offset must be a non-negative number.' },
+        { status: 400 }
+      );
+    }
 
     if (targetDate) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(targetDate)) {
@@ -28,18 +40,27 @@ export async function POST(request: Request) {
       targetDate = today.toISOString().split('T')[0];
     }
 
-    const stats = await runSyncForDate(targetDate);
+    const { nextOffset, ...stats } = await runSyncSlice(targetDate, { offset });
+    const done = nextOffset === null;
 
-    await AdminLog.record({
-      actor: { userId, email, name },
-      action: 'stats.sync',
-      summary: `Ran the coding-stats sync by hand for ${targetDate}`,
-      target: targetDate,
-    });
+    // One line per run, not one per page: the log records that an admin ran
+    // the sync, and a five-page run is still one thing they did.
+    if (done) {
+      await AdminLog.record({
+        actor: { userId, email, name },
+        action: 'stats.sync',
+        summary: `Ran the coding-stats sync by hand for ${targetDate}`,
+        target: targetDate,
+      });
+    }
 
     return NextResponse.json({
       success: true,
-      message: `Manually triggered sync completed for date: ${targetDate}`,
+      done,
+      nextOffset,
+      message: done
+        ? `Manually triggered sync completed for date: ${targetDate}`
+        : `Synced ${stats.processed} student(s) from ${offset}; resume at ${nextOffset}`,
       stats
     });
   } catch (error: unknown) {
@@ -48,3 +69,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: errMsg }, { status: 500 });
   }
 }
+
+// Matches the cron route: runSyncSlice budgets itself well inside this.
+export const maxDuration = 60;

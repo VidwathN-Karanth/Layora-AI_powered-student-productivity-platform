@@ -1,0 +1,102 @@
+# Drives the nightly coding-stats sync to completion.
+#
+# Why this exists: /api/cron/daily-sync syncs one page of students per call and
+# returns where to resume, because the whole department no longer fits inside a
+# single serverless request — at 800 students a one-pass run took a quarter of
+# an hour and the platform would kill it partway, leaving the students it never
+# reached silently missing a day of points.
+#
+# Vercel's own cron fires the endpoint once, which covers the first page. This
+# workflow is what keeps calling until the endpoint says it is done. Re-syncing
+# a page is harmless: the write behind it is an upsert keyed on (user, date), so
+# an overlapping call corrects a row rather than awarding points twice.
+#
+# Requires two repository secrets:
+#   CRON_SECRET      — the same value as the CRON_SECRET env var on Vercel
+#   LAYORA_BASE_URL  — e.g. https://layora239.vercel.app  (no trailing slash)
+#
+# Until both are set this workflow fails on its first run, loudly, by design —
+# a sync that quietly does nothing is the failure mode worth avoiding.
+
+name: Nightly activity sync
+
+on:
+  schedule:
+    # 17:00 UTC = 22:30 IST, half an hour after Vercel's own cron, so the two
+    # are never hitting LeetCode and GitHub for the same student at once.
+    - cron: '0 17 * * *'
+  workflow_dispatch:
+
+# One drain at a time. A run that overlaps its predecessor would double the
+# request rate against the external APIs for no benefit.
+concurrency:
+  group: nightly-activity-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Drain the sync
+        env:
+          BASE_URL: ${{ secrets.LAYORA_BASE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${BASE_URL:-}" ] || [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::Set the LAYORA_BASE_URL and CRON_SECRET repository secrets."
+            exit 1
+          fi
+
+          offset=0
+          page=0
+          synced=0
+          failed=0
+          # Far more pages than the department will ever need. Its job is to
+          # stop a server that never reports done from looping until timeout.
+          max_pages=200
+
+          while [ "$page" -lt "$max_pages" ]; do
+            page=$((page + 1))
+
+            response=$(curl -sS --fail-with-body --max-time 120 \
+              -H "Authorization: Bearer ${CRON_SECRET}" \
+              "${BASE_URL}/api/cron/daily-sync/?offset=${offset}")
+
+            ok=$(printf '%s' "$response" | jq -r '.success // false')
+            if [ "$ok" != "true" ]; then
+              echo "::error::Page ${page} failed: $(printf '%s' "$response" | jq -r '.error // "unknown error"')"
+              exit 1
+            fi
+
+            processed=$(printf '%s' "$response" | jq -r '.stats.processed // 0')
+            ok_count=$(printf '%s' "$response" | jq -r '.stats.successful // 0')
+            bad_count=$(printf '%s' "$response" | jq -r '.stats.failed // 0')
+            is_done=$(printf '%s' "$response" | jq -r '.done')
+            next=$(printf '%s' "$response" | jq -r '.nextOffset')
+
+            synced=$((synced + ok_count))
+            failed=$((failed + bad_count))
+            echo "page ${page}: offset=${offset} processed=${processed} ok=${ok_count} failed=${bad_count}"
+
+            if [ "$is_done" = "true" ]; then
+              echo "Sync complete: ${synced} student(s) synced, ${failed} failed, ${page} page(s)."
+              # Individual students failing is normal — a renamed LeetCode
+              # handle, a profile set to private. Only a run that cannot
+              # finish at all is a workflow failure.
+              exit 0
+            fi
+
+            if [ "$next" = "null" ] || [ -z "$next" ]; then
+              echo "::error::Endpoint reported not done but gave no nextOffset."
+              exit 1
+            fi
+
+            offset="$next"
+          done
+
+          echo "::error::Gave up after ${max_pages} pages — the endpoint never reported done."
+          exit 1
