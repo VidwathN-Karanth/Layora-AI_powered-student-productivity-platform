@@ -540,14 +540,14 @@ html.light-mode[data-theme="emerald"] {
   border-color: var(--l-rule) !important;
 }
 
-/* ── AI Mentor card (glass-panel-neon) in light mode ── */
+/* ── Neon glass panels (course dialogs) in light mode ── */
 .light-mode .glass-panel-neon {
   background: var(--l-card) !important;
   border-color: var(--l-accent) !important;
   box-shadow: 0 4px 16px rgba(var(--l-accent-rgb), 0.08) !important;
 }
 
-/* ── Amber/cyan mentor advice cards in light mode ── */
+/* ── Amber/cyan advisory cards in light mode ── */
 .light-mode [class*="bg-amber-950"] {
   background-color: var(--l-warn-wash) !important;
   border-color: var(--l-warn-rule) !important;

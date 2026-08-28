@@ -1,9 +1,9 @@
-# 🌌 LAYORA: Autonomous AI Student Productivity Suite
+# 🌌 LAYORA: Student Productivity Suite
 
 <div align="center">
   <img src="./public/layora-logo.png" alt="Layora Logo" width="120" height="120" style="border-radius: 24px;" />
   <br />
-  <p><strong>A futuristic, glassmorphic academic assistant combining local-first persistence, cloud database synchronization, secure Google API integrations, and generative AI planning.</strong></p>
+  <p><strong>A futuristic, glassmorphic academic workspace combining local-first persistence, cloud database synchronization, and secure Google API integrations.</strong></p>
 </div>
 
 ---
@@ -24,7 +24,6 @@ Layora is built using modern, bleeding-edge web technologies designed for perfor
 | **Authentication** | **Clerk** | Secure OAuth sign-ins, identity tokens, and multi-profile sessions. |
 | **State Management** | **Zustand** | Local-first state management, atomic state updates, and persistent cache store. |
 | **Database Sync** | **Supabase (PostgreSQL)** | Hybrid cloud storage, real-time sync, and Row-Level Security (RLS) data isolation. |
-| **AI LLM Inference** | **Groq API** | Ultra-low latency schedule compiling and chatbot co-pilot telemetry. |
 | **External Integrations** | **Google APIs** | Direct Google Calendar scheduling sync & Google Drive document storage. |
 | **Deployment** | **Vercel** | Edge runtime deployment and CI/CD automatic builds. |
 
@@ -49,9 +48,9 @@ Layora respects user data privacy: **no PDFs or study materials are saved on Sup
 - **Robust Link Fallbacks**: If Google’s API response omits a direct `webViewLink` metadata field during upload, the backend automatically constructs a fallback URL using the file's ID (`https://drive.google.com/file/d/[id]/view?usp=drivesdk`) so your resources are always viewable under your subjects.
 - **Web Link Alternative**: For files larger than 4.5MB (such as massive lecture slides/PPTs), users can upload directly to Google Drive and index them in Layora via the **Web Link** tab.
 
-### 4. Generative Timetable Compiler
-Features a proactive weekly timetable planner that automatically maps class times, extracurricular activities, and custom free blocks:
-- Combines an online AI-powered scheduler (via Groq API LLMs) and a smart local offline fallback algorithm to structure optimized weekly study agendas.
+### 4. Weekly Timetable
+A weekly planner the student fills themselves. Nothing is placed without them:
+- Courses they add are offered a slot; everything else is theirs to arrange, and an empty week stays empty.
 - Syncs study blocks directly to your personal Google Calendar with a single click.
 
 ---
@@ -64,10 +63,10 @@ Layora is structured into modular academic components that synchronize across al
 A step-by-step routine-capturing wizard that gathers baseline student routines (sleep schedules, wake times, college hours), active courses, and subject parameters to configure your personalized database profile.
 
 ### 2. 📊 Main Workspace Dashboard
-Your academic command center showing active focus stopwatch metrics, consecutive activity streak counts, daily agendas, and shortcut actions to trigger AI schedules or task configurations.
+Your academic command center showing active focus stopwatch metrics, consecutive activity streak counts, daily agendas, and shortcut actions for the day's tasks.
 
-### 3. 📅 Generative Planner & Timetable
-An automated scheduler compiling structured study blocks dynamically throughout your week. Backed by the **Groq LLM API** (with a smart offline fallback builder), it distributes blocks based on credits and difficulty, allowing manual drag-reordering and one-click syncing to **Google Calendar**.
+### 3. 📅 Weekly Planner & Timetable
+A week the student builds. Courses they add can be placed on a free slot, blocks can be dragged and reordered by hand, and the whole week syncs to **Google Calendar** in one click. Nothing is scheduled for them automatically.
 
 ### 4. ⏱️ Milestone Tracker & Global Stopwatch
 A comprehensive task organizer with global ticking integration. Clicking "Start" on any task opens the focus stopwatch at the top of the screen (persisting globally across all dashboard pages). Completing tasks updates study hours, records stats, and triggers streak multipliers.
@@ -78,10 +77,7 @@ A subject-specific document vault indexing slides, notes, and PDFs. It uploads f
 ### 6. 🎓 Online Course Tracker
 A learning manager allowing you to input active online courses, update progress percentages, and visualize progress bars.
 
-### 7. 🤖 Study Copilot (LLM Assistant)
-A context-aware chat interface providing study help, summarizing notes, explaining complex topics, and recommending study timetables. Supports user-provided custom Groq API keys securely stored in their profile.
-
-### 8. 🛡️ Admin Root Console
+### 7. 🛡️ Admin Root Console
 An administrative metrics dashboard to track overall user telemetry (such as total study hours and average streaks) and perform data purge operations.
 
 ---
@@ -95,9 +91,6 @@ f:\ANTIFrontend/
 ├── src/
 │   ├── app/
 │   │   ├── api/
-│   │   │   ├── ai/
-│   │   │   │   ├── chat/route.ts      # LLM chatbot provider & fallback response handler
-│   │   │   │   └── planner/route.ts   # Generative weekly scheduler compiler
 │   │   │   ├── resources/
 │   │   │   │   └── upload-drive/      # Google Drive proxy upload API endpoint
 │   │   │   ├── user/
@@ -151,8 +144,6 @@ cp .env.example .env.local
 ```
 Fill in the following variables:
 ```env
-# AI Models Keys
-GROQ_API_KEY=your_groq_api_key_here
 OPENAI_API_KEY=your_openai_api_key_here
 
 # Clerk Auth Config
@@ -184,7 +175,7 @@ npm run build
 ## 🌐 Vercel Deployment Checklist
 When deploying this repository to Vercel, make sure you configure the environment variables in your Vercel Project Dashboard:
 1. Go to **Settings > Environment Variables**.
-2. Add your Clerk Keys, Groq Keys, and Supabase Credentials.
+2. Add your Clerk keys and Supabase credentials.
 3. Redeploy your application.
 *(Note: If Supabase keys are missing, the application will display a clear warning banner alerting the user that they are in Local Demo Mode, ensuring settings will reset upon page refresh).*
 

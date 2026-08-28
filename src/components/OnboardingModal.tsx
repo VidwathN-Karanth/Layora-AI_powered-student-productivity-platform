@@ -240,7 +240,7 @@ export default function OnboardingModal() {
         {/* Notice alert */}
         <div className="bg-primary-fixed border-b border-primary px-5 py-2.5 flex items-center gap-2.5 text-[11px] text-on-surface/80 font-mono">
           <Info className="w-3.5 h-3.5 text-primary shrink-0" />
-          <span>Please complete these details to construct your interactive dashboard and custom AI timetable.</span>
+          <span>Please complete these details to set up your dashboard and weekly planner.</span>
         </div>
 
         {/* Warning if Supabase is not configured */}
