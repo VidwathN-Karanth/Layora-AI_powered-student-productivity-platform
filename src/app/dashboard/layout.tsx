@@ -18,6 +18,7 @@ import OnboardingModal from '@/components/OnboardingModal';
 import ZenMode from '@/components/ZenMode';
 import NotificationAgent from '@/components/NotificationAgent';
 import NotificationCenter from '@/components/NotificationCenter';
+import LayoraMark from '@/components/LayoraMark';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -299,7 +300,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   exit={{ opacity: 0 }}
                   className="font-bold text-sm text-white flex items-center gap-2"
                 >
-                  <span className="w-6 h-6 rounded bg-primary flex items-center justify-center text-white text-xs">L</span> LAYORA
+                  <LayoraMark className="h-6 w-6" glyphClassName="text-xs" /> LAYORA
                 </motion.span>
               ) : (
                 <motion.div 

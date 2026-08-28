@@ -1,30 +1,38 @@
 import { ImageResponse } from 'next/og';
 
-// Route segment config
+/**
+ * The browser tab icon.
+ *
+ * Solid purple with a white L, matching src/components/LayoraMark.tsx and the
+ * generated PNGs. It used to be a purple-to-blue gradient, which made the tab
+ * the one place the mark looked like neither the app nor the landing page.
+ *
+ * The colour is repeated rather than imported because this renders in the edge
+ * runtime through Satori, which takes plain style objects and no CSS variables.
+ * If MARK_PURPLE changes, change it here and in scripts/generate-logos.py too.
+ */
+
 export const runtime = 'edge';
 
-// Image metadata
 export const size = {
   width: 32,
   height: 32,
 };
 export const contentType = 'image/png';
 
-// Image generation
 export default function Icon() {
   return new ImageResponse(
     (
-      // ImageResponse JSX element
       <div
         style={{
           fontSize: 24,
-          background: 'linear-gradient(to top right, #9333ea, #3b82f6)',
+          background: '#C56BF5',
           width: '100%',
           height: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: 'white',
+          color: '#FFFFFF',
           fontWeight: 900,
           fontFamily: 'monospace',
           borderRadius: '8px',
@@ -33,7 +41,6 @@ export default function Icon() {
         L
       </div>
     ),
-    // ImageResponse options
     {
       ...size,
     }

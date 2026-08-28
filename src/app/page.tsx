@@ -11,6 +11,8 @@ import {
   motion, useScroll, useTransform, useMotionValueEvent, useReducedMotion,
 } from 'framer-motion';
 
+import LayoraMark from '@/components/LayoraMark';
+
 /* ────────────────────────────────────────────────────────────────
    One feature per screen.
 
@@ -179,7 +181,7 @@ function Nav({ onSignIn }: { onSignIn: () => void }) {
     <header className="fixed inset-x-0 top-0 z-50 border-b border-white/[0.06] backdrop-blur-xl" style={{ background: 'rgba(10,11,13,0.72)' }}>
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-5 sm:px-8">
         <a href="#top" className="flex items-center gap-2.5 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2E95FF]">
-          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[#C56BF5] text-[11px] font-bold text-black">L</span>
+          <LayoraMark className="h-6 w-6" glyphClassName="text-[11px]" />
           <span className="font-jetbrains text-[13px] font-bold tracking-[0.18em] text-white">LAYORA</span>
         </a>
 
@@ -674,7 +676,7 @@ function Footer() {
         <div className="flex flex-col justify-between gap-10 lg:flex-row lg:items-end">
           <div>
             <div className="flex items-center gap-2.5">
-              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[#C56BF5] text-[11px] font-bold text-black">L</span>
+              <LayoraMark className="h-6 w-6" glyphClassName="text-[11px]" />
               <span className="font-jetbrains text-[13px] font-bold tracking-[0.18em] text-white">LAYORA</span>
             </div>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/40">
@@ -767,9 +769,9 @@ export default function RootPage() {
         <motion.div
           animate={{ opacity: [0.55, 1, 0.55] }}
           transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
-          className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#C56BF5]"
+          className="flex h-14 w-14 items-center justify-center rounded-[22%] bg-[#C56BF5]"
         >
-          <span className="text-2xl font-bold tracking-tighter text-black">L</span>
+          <span className="text-2xl font-bold tracking-tighter text-white">L</span>
         </motion.div>
         <div className="text-center">
           <h1 className="font-jetbrains text-lg font-bold tracking-[0.2em] text-white">LAYORA</h1>

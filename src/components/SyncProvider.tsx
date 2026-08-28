@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
 import { apiFetch } from '@/lib/apiClient';
+import LayoraMark from '@/components/LayoraMark';
 
 // Module-level flag to suppress ALL database writes during a purge.
 let suppressSync = false;
@@ -590,9 +591,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     return (
       <main className="min-h-screen bg-[#16181C] text-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
-            <span className="text-white font-bold text-lg tracking-tighter">L</span>
-          </div>
+          <LayoraMark className="w-12 h-12" glyphClassName="text-lg" />
           <p className="text-xs font-mono text-white/40">Checking your access...</p>
         </div>
       </main>
@@ -604,10 +603,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       <main className="min-h-screen bg-[#16181C] text-white flex flex-col items-center justify-center relative overflow-hidden">
         <div className="z-10 flex flex-col items-center gap-6">
           <div className="relative w-16 h-16">
-            <div className="absolute inset-0 rounded-full border border-primary/30 animate-pulse"></div>
-            <div className="absolute inset-2 rounded-full bg-primary flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-xl tracking-tighter">L</span>
-            </div>
+            <div className="absolute inset-0 rounded-[22%] border border-primary/30 animate-pulse"></div>
+            <LayoraMark className="absolute inset-2 shadow-lg" glyphClassName="text-xl" />
           </div>
           
           <div className="text-center">
