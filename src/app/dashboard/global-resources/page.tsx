@@ -7,7 +7,6 @@ import { useUser } from '@clerk/nextjs';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
 import { apiFetch } from '@/lib/apiClient';
 import DriveThumb from '@/components/CertificateThumb';
-import { isAdminEmail } from '@/lib/admin';
 import { SHARED_RESOURCE_TAG, resolveResourceTag, shortCohortLabel, type Cohort } from '@/lib/cohorts';
 import { 
   Globe, UploadCloud, File, Plus, Trash, FileText, 
@@ -28,7 +27,9 @@ export default function GlobalResourcesPage() {
   const store = useStore();
   const { user: clerkUser } = useUser();
   const currentUserEmail = clerkUser?.primaryEmailAddress?.emailAddress || '';
-  const isAdmin = isAdminEmail(currentUserEmail) || isAdminEmail(store.user?.email);
+  // Decides which controls to draw, nothing more — every route behind these
+  // buttons re-checks admin status server-side.
+  const isAdmin = store.isAdmin;
   const cohort = store.cohort;
 
   // Component States

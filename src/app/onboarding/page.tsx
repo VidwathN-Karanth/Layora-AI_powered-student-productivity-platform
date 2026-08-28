@@ -14,19 +14,20 @@ import {
 } from 'lucide-react';
 import { getPlatformDisplay, formatCourseLink } from '@/lib/courseUtils';
 import { formatTimeStr } from '@/lib/timeUtils';
-import { isAdminEmail } from '@/lib/admin';
 
 export default function OnboardingPage() {
   const router = useRouter();
   const store = useStore();
-  const { isLoaded, user: clerkUser } = useUser();
+  const { isLoaded } = useUser();
 
   // Admins use the console, not the student workspace — they never onboard.
+  // store.isAdmin is answered by /api/me; middleware catches this server-side
+  // first, so this only matters if that lookup could not resolve the email.
   useEffect(() => {
-    if (isLoaded && isAdminEmail(clerkUser?.primaryEmailAddress?.emailAddress)) {
+    if (isLoaded && store.isAdmin) {
       router.replace('/admin');
     }
-  }, [isLoaded, clerkUser, router]);
+  }, [isLoaded, store.isAdmin, router]);
 
   const [step, setStep] = useState(1);
   const totalSteps = 7;

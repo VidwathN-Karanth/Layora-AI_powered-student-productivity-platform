@@ -2,6 +2,7 @@ import { clerkMiddleware, createRouteMatcher, clerkClient } from "@clerk/nextjs/
 import { NextResponse } from "next/server";
 import { isOnRoster } from "@/lib/roster";
 import { isAdminEmail } from "@/lib/admin";
+import { redirectForRole } from "@/lib/roleRoute";
 
 // Define which routes are protected
 const isProtectedRoute = createRouteMatcher([
@@ -76,9 +77,23 @@ export default clerkMiddleware(async (auth, req) => {
     const email = await resolveEmail(sessionClaims as Record<string, unknown> | null, userId);
 
     if (email) {
-      const allowed = isAdminEmail(email) || isOnRoster(email);
+      const isAdmin = isAdminEmail(email);
+      const allowed = isAdmin || isOnRoster(email);
       if (!allowed && !req.nextUrl.pathname.startsWith('/access-denied')) {
         return NextResponse.redirect(new URL('/access-denied', req.url));
+      }
+
+      // Send each role to its own surface, here, before a page is rendered.
+      //
+      // This used to be decided in the browser, which meant every page that
+      // decided it had to import the admin email list — and a public page
+      // importing that list ships it to every visitor. The server already knows
+      // the address by this point, so the decision belongs here. It also closes
+      // the older gap where a student who typed /admin saw the console shell
+      // painted for a moment before the client bounced them.
+      const destination = redirectForRole(req.nextUrl.pathname, isAdmin);
+      if (destination) {
+        return NextResponse.redirect(new URL(destination, req.url));
       }
     }
   }

@@ -185,6 +185,16 @@ interface AppState {
    */
   cohort: Cohort | null;
   setCohort: (cohort: Cohort | null) => void;
+  /**
+   * Whether the signed-in account is a department admin, as answered by
+   * /api/me. Transient and never persisted: the admin list is server-only, so
+   * this is the browser's only honest source for it, and a value written into
+   * the synced blob would be a client-editable claim about authorization.
+   * Nothing is authorized on this — every admin route re-checks server-side.
+   * It only decides what the UI shows.
+   */
+  isAdmin: boolean;
+  setIsAdmin: (val: boolean) => void;
 }
 
 const DEFAULT_SUBJECTS: Subject[] = [];
@@ -213,6 +223,8 @@ export const useStore = create<AppState>()(
       setIsCloudLoaded: (val) => set({ isCloudLoaded: val }),
       cohort: null,
       setCohort: (cohort) => set({ cohort }),
+      isAdmin: false,
+      setIsAdmin: (val) => set({ isAdmin: val }),
 
       login: (email, name) => {
         const { registeredUsers, user: currentUser } = get();
@@ -422,6 +434,9 @@ export const useStore = create<AppState>()(
           registeredUsers: updatedUsers,
           isAuthenticated: false,
           isCloudLoaded: false,
+          // Cleared on the way out: the next account to sign in on this browser
+          // must not inherit admin affordances before /api/me answers.
+          isAdmin: false,
           user: null,
           activeTaskId: null,
           activeTimerStart: null,
@@ -959,6 +974,7 @@ export const useStore = create<AppState>()(
           user: null,
           isAuthenticated: false,
           isCloudLoaded: false,
+          isAdmin: false,
           registeredUsers: updatedRegisteredUsers,
           subjects: [],
           resources: {},

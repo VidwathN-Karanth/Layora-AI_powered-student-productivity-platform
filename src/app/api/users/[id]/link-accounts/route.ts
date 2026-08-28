@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
-import { auth, currentUser } from '@clerk/nextjs/server';
+import { getRequester } from '@/lib/authz';
 import { User } from '@/lib/models/User';
 import * as leetcodeService from '@/lib/leetcodeService';
 import * as githubService from '@/lib/githubService';
 import * as codechefService from '@/lib/codechefService';
 import { syncUser } from '@/lib/syncLogic';
-import { isAdminEmail } from '@/lib/admin';
 
 export async function POST(
   request: Request,
@@ -14,12 +13,12 @@ export async function POST(
   const { id: userId } = await params;
   
   try {
-    const { userId: authedUserId } = await auth();
-    const clerkUser = await currentUser();
-    const email = clerkUser?.primaryEmailAddress?.emailAddress || '';
-    const isAdmin = authedUserId && isAdminEmail(email);
+    // Unchanged rule — your own record, or an admin looking at anyone's —
+    // just sourced from the shared resolver instead of a local email compare.
+    const requester = await getRequester();
+    const authedUserId = requester?.userId;
 
-    if (!authedUserId || (authedUserId !== userId && !isAdmin)) {
+    if (!authedUserId || (authedUserId !== userId && !requester.isAdmin)) {
       return NextResponse.json({ error: 'Unauthorized user access' }, { status: 401 });
     }
     const { leetcodeUsername, githubUsername, codechefUsername, linkedinUrl } = await request.json();
