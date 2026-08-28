@@ -1,6 +1,6 @@
 # Layora Architecture & System Structure
 
-Layora is a high-performance, next-generation AI-powered student productivity platform built as a serverless Next.js web application. It integrates developer activity metrics (LeetCode, GitHub, CodeChef) with scheduling, Google Calendar, academic progress tracking, and an autonomous AI planning mentor.
+Layora is a student productivity platform for the MITE CSE department, built as a serverless Next.js web application. It integrates developer activity metrics (LeetCode, GitHub, CodeChef) with scheduling, Google Calendar, and academic progress tracking.
 
 ---
 
@@ -24,7 +24,6 @@ flowchart TB
     subgraph Server ["Server Tier (Next.js App Router)"]
         APIAdmin["/api/admin/* (Admin Operations)"]
         APIUser["/api/user/* (User State & Purging)"]
-        APIAI["/api/ai/* (Groq AI Agent / Schedule Engine)"]
         APICalendar["/api/calendar/sync (Google Calendar Sync)"]
         APIGitHub["/api/resources/upload-drive (Google Drive Uploads)"]
         CronSync["/api/cron/daily-sync (Scheduled Activity Sync)"]
@@ -34,7 +33,6 @@ flowchart TB
     %% External Services Tier
     subgraph External ["External Services Tier"]
         ClerkAuth["Clerk Identity Provider"]
-        GroqAI["Groq Llama 3.1 8B LLM"]
         GoogleCalendar["Google Calendar API"]
         GoogleDrive["Google Drive API"]
         LeetCodeAPI["LeetCode GraphQL Engine"]
@@ -57,7 +55,6 @@ flowchart TB
     APIUser -->|storage.from().upload()| SupabaseStorage
     
     %% External API calls
-    APIAI -->|Structured JSON Requests| GroqAI
     APICalendar -->|OAuth Tokens from Clerk| GoogleCalendar
     APIGitHub -->|OAuth Tokens from Clerk| GoogleDrive
     SyncLogic -->|Scrape / Query| LeetCodeAPI & CodeChefScraper & GitHubAPI
@@ -82,7 +79,7 @@ flowchart TB
 *   **API Framework**: Next.js Route Handlers.
 *   **Database Client**: Supabase JS client (`@supabase/supabase-js`) in Serverless functions.
 *   **Authentication & Authorization Server**: Clerk Server SDK (`@clerk/nextjs/server`) checking user identity via asynchronous `auth()` token verification.
-*   **External APIs**: Fetch API for calling Groq AI endpoints, Google Calendar v3 REST APIs, and Google Drive upload APIs.
+*   **External APIs**: Fetch API for Google Calendar v3 REST APIs and Google Drive upload APIs.
 
 ---
 
@@ -180,11 +177,11 @@ All SQL queries execute on a Supabase PostgreSQL instance. Row-Level Security (R
     *   **GitHub Commits**: (+0 pts, commits are compiled for streak telemetry only).
 5. **Ledger Record**: Delta values and calculated daily points are logged idempotently as a row in the `daily_activities` table.
 
-### C. AI Timetable Planning & Mentor Engine
-1. **Weekly timetable generator**: `POST /api/ai/planner` takes the student's college class times, subjects, tasks, and online courses, compiles them, and sends a highly structured prompt to **Groq LLM (Llama 3.1 8B)**.
-2. **Output Structure**: The LLM responds in JSON format returning a structured timetable block array and scheduling insights (explanations of decisions).
+### C. Timetable Planning
+1. **Student-owned week**: the planner starts empty and stays that way until the student fills it. Nothing is generated on their behalf.
+2. **Course placement**: adding an online course offers it the first free slot (`courseBlockFor` in `src/lib/scheduler.ts`); removing the course removes its block.
 3. **Duality Rule**: When a study task is scheduled, both a checkable Task and a Timetable block are generated and bound together in the store.
-4. **AI Academic Mentor**: `POST /api/ai/proactive` compiles student weekly performance metrics and feeds them to the LLM to yield proactive notifications (e.g. subject gap alerts, weekly consistency feedback, motivational guidance).
+4. **Overlap resolution**: `resolveScheduleOverlaps` keeps hand-made blocks (`custom-block-*`) intact when the week is recomputed.
 
 ### D. Calendar Sync & Storage Pipeline
 *   **Google Calendar Sync**: `POST /api/calendar/sync` uses the Google OAuth access token retrieved from Clerk to construct calendar event payloads and push scheduled study blocks directly to the student's primary Google Calendar.

@@ -35,8 +35,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Layora - AI Student Productivity Platform",
-  description: "A premium next-generation student productivity suite powered by artificial intelligence.",
+  title: "Layora — Student Productivity Platform",
+  description: "A student productivity workspace for the MITE CSE department: planner, tasks, resources, courses and leaderboard.",
   // The manifest is what lets a phone install Layora to the Home Screen, which
   // on iOS is the only way the Notification API exists at all.
   manifest: "/manifest.webmanifest",

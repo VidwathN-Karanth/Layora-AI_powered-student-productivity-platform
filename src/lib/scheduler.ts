@@ -190,7 +190,10 @@ export function resolveScheduleOverlaps(schedule: TimetableBlock[]): TimetableBl
     if (block.type === 'class') {
       return 100000000 + index;
     }
-    // 2. Custom or AI-added blocks (manually set times from chat/UI)
+    // 2. Blocks the student owns rather than ones this scheduler produced.
+    //    `ai-block-` is legacy: it was written by the Groq planner that no
+    //    longer exists. No stored planner still contains one, but the check
+    //    stays so a week restored from an older backup is not discarded.
     const isCustom = block.id.startsWith('custom-block-') || block.id.startsWith('ai-block-') || block.id.startsWith('instant-block-');
     if (isCustom) {
       const match = block.id.match(/\d+/);
