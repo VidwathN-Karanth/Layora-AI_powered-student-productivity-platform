@@ -52,3 +52,18 @@ next-env.d.ts
 
 # Local recovery snapshots — contain user emails, never commit
 backups/
+
+# graphify knowledge graph
+# graph.json and GRAPH_REPORT.md are committed on purpose — .gitattributes
+# registers a merge driver for the first, and the post-commit hook keeps both
+# current. The rest is either a large generated artifact or machine-specific.
+graphify-out/graph.html
+graphify-out/cache/
+graphify-out/.graphify_python
+graphify-out/.graphify_root
+graphify-out/obsidian/
+graphify-out/wiki/
+
+# Claude Code hook config — holds an absolute path to this machine's graphify
+# binary, so it cannot be shared. .claude/launch.json is portable and stays.
+.claude/settings.json
