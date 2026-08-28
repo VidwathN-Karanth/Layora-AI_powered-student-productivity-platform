@@ -2,6 +2,7 @@
 
 import { SignIn } from '@clerk/nextjs';
 import { COLLEGE_EMAIL_DOMAIN } from '@/lib/cohorts';
+import LayoraMark from '@/components/LayoraMark';
 
 export default function LoginPage() {
   return (
@@ -9,9 +10,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md z-10 flex flex-col items-center">
         {/* Layora Logo */}
         <div className="flex flex-col items-center mb-6">
-          <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mb-3">
-            <span className="text-white font-bold text-2xl tracking-tighter">L</span>
-          </div>
+          <LayoraMark className="w-14 h-14 mb-3" glyphClassName="text-2xl" />
           <h2 className="text-2xl font-bold tracking-wide text-on-surface">
             LAYORA
           </h2>

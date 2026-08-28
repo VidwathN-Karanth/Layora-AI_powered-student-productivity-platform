@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Scale, ShieldCheck, Terminal, AlertTriangle, HelpCircle } from 'lucide-react';
+import LayoraMark from '@/components/LayoraMark';
 
 export default function TermsAndConditionsPage() {
   const router = useRouter();
@@ -20,9 +21,7 @@ export default function TermsAndConditionsPage() {
         {/* Header */}
         <div className="border-b border-white/10 pb-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-              <span className="text-white font-bold text-sm">L</span>
-            </div>
+            <LayoraMark className="w-10 h-10" glyphClassName="text-sm" />
             <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
               Legal Framework
             </span>
