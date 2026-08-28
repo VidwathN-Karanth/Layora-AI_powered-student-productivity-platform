@@ -5,7 +5,6 @@ import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/store/useStore';
 import { resolveScheduleOverlaps } from '@/lib/scheduler';
-import { apiFetch } from '@/lib/apiClient';
 import { 
   LayoutDashboard, CalendarRange, BookMarked, CheckSquare, CalendarDays, 
   FolderLock, Settings, LogOut, ChevronLeft, 
@@ -168,14 +167,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: 'Global Resources', path: '/dashboard/global-resources', icon: Globe },
     { name: 'Settings', path: '/dashboard/settings', icon: Settings }
   ];
-
-  if (typeof window !== 'undefined') {
-    apiFetch('/api/debug-log/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: `DashboardLayout render - isLoaded=${isLoaded}, isAuthenticated=${store.isAuthenticated}, hasUser=${!!store.user}, userEmail=${store.user?.email}, isOnboarded=${store.user?.isOnboarded}` })
-    }).catch(() => {});
-  }
 
   if (!mockAuth && (!isLoaded || !store.isAuthenticated)) return null;
   if (!mockAuth && isAdmin) return null;

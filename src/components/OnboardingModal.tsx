@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/store/useStore';
 import ResumePanel from '@/components/ResumePanel';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
-import { apiFetch } from '@/lib/apiClient';
 import { 
   Clock, BookOpen, UploadCloud, Dumbbell, Globe, Award, CheckCircle, 
   Plus, Trash, ChevronRight, ChevronLeft, File, X, Info, ExternalLink
@@ -208,14 +207,6 @@ export default function OnboardingModal() {
     // the week is theirs to fill.
     store.placeCoursesOnPlanner();
   };
-
-  if (typeof window !== 'undefined') {
-    apiFetch('/api/debug-log/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: `OnboardingModal render - hasUser=${!!store.user}, isOnboarded=${store.user?.isOnboarded}, email=${store.user?.email}` })
-    }).catch(() => {});
-  }
 
   if (!store.user || store.user.isOnboarded) return null;
 

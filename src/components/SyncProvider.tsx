@@ -125,18 +125,20 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
   const accessAllowed = accessState === 'allowed';
 
+  /**
+   * Sync tracing, to the browser console only.
+   *
+   * This used to POST every line to /api/debug-log as well. That endpoint
+   * answers 404 in production by design, so in a deployment the request was
+   * pure waste — and the two callers that fired it from a render body sent
+   * roughly two a second, per open tab, for as long as the tab stayed open.
+   * The console still gets everything.
+   */
   const serverLog = (msg: string, isError = false) => {
     if (isError) {
       console.error(msg);
     } else {
       console.log(msg);
-    }
-    if (typeof window !== 'undefined') {
-      apiFetch('/api/debug-log/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg })
-      }).catch(() => {});
     }
   };
 
