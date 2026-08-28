@@ -45,6 +45,14 @@ async function resolveEmail(
   if (!userId) return null;
 
   try {
+    // Logged deliberately, and only on this branch. Every line here is one
+    // Clerk Backend API round trip added to a page navigation — at 800
+    // students that is the difference between a snappy app and a sluggish
+    // one. Add `"email": "{{user.primary_email_address}}"` under Clerk
+    // Dashboard → Sessions → Customize session token and these lines stop
+    // appearing. Silence in the logs is the signal that it worked.
+    console.warn('[Auth] Session token carried no email — falling back to the Clerk API.');
+
     const client = await clerkClient();
     const user = await client.users.getUser(userId);
     return user.primaryEmailAddress?.emailAddress || user.emailAddresses[0]?.emailAddress || null;
