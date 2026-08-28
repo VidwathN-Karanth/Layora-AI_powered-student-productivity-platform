@@ -14,7 +14,6 @@ import {
   ScrollText
 } from 'lucide-react';
 import { getPlatformDisplay } from '@/lib/courseUtils';
-import { isAdminEmail } from '@/lib/admin';
 import { COHORTS, SHARED_RESOURCE_TAG, shortCohortLabel, type Cohort } from '@/lib/cohorts';
 import { drivePreviewUrl } from '@/lib/driveLinks';
 import { REPEAT_RULES, REPEAT_LABEL, type RepeatRule } from '@/lib/recurrence';
@@ -704,25 +703,46 @@ export default function AdminPage() {
     fetchCerts();
   }, [selectedCertUser]);
 
-  // Verify Admin Access
+  // Verify admin access — with the server, not by comparing an email here.
+  //
+  // The log POST doubles as the check: /api/admin/logs sits behind
+  // requireAdmin(), so a 2xx *is* the authorization answer. It also records
+  // "opened the console", de-duplicated server-side to once per half hour so a
+  // refresh does not become a line.
+  //
+  // Only an explicit 401/403 means no. Anything else is a failed lookup, and
+  // that leaves the lock screen up rather than throwing a real admin out of the
+  // console over one bad request.
   useEffect(() => {
     if (!isUserLoaded || !isAuthLoaded) return;
 
-    if (isSignedIn) {
-      const email = user?.primaryEmailAddress?.emailAddress || '';
-      if (isAdminEmail(email)) {
-        setAuthorized(true);
-        fetchTelemetry();
-        // Records "opened the console", de-duplicated server-side to once per
-        // half hour so a refresh does not become a line.
-        apiFetch('/api/admin/logs', { method: 'POST' }).catch(() => {});
-      } else {
-        router.replace('/dashboard');
-      }
-    } else {
+    if (!isSignedIn) {
       router.replace('/login');
+      return;
     }
-  }, [isUserLoaded, isAuthLoaded, isSignedIn, user, router]);
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await apiFetch('/api/admin/logs', { method: 'POST' });
+        if (cancelled) return;
+
+        if (res.ok) {
+          setAuthorized(true);
+          fetchTelemetry();
+          return;
+        }
+        if (res.status === 401 || res.status === 403) {
+          router.replace('/dashboard');
+        }
+      } catch {
+        // Offline or a blocked request. Undecided is not the same as denied.
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [isUserLoaded, isAuthLoaded, isSignedIn, router]);
 
   // Fetch Supabase user states
   const fetchTelemetry = async () => {

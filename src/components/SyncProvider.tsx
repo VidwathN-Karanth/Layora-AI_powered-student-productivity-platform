@@ -68,11 +68,13 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
         if (data.allowed) {
           useStore.getState().setCohort(data.cohort ?? null);
+          useStore.getState().setIsAdmin(Boolean(data.isAdmin));
           setAccessState('allowed');
           return;
         }
 
         useStore.getState().setCohort(null);
+        useStore.getState().setIsAdmin(false);
         setAccessState('denied');
         if (!isAccessDeniedRoute) {
           router.replace('/access-denied');
@@ -88,10 +90,12 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
           if (data.allowed) {
             useStore.getState().setCohort(data.cohort ?? null);
+            useStore.getState().setIsAdmin(Boolean(data.isAdmin));
             setAccessState('allowed');
             return;
           }
           useStore.getState().setCohort(null);
+          useStore.getState().setIsAdmin(false);
           setAccessState('denied');
           if (!isAccessDeniedRoute) router.replace('/access-denied');
           return;
@@ -107,6 +111,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         const onProtectedRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/admin');
         if (onProtectedRoute) {
           useStore.getState().setCohort(null);
+          useStore.getState().setIsAdmin(false);
           setAccessState('denied');
           if (!isAccessDeniedRoute) router.replace('/access-denied');
         } else {

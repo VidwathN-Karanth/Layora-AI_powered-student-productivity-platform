@@ -19,7 +19,6 @@ import OnboardingModal from '@/components/OnboardingModal';
 import ZenMode from '@/components/ZenMode';
 import NotificationAgent from '@/components/NotificationAgent';
 import NotificationCenter from '@/components/NotificationCenter';
-import { isAdminEmail } from '@/lib/admin';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -66,7 +65,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // The student workspace and the admin console are separate surfaces.
   // Admins belong to the console only — bounce them out of every /dashboard route.
-  const isAdmin = isAdminEmail(store.user?.email) || isAdminEmail(clerkUser?.primaryEmailAddress?.emailAddress);
+  //
+  // The answer comes from /api/me via the store, not from comparing the email
+  // here: the admin list is server-only, so the browser is told whether it is
+  // admin rather than being handed everyone's address to check against.
+  // Middleware already redirects admins server-side; this is the second net.
+  const isAdmin = store.isAdmin;
 
   useEffect(() => {
     if (mockAuth) return;

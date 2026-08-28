@@ -1,18 +1,15 @@
 import { NextResponse } from 'next/server';
 import { runSyncForDate } from '@/lib/syncLogic';
-import { auth, currentUser } from '@clerk/nextjs/server';
-import { isAdminEmail } from '@/lib/admin';
+import { requireAdmin } from '@/lib/authz';
 import { AdminLog } from '@/lib/models/AdminLog';
 
 export async function POST(request: Request) {
   try {
-    const { userId } = await auth();
-    const user = await currentUser();
-    const email = user?.primaryEmailAddress?.emailAddress || '';
-
-    if (!userId || !isAdminEmail(email)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // The shared guard rather than a local email compare, so this route
+    // inherits whatever requireAdmin() grows into.
+    const guard = await requireAdmin();
+    if (!guard.ok) return guard.response;
+    const { userId, email, name } = guard.requester;
 
     const body = await request.json().catch(() => ({}));
     const { date } = body;
@@ -34,7 +31,7 @@ export async function POST(request: Request) {
     const stats = await runSyncForDate(targetDate);
 
     await AdminLog.record({
-      actor: { userId, email, name: user?.fullName ?? null },
+      actor: { userId, email, name },
       action: 'stats.sync',
       summary: `Ran the coding-stats sync by hand for ${targetDate}`,
       target: targetDate,

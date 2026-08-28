@@ -1,18 +1,13 @@
 import { NextResponse } from 'next/server';
-import { auth, currentUser } from '@clerk/nextjs/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { isAdminEmail } from '@/lib/admin';
+import { requireAdmin } from '@/lib/authz';
 
 export async function GET(req: Request) {
   try {
-    const { userId: authedUserId } = await auth();
-    const user = await currentUser();
-    const email = user?.primaryEmailAddress?.emailAddress || '';
-
-    // Verify requesting user is the system admin
-    if (!authedUserId || !isAdminEmail(email)) {
-      return NextResponse.json({ error: 'Unauthorized admin access' }, { status: 401 });
-    }
+    // The shared guard rather than a local email compare, so this route
+    // inherits whatever requireAdmin() grows into.
+    const guard = await requireAdmin();
+    if (!guard.ok) return guard.response;
 
     const { searchParams } = new URL(req.url);
     const targetUserId = searchParams.get('userId');

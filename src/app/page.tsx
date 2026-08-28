@@ -7,7 +7,6 @@ import {
   ArrowRight, ArrowDown, ShieldCheck, Award, Terminal,
   FolderLock, Globe, BookMarked, Smartphone, Check,
 } from 'lucide-react';
-import { isAdminEmail } from '@/lib/admin';
 import {
   motion, useScroll, useTransform, useMotionValueEvent, useReducedMotion,
 } from 'framer-motion';
@@ -711,7 +710,7 @@ function Footer() {
 export default function RootPage() {
   const router = useRouter();
   const { isLoaded: isAuthLoaded, isSignedIn } = useAuth();
-  const { isLoaded: isUserLoaded, user } = useUser();
+  const { isLoaded: isUserLoaded } = useUser();
   // Derived, not stored: a state set inside the effect only to mirror what the
   // props already say costs an extra render pass on every visit.
   const showLanding = isAuthLoaded && isUserLoaded && !isSignedIn;
@@ -719,14 +718,16 @@ export default function RootPage() {
   useEffect(() => {
     if (!isAuthLoaded || !isUserLoaded || !isSignedIn) return;
 
-    // Admins never see the student workspace — send them straight to the admin console.
-    const email = user?.primaryEmailAddress?.emailAddress || '';
-    const destination = isAdminEmail(email) ? '/admin' : '/dashboard';
+    // Everyone is sent to the workspace; proxy.ts forwards admins on to the
+    // console from there, server-side, before anything renders.
+    //
+    // Deciding it here would mean importing the admin list, and this page is
+    // public — whatever it imports is served to every visitor of the site.
     const timeout = setTimeout(() => {
-      router.replace(destination);
+      router.replace('/dashboard');
     }, 500);
     return () => clearTimeout(timeout);
-  }, [isAuthLoaded, isUserLoaded, isSignedIn, user, router]);
+  }, [isAuthLoaded, isUserLoaded, isSignedIn, router]);
 
   const goToLogin = () => router.push('/login');
 
