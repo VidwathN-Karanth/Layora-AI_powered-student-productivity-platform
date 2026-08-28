@@ -200,11 +200,28 @@ export class User {
   /**
    * Finds all users with at least one profile linked.
    */
-  static async findLinkedUsers(): Promise<UserRow[]> {
-    const { data, error } = await supabaseAdmin
+  static async findLinkedUsers(
+    opts: { offset?: number; limit?: number } = {}
+  ): Promise<UserRow[]> {
+    let query = supabaseAdmin
       .from('users')
       .select('*')
-      .or('leetcode_username.not.is.null,github_username.not.is.null,codechef_username.not.is.null');
+      .or('leetcode_username.not.is.null,github_username.not.is.null,codechef_username.not.is.null')
+      // The explicit order is what makes slicing safe. Postgres gives no
+      // ordering guarantee without it, so between two calls the same student
+      // could land in two slices — or, far worse, in none, losing a day of
+      // their points with nothing logged to say so.
+      .order('id', { ascending: true });
+
+    // No limit means the whole list, exactly as this behaved before slicing
+    // existed. The nightly job asks for pages; everything else still asks for
+    // all of them.
+    if (opts.limit !== undefined) {
+      const from = opts.offset ?? 0;
+      query = query.range(from, from + opts.limit - 1);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       throw new Error(`Failed to retrieve linked users: ${error.message}`);

@@ -175,6 +175,8 @@ export default function AdminPage() {
   };
   
   const [authorized, setAuthorized] = useState(false);
+  /** Shown while a multi-page sync is still walking the department. */
+  const [syncProgress, setSyncProgress] = useState('');
   const [usersList, setUsersList] = useState<TelemetryUser[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -473,28 +475,60 @@ export default function AdminPage() {
   const handleSystemSync = async () => {
     setIsSyncingSystem(true);
     setErrorMsg('');
+    setSyncProgress('');
     try {
-      const res = await apiFetch('/api/admin/sync-now', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      if (!res.ok) {
-        throw new Error('System sync request failed');
+      // The route syncs one page of students per call and returns where to
+      // resume, because the whole department does not fit inside a single
+      // serverless request. Keep going until it says it is done.
+      let offset: number | null = 0;
+      let synced = 0;
+      let failed = 0;
+      // A ceiling so a server that never reports done cannot spin forever.
+      // 200 pages is far more students than the department will ever hold.
+      const MAX_PAGES = 200;
+
+      for (let page = 0; page < MAX_PAGES && offset !== null; page++) {
+        const res = await apiFetch('/api/admin/sync-now', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ offset }),
+        });
+        if (!res.ok) {
+          throw new Error('System sync request failed');
+        }
+        const data = await res.json();
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to trigger global sync');
+        }
+
+        synced += data.stats?.successful ?? 0;
+        failed += data.stats?.failed ?? 0;
+        offset = data.done ? null : data.nextOffset;
+
+        if (offset !== null) {
+          setSyncProgress(`Synced ${synced} student(s)… still going`);
+        }
       }
-      const data = await res.json();
-      if (data.success) {
-        alert('Global activity sync completed successfully!');
-        await Promise.all([
-          fetchTelemetry(),
-          fetchLeaderboard(leaderboardRange)
-        ]);
-      } else {
-        throw new Error(data.error || 'Failed to trigger global sync');
+
+      if (offset !== null) {
+        throw new Error('Sync did not finish — stopped after too many batches.');
       }
+
+      setSyncProgress('');
+      alert(
+        failed > 0
+          ? `Global activity sync completed. ${synced} synced, ${failed} failed.`
+          : `Global activity sync completed successfully! ${synced} student(s) synced.`
+      );
+      await Promise.all([
+        fetchTelemetry(),
+        fetchLeaderboard(leaderboardRange)
+      ]);
     } catch (err: any) {
       console.error("Global sync failed:", err);
       setErrorMsg(err.message || 'Failed to trigger global activity sync.');
     } finally {
+      setSyncProgress('');
       setIsSyncingSystem(false);
     }
   };
@@ -1061,6 +1095,11 @@ export default function AdminPage() {
                 <RefreshCw className={`w-3.5 h-3.5 ${isSyncingSystem ? 'animate-spin' : ''}`} />
                 TRIGGER GLOBAL SYNC
               </button>
+              {/* A department-wide sync now takes several requests, so it says
+                  how far it has got rather than looking frozen. */}
+              {syncProgress && (
+                <span className="mt-1.5 block font-mono text-[10px] text-white/50">{syncProgress}</span>
+              )}
               {showSyncTip && (
                 <div
                   id="sync-tip"

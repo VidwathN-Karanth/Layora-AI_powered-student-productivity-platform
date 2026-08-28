@@ -26,6 +26,119 @@ interface SyncStats {
   details: SyncDetail[];
 }
 
+/* ── batching ──────────────────────────────────────────────────────
+   Why this exists: the nightly job used to walk every linked student one
+   at a time with a 500ms pause between each, plus three external API calls
+   apiece. At the department's ~8 students that finishes in seconds. At 800
+   it is fifteen minutes or more in a single request, and a serverless
+   function is killed long before that — so some students would be synced,
+   the rest silently skipped, and nobody would be told.
+
+   So the work is now sliced: each call handles a page of students within a
+   time budget and reports where to resume.
+   ────────────────────────────────────────────────────────────────── */
+
+/** Students started together. Deliberately small. */
+const CONCURRENCY = 3;
+
+/**
+ * Pause between groups, not between students.
+ *
+ * The original 500ms gap existed to stay friendly to LeetCode, GitHub and
+ * CodeChef. Three students in flight at once with the same gap is roughly
+ * three times the throughput at three times the instantaneous rate — the
+ * conservative end of what those services tolerate. If any of them starts
+ * refusing requests, lower CONCURRENCY before raising this.
+ */
+const GROUP_GAP_MS = 600;
+
+/** Students per call. Small enough that one page always fits in a budget. */
+export const DEFAULT_SLICE_SIZE = 60;
+
+/**
+ * Time to keep starting new groups.
+ *
+ * Well under a serverless limit, because the budget is checked *between*
+ * groups: whatever is already in flight still has to finish after the last
+ * check, and three students' worth of external calls is the overshoot.
+ */
+export const DEFAULT_SLICE_BUDGET_MS = 40_000;
+
+export interface SliceOptions {
+  offset?: number;
+  limit?: number;
+  budgetMs?: number;
+}
+
+export interface SliceResult extends SyncStats {
+  /** Where the next call resumes, or null once every student is done. */
+  nextOffset: number | null;
+}
+
+/**
+ * Syncs one page of linked students, then says where to pick up.
+ *
+ * Safe to re-run over a range already covered: the write behind syncUser is
+ * an upsert keyed on (user_id, date), so an overlapping slice corrects a row
+ * rather than adding points twice.
+ */
+export async function runSyncSlice(
+  targetDateStr: string,
+  opts: SliceOptions = {}
+): Promise<SliceResult> {
+  const offset = Math.max(0, opts.offset ?? 0);
+  const limit = Math.max(1, opts.limit ?? DEFAULT_SLICE_SIZE);
+  const budgetMs = opts.budgetMs ?? DEFAULT_SLICE_BUDGET_MS;
+  const startedAt = Date.now();
+
+  const users = await User.findLinkedUsers({ offset, limit });
+  console.log(`[Sync] Slice at offset ${offset}: ${users.length} student(s) for ${targetDateStr}`);
+
+  const stats: SyncStats = { processed: 0, successful: 0, failed: 0, details: [] };
+  let consumed = 0;
+
+  for (let i = 0; i < users.length; i += CONCURRENCY) {
+    // The budget is never checked before the first group, so every call makes
+    // progress. Without that guarantee a tight budget would return the same
+    // offset forever and the driver would loop until it gave up.
+    if (i > 0) {
+      if (Date.now() - startedAt >= budgetMs) {
+        console.log(`[Sync] Budget spent after ${consumed} student(s); resuming at ${offset + consumed}`);
+        break;
+      }
+      await sleep(GROUP_GAP_MS);
+    }
+
+    const group = users.slice(i, i + CONCURRENCY);
+    const results = await Promise.all(
+      // syncUser resolves its own failures, but a throw here would lose the
+      // whole group's results, so it is belt-and-braces.
+      group.map((user) =>
+        syncUser(user, targetDateStr).catch((error: unknown) => ({
+          userId: user.id,
+          name: user.name,
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        } as SyncDetail))
+      )
+    );
+
+    for (const detail of results) {
+      stats.processed++;
+      if (detail.success) stats.successful++;
+      else stats.failed++;
+      stats.details.push(detail);
+    }
+    consumed += group.length;
+  }
+
+  // More work remains if the budget cut this slice short, or if the page came
+  // back full — a full page means the next one may hold more.
+  const more = consumed < users.length || users.length === limit;
+
+  return { ...stats, nextOffset: more ? offset + consumed : null };
+}
+
 /**
  * Syncs activity statistics (LeetCode, GitHub) for a single user for a target date.
  */
