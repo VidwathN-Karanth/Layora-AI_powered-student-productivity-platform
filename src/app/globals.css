@@ -775,9 +775,19 @@ html.light-mode[data-theme="emerald"] {
   color: var(--l-ink-mute) !important;
 }
 
-/* Header bar */
-.light-mode header {
+/* Header bar
+   Only headers that actually paint a background in dark mode get a card face
+   here. This used to match every <header> on the page, which gave the admin
+   console's title row — a bare heading with nothing but a bottom rule — a
+   white rectangle floating on the warm paper ground, and did the same to the
+   plain title blocks on /extension and inside the certificate groups.
+   The border colour still applies everywhere: a hairline should be the light
+   rule colour whether or not the element has a fill. */
+.light-mode header[class*="bg-"] {
   background-color: var(--l-card) !important;
+}
+
+.light-mode header {
   border-color: var(--l-rule) !important;
 }
 
