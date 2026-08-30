@@ -23,10 +23,13 @@ There is no build step. Load the folder as-is:
 
 Change a file, press the reload arrow on the extension card, done.
 
-**Firefox** needs the generated manifest, so run `python extension/build-zip.py`
-first and load `public/layora-extension-firefox.zip` through `about:debugging`
-→ **This Firefox** → **Load Temporary Add-on…**. Firefox drops a temporary
-add-on when it closes.
+**Firefox** is published, so students install it from the listing:
+<https://addons.mozilla.org/en-US/firefox/addon/layora-quick-access/>
+
+To load a *development* build instead, run `python extension/build-zip.py` and
+open `public/layora-extension-firefox.zip` through `about:debugging` → **This
+Firefox** → **Load Temporary Add-on…**. Firefox drops a temporary add-on when
+it closes; the published one is permanent.
 
 ## Packaging
 
@@ -117,5 +120,8 @@ The origin appears in three places and all three must agree:
   a tab that had already staged a write can still land it afterwards and drop
   the new launcher. Moving launchers to their own table would close it.
 - **A temporary Firefox add-on disappears on restart.** That is Firefox's rule
-  for anything loaded through `about:debugging`, not something this can fix.
-  An AMO listing removes it.
+  for anything loaded through `about:debugging`. It only affects development
+  builds — the published listing installs permanently.
+- **Chrome has no store listing yet**, so Chromium users still install the zip
+  by hand. `/extension` shows them that route and shows Firefox users the
+  listing instead, picking by user agent.
