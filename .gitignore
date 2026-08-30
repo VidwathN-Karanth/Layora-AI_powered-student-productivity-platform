@@ -67,3 +67,7 @@ graphify-out/wiki/
 # Claude Code hook config — holds an absolute path to this machine's graphify
 # binary, so it cannot be shared. .claude/launch.json is portable and stays.
 .claude/settings.json
+
+# Python bytecode cache, written whenever scripts/ is imported
+__pycache__/
+*.pyc
