@@ -13,9 +13,18 @@ import { Download, Puzzle } from 'lucide-react';
    instruction at all.
    ──────────────────────────────────────────────────────────────── */
 
-/** Set once each listing exists; until then the manual route shows instead. */
+/**
+ * Where each browser installs from.
+ *
+ * Firefox is listed on addons.mozilla.org, so Gecko visitors get a one-click
+ * install and automatic updates, and never see the by-hand route. The Chrome
+ * Web Store listing does not exist yet, so Chromium still falls back to the
+ * downloadable zip. Each can be overridden by an env var without a deploy.
+ */
 const CHROME_STORE_URL = process.env.NEXT_PUBLIC_EXTENSION_STORE_URL || '';
-const FIREFOX_STORE_URL = process.env.NEXT_PUBLIC_EXTENSION_AMO_URL || '';
+const FIREFOX_STORE_URL =
+  process.env.NEXT_PUBLIC_EXTENSION_AMO_URL ||
+  'https://addons.mozilla.org/en-US/firefox/addon/layora-quick-access/';
 
 export type BrowserFamily = 'firefox' | 'chromium';
 
@@ -81,8 +90,10 @@ const BUILDS: Record<BrowserFamily, Build> = {
       <>Click the <span className="text-on-surface">Load Temporary Add-on…</span> button.</>,
       <>Select the downloaded Firefox ZIP file — no need to unzip it.</>,
     ],
+    // Only reachable if the AMO link is deliberately unset, since Firefox now
+    // installs from the listing. Kept accurate in case it ever shows.
     caveat:
-      'Firefox removes a temporary add-on when it closes, so this needs repeating after a restart until the Add-ons listing is live.',
+      'Loaded this way, Firefox drops the add-on when it closes. Installing from the Add-ons site instead makes it permanent.',
   },
 };
 
@@ -101,24 +112,56 @@ export default function ExtensionInstall() {
   const build = BUILDS[family];
   const other = BUILDS[family === 'firefox' ? 'chromium' : 'firefox'];
 
+  /* Shown on both routes: someone downloading here to install on another
+     machine still needs a way across. Deliberately a text link, not a second
+     button. It points at the other browser's store when there is one. */
+  const secondary = (
+    <p className="font-mono text-[11px] text-outline">
+      Installing on {other.name} instead?{' '}
+      {other.storeUrl ? (
+        <a
+          href={other.storeUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline underline-offset-2"
+        >
+          Get it for {other.name}
+        </a>
+      ) : (
+        <a href={other.file} download className="text-primary underline underline-offset-2">
+          Get the {other.name} build
+        </a>
+      )}
+    </p>
+  );
+
   if (build.storeUrl) {
     return (
-      <a
-        href={build.storeUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-on-primary transition hover:opacity-90"
-      >
-        <Puzzle className="h-4 w-4" /> {build.storeLabel}
-      </a>
+      <div className="mt-5 space-y-4">
+        <p className="text-sm leading-relaxed text-on-surface-variant">
+          One click from the official add-ons site, and it updates itself from
+          then on.
+        </p>
+
+        <a
+          href={build.storeUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-on-primary transition hover:opacity-90"
+        >
+          <Puzzle className="h-4 w-4" /> {build.storeLabel}
+        </a>
+
+        {secondary}
+      </div>
     );
   }
 
   return (
     <div className="mt-5 space-y-4">
       <p className="text-sm leading-relaxed text-on-surface-variant">
-        The store listing is not live yet, so it installs by hand for now.
-        It takes about a minute.
+        The {build.name} store listing is not live yet, so it installs by hand
+        for now. It takes about a minute.
       </p>
 
       <a
@@ -139,14 +182,7 @@ export default function ExtensionInstall() {
         <p className="font-mono text-[11px] leading-relaxed text-outline">{build.caveat}</p>
       )}
 
-      {/* Deliberately a text link, not a second button: someone downloading
-          here to install on another machine still needs a way through. */}
-      <p className="font-mono text-[11px] text-outline">
-        Installing on {other.name} instead?{' '}
-        <a href={other.file} download className="text-primary underline underline-offset-2">
-          Get the {other.name} build
-        </a>
-      </p>
+      {secondary}
     </div>
   );
 }
