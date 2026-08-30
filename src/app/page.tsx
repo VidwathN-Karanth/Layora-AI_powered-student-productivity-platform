@@ -38,6 +38,14 @@ const STEPS = [
     facts: ['Space to pause · Esc to leave', 'Focus and break lengths are yours', 'Logs to your streak'],
   },
   {
+    label: 'Browser extension',
+    title: 'Your links and courses, from any tab.',
+    body: 'Published on the Firefox Add-ons site. Pin it once and your quick launchers and course list are a click away without opening the dashboard — and a link you add from the popup shows up in Layora too.',
+    src: '/images/landing/extension.webp',
+    alt: 'The Layora extension popup, twice: the quick launcher grid with LeetCode, GitHub, NPTEL, Drive, Classroom and CodeChef, and the courses tab with progress meters.',
+    facts: ['One press to connect, no keys to paste', 'Opens the course itself, not a page about it', 'Firefox now, Chromium by hand'],
+  },
+  {
     label: 'Weekly planner',
     title: 'The week builds itself around your classes.',
     body: 'Add your subjects once — code, credits, how hard they are. Layora fills the gaps between lectures with focus sessions sized to your Pomodoro rhythm, and calls out any deadline it could not find time for.',
