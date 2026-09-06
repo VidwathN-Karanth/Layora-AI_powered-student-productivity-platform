@@ -68,53 +68,84 @@ interface PageRuntime {
   lastError?: { message?: string };
 }
 
+/** Chromium browsers that cannot install an extension at all. */
+const MOBILE = /Android|iPhone|iPad|iPod|Mobile/i;
+
+/** If the ping is going to be answered, it is answered immediately. */
+const PING_TIMEOUT_MS = 1500;
+
 /**
  * Whether this visitor has the extension installed.
  *
- * `true` / `false` once known, and `null` while the answer is still unknown —
- * which on Firefox means *permanently* unknown, so callers must treat `null`
- * as "say nothing". The check rides `externally_connectable` in the manifest,
- * which is a Chromium-only key; Firefox drops it, and its `browser.runtime` is
- * not exposed to web pages at all. There is no equivalent, so a Gecko visitor
- * is never nagged rather than being nagged wrongly.
+ * `true` / `false` once known, `null` while the question cannot be asked at
+ * all — so callers must treat `null` as "say nothing".
  *
- * The extension answers `layora:ping` from any Layora page. If it is missing,
- * Chromium invokes the callback with no response and sets `lastError`, which
- * has to be *read* inside the callback or the console fills with unchecked
- * runtime errors on every page load.
+ * The check rides `externally_connectable`, a Chromium-only manifest key that
+ * grants the Layora origin the right to message the extension. Two things
+ * follow from how Chromium implements it, and both matter here:
+ *
+ * 1. `chrome.runtime` is injected into a page *only* when some installed
+ *    extension lists that page in `externally_connectable`. Its absence is
+ *    therefore the ordinary signal that ours is not installed — not a signal
+ *    that the browser could not be asked. Treating absence as "unknown" makes
+ *    the negative answer unreachable, which is the whole point of asking.
+ * 2. When `chrome.runtime` *is* present but ours is missing, Chromium calls
+ *    back with no response and sets `lastError`, which has to be read inside
+ *    the callback or the console fills with unchecked runtime errors.
+ *
+ * Firefox is the genuine `null`: it drops `externally_connectable` and exposes
+ * no equivalent to a web page, so a Gecko visitor is left alone rather than
+ * nagged on a guess. Mobile Chromium is the other, since it cannot install
+ * extensions at all.
  */
 export function useExtensionInstalled(): boolean | null {
+  const family = useBrowserFamily();
   const [installed, setInstalled] = useState<boolean | null>(null);
 
   useEffect(() => {
+    // Gecko cannot answer, and no mobile browser can install one.
+    if (family !== 'chromium') return;
+    if (MOBILE.test(navigator.userAgent)) return;
+
+    let cancelled = false;
+    // Deferred so the effect body never sets state synchronously, which would
+    // cascade a second render on every mount.
+    const settle = (value: boolean) => {
+      queueMicrotask(() => {
+        if (!cancelled) setInstalled(value);
+      });
+    };
+
     const runtime = (window as unknown as { chrome?: { runtime?: PageRuntime } })
       .chrome?.runtime;
 
-    // Firefox, Safari, and every mobile browser: no way to ask. Stay null.
-    if (!runtime || typeof runtime.sendMessage !== 'function') return;
+    // Nothing is listening on this origin, so ours is not among them.
+    if (!runtime || typeof runtime.sendMessage !== 'function') {
+      settle(false);
+      return () => {
+        cancelled = true;
+      };
+    }
 
-    let cancelled = false;
+    // Another extension may own the runtime we can see, so still ask ours.
+    const timer = setTimeout(() => settle(false), PING_TIMEOUT_MS);
 
     try {
       runtime.sendMessage(EXTENSION_ID, { type: 'layora:ping' }, (response) => {
-        // Reading this is what suppresses Chromium's console warning when the
-        // extension is absent. The value itself is not needed.
         void runtime.lastError;
-        if (!cancelled) setInstalled(Boolean(response && response.ok));
+        clearTimeout(timer);
+        settle(Boolean(response && response.ok));
       });
     } catch {
-      // Some Chromium forks throw instead of calling back with lastError.
-      // Deferred to a microtask so the effect body never sets state
-      // synchronously, which would cascade a second render on every mount.
-      queueMicrotask(() => {
-        if (!cancelled) setInstalled(false);
-      });
+      clearTimeout(timer);
+      settle(false);
     }
 
     return () => {
       cancelled = true;
+      clearTimeout(timer);
     };
-  }, []);
+  }, [family]);
 
   return installed;
 }
