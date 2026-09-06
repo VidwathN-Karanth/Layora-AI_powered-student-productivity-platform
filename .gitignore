@@ -63,6 +63,9 @@ graphify-out/.graphify_python
 graphify-out/.graphify_root
 graphify-out/obsidian/
 graphify-out/wiki/
+# Per-run snapshots the post-commit hook drops, ~1MB each and never merged.
+graphify-out/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/
+graphify-out/.graphify_labels.json.sig
 
 # Claude Code hook config — holds an absolute path to this machine's graphify
 # binary, so it cannot be shared. .claude/launch.json is portable and stays.
