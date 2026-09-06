@@ -27,6 +27,9 @@ interface Connection {
 
 type ConnectState = 'idle' | 'working' | 'done' | 'error';
 
+/** Set once this browser has been paired without being asked. */
+const AUTO_CONNECT_KEY = 'layora:ext-autoconnected';
+
 export default function ExtensionPage() {
   const { isLoaded, isSignedIn } = useUser();
 
@@ -89,7 +92,7 @@ export default function ExtensionPage() {
   }, [isSignedIn]);
 
   /** Mint a token and hand it to the extension. No ids, no copy-paste. */
-  const connect = async () => {
+  const connect = useCallback(async (auto = false) => {
     setConnectState('working');
     setMessage('');
 
@@ -127,13 +130,49 @@ export default function ExtensionPage() {
       }
 
       setConnectState('done');
-      setMessage('Connected. Open the extension from your toolbar.');
+      setMessage(
+        auto
+          ? 'Connected automatically. Open the extension from your toolbar.'
+          : 'Connected. Open the extension from your toolbar.'
+      );
       await loadConnections();
     } catch (err) {
       setConnectState('error');
       setMessage(errorMessage(err, 'Could not create a connection.'));
     }
-  };
+  }, [loadConnections]);
+
+  /* ── Connect it without being asked ──
+     A student who has just installed from the store should not have to find a
+     button to finish. When this page can see the extension and the account at
+     the same time, it pairs them itself.
+
+     Guarded by a flag in localStorage, because every connection mints a token
+     and a fresh one on every page load would litter the list below with
+     duplicates. One automatic connection per browser; the button stays for
+     every case after that, including reconnecting a browser disconnected by
+     hand. Storage being unavailable reads as already-done, which errs towards
+     doing nothing. */
+  useEffect(() => {
+    if (!isSignedIn || installed !== true || connectState !== 'idle') return;
+
+    let already = true;
+    try {
+      already = window.localStorage.getItem(AUTO_CONNECT_KEY) !== null;
+    } catch {
+      // Private mode. Leave it to the button.
+    }
+    if (already) return;
+
+    try {
+      window.localStorage.setItem(AUTO_CONNECT_KEY, String(Date.now()));
+    } catch {
+      return;
+    }
+
+    // Deferred so the effect body never starts a state update synchronously.
+    queueMicrotask(() => { void connect(true); });
+  }, [isSignedIn, installed, connectState, connect]);
 
   const disconnect = async (id: string) => {
     try {
@@ -190,7 +229,7 @@ export default function ExtensionPage() {
           ) : (
             <div className="mt-5 space-y-4">
               <button
-                onClick={connect}
+                onClick={() => void connect()}
                 disabled={connectState === 'working'}
                 className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-on-primary transition hover:opacity-90 disabled:opacity-50"
               >
