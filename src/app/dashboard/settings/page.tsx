@@ -15,10 +15,17 @@ import {
   permissionState, requestPermission, type NotificationPermissionState,
 } from '@/lib/notifications';
 import { toDateKey } from '@/lib/dateFormat';
+import { useExtensionInstalled, useStoreTarget } from '@/lib/extension';
 
 export default function SettingsPage() {
   const store = useStore();
   const { user: clerkUser } = useUser();
+
+  // Whether this browser already has the extension, and where it would get it.
+  // `null` means the browser could not be asked (Firefox has no equivalent of
+  // externally_connectable), so the panel falls back to simply offering it.
+  const extensionInstalled = useExtensionInstalled();
+  const extensionStore = useStoreTarget();
 
   // Local profile states
   // The display name is read-only — Clerk (Google) is the source of truth.
@@ -506,13 +513,31 @@ export default function SettingsPage() {
               press Connect, and add links straight from the popup.
             </p>
 
+            {extensionInstalled === true ? (
+              <p className="flex items-center gap-2 rounded-xl border border-primary/25 bg-primary/5 p-3 text-[11px] font-mono text-on-surface-variant">
+                <Check className="w-3.5 h-3.5 shrink-0 text-primary" />
+                Installed in this browser.
+              </p>
+            ) : (
+              <a
+                href={extensionStore.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-on-primary transition hover:opacity-90"
+              >
+                <Puzzle className="w-3.5 h-3.5" /> {extensionStore.label}
+              </a>
+            )}
+
             <a
               href="/extension"
               className="flex items-center justify-between gap-3 rounded-xl border border-outline-variant bg-white/2 p-3.5 transition hover:border-primary hover:bg-surface-container cursor-pointer group"
             >
               <span className="min-w-0">
                 <span className="block text-xs font-mono font-bold text-on-surface">
-                  Install &amp; connect the extension
+                  {extensionInstalled === true
+                    ? 'Connect it to your account'
+                    : 'Install & connect the extension'}
                 </span>
                 <span className="block text-[10px] font-mono text-outline mt-0.5">
                   Firefox, Chrome, Edge and other Chromium browsers

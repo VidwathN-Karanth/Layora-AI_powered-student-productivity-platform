@@ -19,6 +19,7 @@ import ZenMode from '@/components/ZenMode';
 import NotificationAgent from '@/components/NotificationAgent';
 import NotificationCenter from '@/components/NotificationCenter';
 import LayoraMark from '@/components/LayoraMark';
+import ExtensionPrompt from '@/components/ExtensionPrompt';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -483,6 +484,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <NotificationAgent />
       <NotificationCenter />
       <OnboardingModal />
+      <ExtensionPrompt />
     </div>
   );
 }

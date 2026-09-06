@@ -1,7 +1,13 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
 import { Download, Puzzle } from 'lucide-react';
+
+import {
+  CHROME_STORE_URL,
+  FIREFOX_STORE_URL,
+  useBrowserFamily,
+  type BrowserFamily,
+} from '@/lib/extension';
 
 /* ────────────────────────────────────────────────────────────────
    The install step of /extension, in whichever browser is reading it.
@@ -11,40 +17,11 @@ import { Download, Puzzle } from 'lucide-react';
    underneath match the button — the two halves are never allowed to disagree,
    because a Chrome instruction under a Firefox download is worse than no
    instruction at all.
+
+   Both browsers now have a published listing, so the by-hand route below is
+   only reachable if a store URL is deliberately unset by env var. It is kept
+   working, and kept accurate, for that case.
    ──────────────────────────────────────────────────────────────── */
-
-/**
- * Where each browser installs from.
- *
- * Firefox is listed on addons.mozilla.org, so Gecko visitors get a one-click
- * install and automatic updates, and never see the by-hand route. The Chrome
- * Web Store listing does not exist yet, so Chromium still falls back to the
- * downloadable zip. Each can be overridden by an env var without a deploy.
- */
-const CHROME_STORE_URL = process.env.NEXT_PUBLIC_EXTENSION_STORE_URL || '';
-const FIREFOX_STORE_URL =
-  process.env.NEXT_PUBLIC_EXTENSION_AMO_URL ||
-  'https://addons.mozilla.org/en-US/firefox/addon/layora-quick-access/';
-
-export type BrowserFamily = 'firefox' | 'chromium';
-
-/**
- * Which build this browser can actually load.
- *
- * Only two answers are useful here, because only two packages exist: Gecko, and
- * everything Chromium. Edge, Brave, Opera, Vivaldi and Arc all carry `Chrome/`
- * in their user agent and all load the same zip, so none of them need naming.
- *
- * Firefox on iOS reports `FxiOS` and is WebKit underneath — it cannot load an
- * extension at all, so it is deliberately *not* matched as Firefox. It falls to
- * the Chromium branch, which is equally wrong for it but at least points at the
- * package a student's desktop will accept.
- */
-export function detectBrowser(userAgent: string): BrowserFamily {
-  return /\bFirefox\/\d+/.test(userAgent) && !/Seamonkey/i.test(userAgent)
-    ? 'firefox'
-    : 'chromium';
-}
 
 interface Build {
   /** What the one button says. */
@@ -90,24 +67,13 @@ const BUILDS: Record<BrowserFamily, Build> = {
       <>Click the <span className="text-on-surface">Load Temporary Add-on…</span> button.</>,
       <>Select the downloaded Firefox ZIP file — no need to unzip it.</>,
     ],
-    // Only reachable if the AMO link is deliberately unset, since Firefox now
-    // installs from the listing. Kept accurate in case it ever shows.
     caveat:
       'Loaded this way, Firefox drops the add-on when it closes. Installing from the Add-ons site instead makes it permanent.',
   },
 };
 
 export default function ExtensionInstall() {
-  // The user agent is a client-only value, so it is read through
-  // useSyncExternalStore rather than an effect: the server snapshot is what
-  // gets rendered on the server and on the first client pass, which keeps
-  // hydration in agreement, and React swaps in the real answer immediately
-  // after. It never changes afterwards, hence the no-op subscribe.
-  const family = useSyncExternalStore<BrowserFamily>(
-    () => () => {},
-    () => detectBrowser(navigator.userAgent),
-    () => 'chromium'
-  );
+  const family: BrowserFamily = useBrowserFamily();
 
   const build = BUILDS[family];
   const other = BUILDS[family === 'firefox' ? 'chromium' : 'firefox'];
@@ -139,8 +105,7 @@ export default function ExtensionInstall() {
     return (
       <div className="mt-5 space-y-4">
         <p className="text-sm leading-relaxed text-on-surface-variant">
-          One click from the official add-ons site, and it updates itself from
-          then on.
+          One click from the official store, and it updates itself from then on.
         </p>
 
         <a
