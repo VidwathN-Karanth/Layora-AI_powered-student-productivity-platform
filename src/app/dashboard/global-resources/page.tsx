@@ -1,13 +1,13 @@
 'use client';
 import { formatDate } from '@/lib/dateFormat';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useStore } from '@/store/useStore';
 import { useUser } from '@clerk/nextjs';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
 import { apiFetch } from '@/lib/apiClient';
 import DriveThumb from '@/components/CertificateThumb';
-import { SHARED_RESOURCE_TAG, resolveResourceTag, shortCohortLabel, type Cohort } from '@/lib/cohorts';
+import { SHARED_RESOURCE_TAG, normalizeResourceName, resolveResourceTag, shortCohortLabel, type Cohort } from '@/lib/cohorts';
 import { 
   Globe, UploadCloud, File, Plus, Trash, FileText, 
   ExternalLink, RefreshCw, Loader2, Search, User, Clock, AlertCircle, Users
@@ -155,9 +155,33 @@ export default function GlobalResourcesPage() {
     processSelectedFile(file);
   };
 
+  /**
+   * The document already holding the name being typed, if any.
+   *
+   * `resources` is the list this account can actually see — its own year plus
+   * the shared shelf — which is exactly the set a duplicate name would be
+   * confusing within. The server repeats this check and has the final say;
+   * this copy exists so the student is told before a file is sent to Drive
+   * rather than after.
+   */
+  const nameTakenBy = useMemo(() => {
+    const wanted = normalizeResourceName(fileName);
+    if (!wanted) return undefined;
+    return resources.find((r) => normalizeResourceName(r.name) === wanted);
+  }, [fileName, resources]);
+
+  const NAME_TAKEN_MESSAGE = 'Name not available — a document with this name is already here. Please pick another.';
+
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errors: Record<string, string> = {};
+
+    // Checked on both paths before any work is done, so a duplicate name can
+    // never cost the student a Drive upload that is then rejected.
+    if (nameTakenBy) {
+      setUploadErrors({ fileName: NAME_TAKEN_MESSAGE });
+      return;
+    }
 
     if (uploadMethod === 'link') {
       if (!linkUrl.trim()) errors.link = "Web Link is required";
@@ -183,6 +207,12 @@ export default function GlobalResourcesPage() {
           });
           if (!res.ok) {
             const errData = await res.json().catch(() => ({}));
+            // A taken name belongs against the field, not in an alert.
+            if (res.status === 409) {
+              setUploadErrors({ fileName: errData.error || NAME_TAKEN_MESSAGE });
+              setIsUploading(false);
+              return;
+            }
             throw new Error(errData.error || 'Failed to submit document link');
           }
           const data = await res.json();
@@ -262,6 +292,14 @@ export default function GlobalResourcesPage() {
 
       if (!saveRes.ok) {
         const errData = await saveRes.json().catch(() => ({}));
+        // Someone claimed the name while this file was uploading. The file is
+        // safely in the student's Drive; only the library entry was refused,
+        // so say that plainly instead of the generic upload-failure advice.
+        if (saveRes.status === 409) {
+          setUploadErrors({ fileName: errData.error || NAME_TAKEN_MESSAGE });
+          setIsUploading(false);
+          return;
+        }
         throw new Error(errData.error || 'Failed to register document in global library');
       }
 
@@ -488,11 +526,20 @@ export default function GlobalResourcesPage() {
                   setUploadErrors(prev => ({ ...prev, fileName: undefined }));
                 }}
                 placeholder="e.g. Physics Semester 2 Lecture Notes"
-                className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary font-mono"
+                className={`w-full bg-surface-container border rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none font-mono ${
+                  nameTakenBy ? 'border-red-500/70 focus:border-red-500' : 'border-outline-variant focus:border-primary'
+                }`}
               />
-              {uploadErrors.fileName && (
+              {uploadErrors.fileName ? (
                 <p className="text-red-500 text-[10px] font-mono mt-1">❌ {uploadErrors.fileName}</p>
-              )}
+              ) : nameTakenBy ? (
+                /* Said while typing, so a duplicate is caught before a file is
+                   ever sent to Drive. */
+                <p className="text-red-500 text-[10px] font-mono mt-1">
+                  ❌ Name not available — already used by a document from{' '}
+                  {nameTakenBy.uploaderName || 'another student'}. Please pick another.
+                </p>
+              ) : null}
             </div>
 
             {/* Where this lands is decided by the roster, not by the uploader. */}
@@ -508,7 +555,7 @@ export default function GlobalResourcesPage() {
             <div className="flex gap-2">
               <button
                 type="submit"
-                disabled={isUploading}
+                disabled={isUploading || Boolean(nameTakenBy)}
                 className="bg-primary hover:bg-primary-container text-on-surface rounded-lg px-4 py-2 text-xs font-mono font-bold transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
               >
                 {isUploading ? (

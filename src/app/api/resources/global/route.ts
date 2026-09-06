@@ -6,6 +6,7 @@ import { AdminLog } from '@/lib/models/AdminLog';
 import {
   SHARED_RESOURCE_TAG,
   cohortCanSeeResource,
+  findResourceNameClash,
   isCohort,
   type Cohort,
 } from '@/lib/cohorts';
@@ -142,6 +143,26 @@ export async function POST(request: Request) {
     }
 
     const list = await readResourceList();
+
+    /* One name, one document.
+       Checked here rather than only in the browser because the client knows
+       about its own shelf and the shared one, but an admin publishing to
+       `Others` collides with every year at once — and only the server can see
+       all of them. This is also the check that survives two students pressing
+       Upload at the same moment. */
+    const clash = findResourceNameClash(list, name, year);
+    if (clash) {
+      return NextResponse.json(
+        {
+          error:
+            `Name not available — "${clash.name}" is already in this library. ` +
+            'Please choose a different document name.',
+          code: 'NAME_TAKEN',
+          conflictsWith: { name: clash.name, year: clash.year },
+        },
+        { status: 409 }
+      );
+    }
 
     const newResource: StoredResource = {
       id: `file-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
