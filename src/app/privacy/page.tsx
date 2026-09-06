@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ShieldCheck, Eye, Database, Trash2, Key } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Eye, Database, Trash2, Key, Puzzle } from 'lucide-react';
 import LayoraMark from '@/components/LayoraMark';
 
 export default function PrivacyPolicyPage() {
@@ -29,7 +29,7 @@ export default function PrivacyPolicyPage() {
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight font-geist text-white">
             Privacy Policy
           </h1>
-          <p className="text-xs text-white/40 mt-1">Last updated: June 22, 2026</p>
+          <p className="text-xs text-white/40 mt-1">Last updated: September 6, 2026</p>
         </div>
 
         {/* Content Body */}
@@ -95,8 +95,35 @@ export default function PrivacyPolicyPage() {
 
           <section className="space-y-3">
             <div className="flex items-center gap-2 text-white font-bold text-sm border-b border-white/5 pb-1">
+              <Puzzle className="w-4 h-4 text-primary" />
+              <span>5. Browser Extension</span>
+            </div>
+            <p>
+              The <strong className="text-white">Layora Quick Access</strong> browser extension for Chrome, Edge, Brave and Firefox is covered by this same policy. It is an optional companion to your Layora account, and it works only after you sign in on this site and press Connect on the Extension page.
+            </p>
+            <ul className="list-disc pl-5 space-y-2 text-white/70">
+              <li>
+                <strong className="text-white">What it reads:</strong> only your own account name and email address, your saved quick launchers, and your course list with their platform and progress. It requests nothing else.
+              </li>
+              <li>
+                <strong className="text-white">What it never reads:</strong> your browsing history, your open tabs, or the content of any page you visit. The extension runs a script on exactly one page &mdash; Layora&apos;s own Extension page &mdash; and that script does nothing but pass the pairing token to the extension.
+              </li>
+              <li>
+                <strong className="text-white">Where it sends data:</strong> only to Layora at <span className="text-white/90">layora239.vercel.app</span>. It contacts no analytics service, no advertiser, and no other third party.
+              </li>
+              <li>
+                <strong className="text-white">What it stores on your device:</strong> a pairing token and a cached copy of your own launchers and courses, kept in the browser&apos;s local extension storage so the popup opens instantly. Uninstalling the extension deletes both.
+              </li>
+              <li>
+                <strong className="text-white">How pairing works:</strong> connecting mints a token tied to your account rather than using your password, which the extension never sees or stores. We keep only a hashed form of that token on our servers, and you can revoke it for any browser at any time from the Extension page.
+              </li>
+            </ul>
+          </section>
+
+          <section className="space-y-3">
+            <div className="flex items-center gap-2 text-white font-bold text-sm border-b border-white/5 pb-1">
               <Trash2 className="w-4 h-4 text-primary" />
-              <span>5. User Rights & Data Erasure</span>
+              <span>6. User Rights & Data Erasure</span>
             </div>
             <p>
               You maintain full ownership of your data profile. You have the right to edit your username mappings, clear active integrations, or wipe all saved account records at any time. Please contact us to request the permanent deletion of your cached parameters, database rows, and sync configurations.
@@ -106,7 +133,7 @@ export default function PrivacyPolicyPage() {
           <section className="space-y-3">
             <div className="flex items-center gap-2 text-white font-bold text-sm border-b border-white/5 pb-1">
               <ShieldCheck className="w-4 h-4 text-primary" />
-              <span>6. Contact Us</span>
+              <span>7. Contact Us</span>
             </div>
             <p>
               If you have any questions or data requests regarding our privacy standards, you can reach out directly via:
