@@ -92,7 +92,9 @@ export default function NotificationAgent() {
         title: 'Turn on desktop reminders',
         body: 'Open Settings to let Layora notify you on this device.',
         tag: 'layora-permission-nudge',
-        url: '/dashboard/settings/',
+        // Staff and students have separate Settings pages, and sending an
+        // admin to /dashboard/settings only bounces them back to the console.
+        url: useStore.getState().isAdmin ? '/admin/settings' : '/dashboard/settings/',
       });
     }, 1500);
 

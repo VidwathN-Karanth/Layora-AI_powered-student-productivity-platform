@@ -104,6 +104,24 @@ export class Event {
     return (data || []).map((r) => mapRow(r as DatabaseEventRow));
   }
 
+  /**
+   * Every staff entry, whatever year it is aimed at.
+   *
+   * An admin has no cohort of their own, so "what is on today" for them is the
+   * department's whole calendar rather than one year's slice. Used by the
+   * reminder agent, which needs an answer before any year has been chosen.
+   */
+  static async findAllStaff(): Promise<EventRow[]> {
+    const { data, error } = await supabaseAdmin
+      .from('events')
+      .select('*')
+      .neq('audience', PERSONAL_AUDIENCE)
+      .order('event_date', { ascending: true });
+
+    if (error) throw new Error(`Failed to load events: ${error.message}`);
+    return (data || []).map((r) => mapRow(r as DatabaseEventRow));
+  }
+
   static async create(input: {
     title: string;
     description?: string | null;

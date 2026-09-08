@@ -67,12 +67,16 @@ export default function RootLayout({
   return (
     <ClerkProvider
       appearance={{
-        baseTheme: dark,
+        // Clerk 7 renamed this from `baseTheme`.
+        theme: dark,
         variables: {
           colorPrimary: '#007AFF', // Apple Blue
           colorBackground: '#121214', // Neutral dark
-          colorInputBackground: 'rgba(255, 255, 255, 0.05)',
-          colorInputText: '#e2e2e2',
+          // Renamed by Clerk 7: colorInputBackground/colorInputText became
+          // colorInput/colorInputForeground, and the old names now fail the
+          // type check rather than being ignored.
+          colorInput: 'rgba(255, 255, 255, 0.05)',
+          colorInputForeground: '#e2e2e2',
         },
       }}
     >

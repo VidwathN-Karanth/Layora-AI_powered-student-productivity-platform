@@ -1,0 +1,489 @@
+'use client';
+
+import { useCallback, useMemo, useState } from 'react';
+import {
+  CalendarDays, ChevronLeft, ChevronRight, Loader2, Plus, Repeat, Trash, Users, X,
+} from 'lucide-react';
+
+import { apiFetch, errorMessage, readJson } from '@/lib/apiClient';
+import { formatLongDate, formatMonthLabel } from '@/lib/dateFormat';
+import { REPEAT_LABEL, REPEAT_RULES, expandByDate, toKey, type RepeatRule } from '@/lib/recurrence';
+import { useAdmin } from '../AdminContext';
+import { PanelError, SectionHeader } from '../_components/PanelState';
+import { useSectionData } from '../_components/useSectionData';
+
+/* ────────────────────────────────────────────────────────────────
+   The department calendar, as a calendar.
+
+   Staff used to publish events into a table of rows, while students read them
+   on a month grid — so the person creating "internal assessment 2" could not
+   see it land next to the lab it clashes with. This is the student's calendar
+   with the two things staff need on top: an audience for each entry, and the
+   ability to remove one.
+   ──────────────────────────────────────────────────────────────── */
+
+interface StaffEvent {
+  id: string;
+  title: string;
+  description: string | null;
+  /** The first occurrence; a repeating entry is stored once. */
+  eventDate: string;
+  repeat?: RepeatRule | null;
+  repeatUntil?: string | null;
+  audience: string;
+  creatorName: string | null;
+  isStaff: boolean;
+}
+
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+/** The 6x7 grid for a month, Monday-first, padded with neighbouring days. */
+function buildGrid(year: number, month: number): Date[] {
+  const first = new Date(year, month, 1);
+  const offset = (first.getDay() + 6) % 7; // shift Sunday=0 to Monday=0
+  const start = new Date(year, month, 1 - offset);
+  return Array.from({ length: 42 }, (_, i) =>
+    new Date(start.getFullYear(), start.getMonth(), start.getDate() + i)
+  );
+}
+
+export default function AdminEventsPage() {
+  const { selectedCohort } = useAdmin();
+
+  const today = useMemo(() => new Date(), []);
+  const todayKey = toKey(today);
+
+  const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const [events, setEvents] = useState<StaffEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const [selected, setSelected] = useState(todayKey);
+  const [daySheetOpen, setDaySheetOpen] = useState(false);
+
+  const [showForm, setShowForm] = useState(false);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [repeat, setRepeat] = useState<RepeatRule>('none');
+  const [repeatUntil, setRepeatUntil] = useState('');
+  const [audience, setAudience] = useState<'cohort' | 'everyone'>('cohort');
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    // A half-written event belongs to the year it was started in.
+    setShowForm(false);
+    try {
+      const data = await readJson<{ events?: StaffEvent[] }>(
+        await apiFetch(`/api/admin/events?cohort=${encodeURIComponent(selectedCohort)}`)
+      );
+      setEvents(data.events || []);
+    } catch (err) {
+      setError(errorMessage(err, 'Could not load the department calendar.'));
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedCohort]);
+
+  useSectionData(load);
+
+  const grid = useMemo(() => buildGrid(cursor.getFullYear(), cursor.getMonth()), [cursor]);
+
+  // One stored row can occupy many cells: a weekly seminar shows on all of its
+  // Tuesdays without a row per week existing anywhere.
+  const byDate = useMemo(
+    () => expandByDate(events, toKey(grid[0]), toKey(grid[grid.length - 1])),
+    [events, grid]
+  );
+
+  // The selected day can sit outside the drawn month, so expand it on its own.
+  const selectedEvents = useMemo(
+    () => expandByDate(events, selected, selected).get(selected) || [],
+    [events, selected]
+  );
+
+  const resetForm = () => {
+    setTitle('');
+    setDescription('');
+    setRepeat('none');
+    setRepeatUntil('');
+    setAudience('cohort');
+    setShowForm(false);
+  };
+
+  const publish = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) return;
+
+    setSaving(true);
+    setError('');
+    try {
+      await readJson(await apiFetch('/api/admin/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          description,
+          eventDate: selected,
+          repeat,
+          repeatUntil: repeat === 'none' ? null : repeatUntil || null,
+          audience: audience === 'everyone' ? 'Everyone' : selectedCohort,
+        }),
+      }));
+      resetForm();
+      await load();
+    } catch (err) {
+      setError(errorMessage(err, 'Could not publish the event.'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async (event: StaffEvent) => {
+    // Removing a series is not the same as removing one day of it, so say which.
+    const repeating = !!event.repeat && event.repeat !== 'none';
+    const question = repeating
+      ? `"${event.title}" repeats. Removing it deletes every occurrence, not just this day. Students will no longer see it. Continue?`
+      : `Remove "${event.title}" from the calendar? Students will no longer see it.`;
+    if (!confirm(question)) return;
+
+    setError('');
+    try {
+      await readJson(await apiFetch(`/api/admin/events?id=${encodeURIComponent(event.id)}`, { method: 'DELETE' }));
+      setEvents((prev) => prev.filter((e) => e.id !== event.id));
+    } catch (err) {
+      setError(errorMessage(err, 'Could not remove the event.'));
+    }
+  };
+
+  const shiftMonth = (delta: number) =>
+    setCursor((c) => new Date(c.getFullYear(), c.getMonth() + delta, 1));
+
+  /* Rendered twice — as the desktop column and as the phone sheet — so the two
+     can never drift apart. */
+  const dayPanel = (
+    <>
+      <div className="border-b border-outline-variant pb-2">
+        <h3 className="text-xs font-mono font-bold tracking-wider text-primary">
+          {formatLongDate(selected)}
+        </h3>
+        <p className="text-[9px] font-mono text-outline mt-0.5">
+          {selectedEvents.length === 0
+            ? 'Nothing scheduled'
+            : `${selectedEvents.length} event${selectedEvents.length === 1 ? '' : 's'}`}
+        </p>
+      </div>
+
+      <div className="space-y-2.5">
+        {selectedEvents.map((e) => (
+          <div
+            key={e.id}
+            className={`p-3 rounded-xl border ${
+              e.audience === 'Everyone'
+                ? 'border-violet-500/30 bg-violet-950/15'
+                : 'border-amber-500/25 bg-amber-950/15'
+            }`}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-on-surface break-words">{e.title}</p>
+                {e.description && (
+                  <p className="text-[10px] text-outline mt-1 leading-relaxed break-words">{e.description}</p>
+                )}
+              </div>
+              <button
+                onClick={() => remove(e)}
+                aria-label={`Remove ${e.title}`}
+                className="p-1 rounded text-outline hover:text-red-400 transition cursor-pointer shrink-0"
+              >
+                <Trash className="w-3 h-3" />
+              </button>
+            </div>
+            <div className="flex items-center gap-2.5 mt-2 flex-wrap">
+              <span className="inline-flex items-center gap-1 text-[8px] font-mono font-bold uppercase tracking-wider text-outline">
+                <Users className="w-2.5 h-2.5" />
+                {e.audience === 'Everyone' ? 'Every year' : e.audience}
+              </span>
+              {e.repeat && e.repeat !== 'none' && (
+                <span className="inline-flex items-center gap-1 text-[8px] font-mono font-bold uppercase tracking-wider text-primary">
+                  <Repeat className="w-2.5 h-2.5" />
+                  {REPEAT_LABEL[e.repeat]}
+                  {e.repeatUntil ? ` until ${e.repeatUntil}` : ''}
+                </span>
+              )}
+              {e.creatorName && (
+                <span className="text-[8px] font-mono uppercase tracking-wider text-outline">
+                  by {e.creatorName}
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {showForm ? (
+        <form onSubmit={publish} className="space-y-2.5 pt-1">
+          <input
+            autoFocus
+            value={title}
+            onChange={(ev) => setTitle(ev.target.value)}
+            placeholder="e.g. Internal assessment 2"
+            maxLength={120}
+            className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+          />
+          <textarea
+            value={description}
+            onChange={(ev) => setDescription(ev.target.value)}
+            placeholder="Details (optional)"
+            rows={2}
+            maxLength={500}
+            className="w-full bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary resize-none"
+          />
+
+          <div className="grid grid-cols-2 gap-2">
+            <label className="block">
+              <span className="block text-[9px] font-mono text-outline mb-1">Repeat</span>
+              <select
+                value={repeat}
+                onChange={(ev) => setRepeat(ev.target.value as RepeatRule)}
+                className="w-full bg-surface-container border border-outline-variant rounded-lg px-2 py-1.5 text-[11px] text-on-surface focus:outline-none focus:border-primary cursor-pointer"
+              >
+                {REPEAT_RULES.map((r) => (
+                  <option key={r} value={r}>{REPEAT_LABEL[r]}</option>
+                ))}
+              </select>
+            </label>
+            {repeat !== 'none' && (
+              <label className="block">
+                <span className="block text-[9px] font-mono text-outline mb-1">Until (optional)</span>
+                <input
+                  type="date"
+                  lang="en-GB"
+                  value={repeatUntil}
+                  min={selected}
+                  onChange={(ev) => setRepeatUntil(ev.target.value)}
+                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-2 py-1.5 text-[11px] text-on-surface focus:outline-none focus:border-primary cursor-pointer"
+                />
+              </label>
+            )}
+          </div>
+
+          {/* Posting department-wide has to be a deliberate choice, so the
+              audience is explicit rather than inferred from the year selector. */}
+          <div className="space-y-1">
+            <span className="block text-[9px] font-mono text-outline">Who sees it</span>
+            <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-white/5 border border-outline-variant">
+              {([
+                { key: 'cohort' as const, label: `${selectedCohort} only` },
+                { key: 'everyone' as const, label: 'Every year' },
+              ]).map((opt) => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => setAudience(opt.key)}
+                  aria-pressed={audience === opt.key}
+                  className={`px-2.5 py-1.5 rounded-lg text-[10px] font-mono font-bold uppercase tracking-wider transition cursor-pointer ${
+                    audience === opt.key ? 'bg-violet-500 text-white' : 'text-outline hover:text-on-surface'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={saving || !title.trim()}
+              className="bg-primary hover:bg-primary/90 text-white rounded-lg px-3 py-1.5 text-xs font-mono font-bold transition cursor-pointer flex items-center gap-1.5 disabled:opacity-40"
+            >
+              {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+              Publish
+            </button>
+            <button
+              type="button"
+              onClick={resetForm}
+              className="border border-outline-variant hover:border-outline text-outline hover:text-on-surface rounded-lg px-3 py-1.5 text-xs font-mono transition cursor-pointer"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      ) : (
+        <button
+          onClick={() => setShowForm(true)}
+          className="w-full flex items-center justify-center gap-1.5 border border-dashed border-outline-variant hover:border-primary text-outline hover:text-primary rounded-xl py-2.5 text-xs font-mono transition cursor-pointer"
+        >
+          <Plus className="w-3.5 h-3.5" /> Publish an event on this day
+        </button>
+      )}
+    </>
+  );
+
+  return (
+    <div className="space-y-6">
+      <SectionHeader
+        icon={CalendarDays}
+        title="Events"
+        subtitle={`What the department has scheduled for ${selectedCohort}, plus anything posted to every year.`}
+      >
+        <button
+          onClick={() => {
+            setSelected(todayKey);
+            setCursor(new Date(today.getFullYear(), today.getMonth(), 1));
+          }}
+          className="px-3.5 py-2 rounded-xl border border-outline-variant bg-white/3 hover:border-primary text-xs font-mono text-outline hover:text-on-surface transition cursor-pointer"
+        >
+          Today
+        </button>
+        <span className="px-3 py-2 rounded-xl border border-outline-variant bg-white/3 text-[10px] font-mono uppercase tracking-wider text-outline">
+          {events.length} scheduled
+        </span>
+      </SectionHeader>
+
+      {error && <PanelError message={error} onRetry={load} />}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* ---- Month grid ---- */}
+        <div className="lg:col-span-2 glass-card rounded-2xl border border-outline-variant overflow-hidden">
+          <div className="p-4 border-b border-outline-variant flex items-center justify-between">
+            <span className="text-sm font-bold text-on-surface">{formatMonthLabel(cursor)}</span>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => shiftMonth(-1)}
+                aria-label="Previous month"
+                className="p-1.5 rounded-lg border border-outline-variant hover:border-primary text-outline hover:text-primary transition cursor-pointer"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => shiftMonth(1)}
+                aria-label="Next month"
+                className="p-1.5 rounded-lg border border-outline-variant hover:border-primary text-outline hover:text-primary transition cursor-pointer"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="p-12 flex items-center justify-center gap-2 text-xs font-mono text-outline">
+              <Loader2 className="w-4 h-4 animate-spin text-primary" /> Loading calendar…
+            </div>
+          ) : (
+            <div className="p-3">
+              <div className="grid grid-cols-7 gap-1 mb-1">
+                {WEEKDAYS.map((d) => (
+                  <div key={d} className="text-center text-[9px] font-mono font-bold uppercase tracking-wider text-outline py-1.5">
+                    {d}
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-7 gap-1">
+                {grid.map((day) => {
+                  const key = toKey(day);
+                  const inMonth = day.getMonth() === cursor.getMonth();
+                  const dayEvents = byDate.get(key) || [];
+                  const isToday = key === todayKey;
+                  const isSelected = key === selected;
+
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => { setSelected(key); setShowForm(false); setDaySheetOpen(true); }}
+                      className={`min-h-[54px] sm:min-h-[84px] rounded-lg p-1 sm:p-1.5 flex flex-col items-stretch gap-1 border text-left transition cursor-pointer overflow-hidden ${
+                        isSelected
+                          ? 'border-primary bg-primary/10'
+                          : 'border-white/20 bg-surface-container hover:border-white/40 hover:bg-surface-container-high'
+                      } ${inMonth ? '' : 'opacity-45'}`}
+                    >
+                      <span className={`text-[11px] font-mono px-0.5 ${
+                        isToday ? 'font-black text-primary' : isSelected ? 'font-bold text-on-surface' : 'text-on-surface-variant'
+                      }`}>
+                        {day.getDate()}
+                      </span>
+
+                      {/* A phone gives each cell about 47px, which truncates a
+                          title to roughly six characters. Dots there, titles
+                          from sm up; the day panel always spells them out. */}
+                      {dayEvents.length > 0 && (
+                        <span className="flex sm:hidden items-center justify-center gap-0.5 mt-auto pb-0.5">
+                          {dayEvents.slice(0, 3).map((e) => (
+                            <span
+                              key={e.id}
+                              className={`w-1.5 h-1.5 rounded-full ${e.audience === 'Everyone' ? 'bg-violet-400' : 'bg-amber-400'}`}
+                            />
+                          ))}
+                        </span>
+                      )}
+
+                      <span className="hidden sm:flex flex-col gap-0.5 min-w-0">
+                        {dayEvents.slice(0, 2).map((e) => (
+                          <span
+                            key={e.id}
+                            title={e.title}
+                            className={`block truncate rounded px-1 py-0.5 text-[9px] font-medium leading-tight ${
+                              e.audience === 'Everyone'
+                                ? 'bg-violet-400/15 text-violet-400 border-l-2 border-violet-400'
+                                : 'bg-amber-400/15 text-amber-500 border-l-2 border-amber-400'
+                            }`}
+                          >
+                            {e.title}
+                          </span>
+                        ))}
+                        {dayEvents.length > 2 && (
+                          <span className="text-[8px] font-mono text-outline px-1">
+                            +{dayEvents.length - 2} more
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center gap-4 px-1 pt-3 mt-1 border-t border-outline-variant/50">
+                <span className="flex items-center gap-1.5 text-[9px] font-mono text-outline">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" /> {selectedCohort} only
+                </span>
+                <span className="flex items-center gap-1.5 text-[9px] font-mono text-outline">
+                  <span className="w-1.5 h-1.5 rounded-full bg-violet-400" /> Every year
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ---- Selected day: a column on wide screens, a sheet on a phone ---- */}
+        <div className="hidden lg:block glass-card rounded-2xl border border-outline-variant p-5 space-y-4">
+          {dayPanel}
+        </div>
+      </div>
+
+      {daySheetOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 flex items-end">
+          <div
+            onClick={() => setDaySheetOpen(false)}
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          />
+          <div className="relative z-10 w-full max-h-[85vh] overflow-y-auto rounded-t-2xl border-t border-outline-variant bg-surface-container p-5 pb-8 space-y-4">
+            <div className="flex justify-center pb-1">
+              <span className="w-10 h-1 rounded-full bg-outline-variant" />
+            </div>
+            <button
+              onClick={() => setDaySheetOpen(false)}
+              aria-label="Close"
+              className="absolute top-4 right-4 p-1.5 rounded-lg border border-outline-variant text-outline hover:text-on-surface transition cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+            {dayPanel}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

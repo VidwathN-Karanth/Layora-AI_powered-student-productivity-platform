@@ -28,6 +28,7 @@ export const ADMIN_ACTIONS = [
   'library.create',
   'library.delete',
   'users.export',
+  'resumes.export',
   'stats.sync',
 ] as const;
 

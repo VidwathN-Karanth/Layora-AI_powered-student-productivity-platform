@@ -18,6 +18,7 @@ import OnboardingModal from '@/components/OnboardingModal';
 import ZenMode from '@/components/ZenMode';
 import NotificationAgent from '@/components/NotificationAgent';
 import NotificationCenter from '@/components/NotificationCenter';
+import ExtensionNudge from '@/components/ExtensionNudge';
 import LayoraMark from '@/components/LayoraMark';
 import ExtensionPrompt from '@/components/ExtensionPrompt';
 
@@ -483,6 +484,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <ZenMode open={zenOpen} onClose={() => setZenOpen(false)} />
       <NotificationAgent />
       <NotificationCenter />
+      <ExtensionNudge />
       <OnboardingModal />
       <ExtensionPrompt />
     </div>

@@ -1,12 +1,30 @@
 import { NextResponse } from 'next/server';
 import { Event, PERSONAL_AUDIENCE } from '@/lib/models/Event';
-import { requireStudent } from '@/lib/authz';
+import { getRequester, requireStudent } from '@/lib/authz';
 import { REPEAT_RULES, isDateKey, isRepeatRule } from '@/lib/recurrence';
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-/** The student's calendar: their own entries plus staff entries for their year. */
+/**
+ * The caller's calendar: a student's own entries plus staff entries for their
+ * year, or — for an admin — every staff entry the department has published.
+ *
+ * Admins are read-only here. They post through /api/admin/events, which is
+ * where the audience is chosen; this exists so the reminder agent can tell a
+ * lecturer what is on today without first knowing which year to ask about.
+ */
 export async function GET() {
+  const requester = await getRequester();
+  if (requester?.isAdmin) {
+    try {
+      return NextResponse.json({ cohort: null, events: await Event.findAllStaff() });
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      console.error('GET events (admin) failed:', errMsg);
+      return NextResponse.json({ error: errMsg }, { status: 500 });
+    }
+  }
+
   const guard = await requireStudent();
   if (!guard.ok) return guard.response;
 
