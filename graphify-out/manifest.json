@@ -306,9 +306,9 @@
     "semantic_hash": ""
   },
   "src/app/dashboard/layout.tsx": {
-    "mtime": 1787935930.6975813,
-    "seen": 1788714586.3166342,
-    "ast_hash": "4b4754963845eefde7712d0ebdffea03",
+    "mtime": 1788736730.6990318,
+    "seen": 1788737034.693992,
+    "ast_hash": "c9a498b04d6fadbb7f5525e1fdd43c7e",
     "semantic_hash": ""
   },
   "src/app/dashboard/leaderboard/page.tsx": {
@@ -336,10 +336,10 @@
     "semantic_hash": "7b5a0ebb3f99ae60baef67ddaf1e2d26"
   },
   "src/app/dashboard/settings/page.tsx": {
-    "mtime": 1787851355.5743861,
-    "seen": 1787913787.6346755,
-    "ast_hash": "91487997f57984fc1ab8731b73cc9c25",
-    "semantic_hash": "91487997f57984fc1ab8731b73cc9c25"
+    "mtime": 1788736837.943295,
+    "seen": 1788737034.6939971,
+    "ast_hash": "5a0bd1c5bc33d0698c280e4d790a237b",
+    "semantic_hash": ""
   },
   "src/app/dashboard/tasks/page.tsx": {
     "mtime": 1787288576.3450184,
@@ -348,10 +348,10 @@
     "semantic_hash": "88e9ad22148987327672738ed612b40c"
   },
   "src/app/extension/page.tsx": {
-    "mtime": 1787847253.0719686,
-    "seen": 1787913787.6346784,
-    "ast_hash": "042742e5dc1d69f47e521d181c29b0bd",
-    "semantic_hash": "042742e5dc1d69f47e521d181c29b0bd"
+    "mtime": 1788737717.725942,
+    "seen": 1788737768.7058592,
+    "ast_hash": "c6b0d8f91c7eb710944835a272ab5073",
+    "semantic_hash": ""
   },
   "src/app/icon.tsx": {
     "mtime": 1787935704.316945,
@@ -420,9 +420,9 @@
     "semantic_hash": "969f9f64f4a944e5fc7e595fa656e1f8"
   },
   "src/components/ExtensionInstall.tsx": {
-    "mtime": 1788112106.818489,
-    "seen": 1788714586.3166509,
-    "ast_hash": "57f8059e78d47ca540ed46b68287259f",
+    "mtime": 1788736762.9069495,
+    "seen": 1788737034.6940107,
+    "ast_hash": "bf3b9e90a1ab8bdda39bb4f2a0935875",
     "semantic_hash": ""
   },
   "src/components/InfoPopover.tsx": {
@@ -903,6 +903,18 @@
     "mtime": 1788670180.5438893,
     "seen": 1788714586.3167243,
     "ast_hash": "879063999890183924b384610d569e18",
+    "semantic_hash": ""
+  },
+  "src/components/ExtensionPrompt.tsx": {
+    "mtime": 1788736708.8414915,
+    "seen": 1788737034.694012,
+    "ast_hash": "001da3e7424e0a0fb9699d00bbf66534",
+    "semantic_hash": ""
+  },
+  "src/lib/extension.ts": {
+    "mtime": 1788737511.3468213,
+    "seen": 1788737551.990335,
+    "ast_hash": "26523ccbb952412da5df3cc3b21c2225",
     "semantic_hash": ""
   }
 }

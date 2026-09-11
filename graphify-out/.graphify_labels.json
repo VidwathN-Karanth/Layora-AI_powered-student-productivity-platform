@@ -1,5 +1,5 @@
 {
-  "0": "useStore",
+  "0": "apiFetch",
   "1": "authz.ts",
   "2": "Event.ts",
   "3": "extensionAuth.ts",
@@ -29,12 +29,12 @@
   "27": "leetcodeService.ts",
   "28": "Layora: Autonomous AI Student Productivity Suite",
   "29": "package.json",
-  "30": "requireAdmin",
+  "30": "supabaseAdmin.ts",
   "31": "Resource Vault",
   "32": "Generative Timetable Compiler",
   "33": "syncLogic.ts",
   "34": "build-zip.py",
-  "35": "ExtensionInstall.tsx",
+  "35": "useStore",
   "36": "icon.tsx",
   "37": "Main Workspace Dashboard",
   "38": "POST",
@@ -49,10 +49,11 @@
   "47": "delete/route.ts",
   "48": "global/route.ts",
   "49": "upload-drive/route.ts",
-  "50": "getRequester",
+  "50": "dateFormat.ts",
   "51": "calendar/courses/route.ts",
   "52": "vercel.json",
   "53": "connect.js",
-  "54": "proxy.ts",
-  "55": "draw_mark"
+  "54": "certificates/page.tsx",
+  "55": "draw_mark",
+  "56": "getRequester"
 }
