@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { NextResponse } from 'next/server';
+import { clerkClient } from '@clerk/nextjs/server';
 
 import { getRequester } from './authz';
 import { isAdminEmail } from './admin';
@@ -81,8 +82,27 @@ export async function requireExtensionUser(request: Request): Promise<Guard> {
     const userId = await ExtensionToken.resolve(token);
     if (!userId) return deny(401, 'This extension is not connected to a Layora account.', 'bad_token');
 
+    // Identity for the token's Clerk user id. Prefer the synced `users` row —
+    // it is one cheap query and it carries the display name a student set. But
+    // that row only exists once a student has opened the workspace and synced;
+    // an admin, who lives in the admin console, never has one. So fall back to
+    // Clerk, the source of truth for this id, rather than turning a real admin
+    // or a not-yet-synced student away with a 401.
     const user = await User.findById(userId);
-    const email = (user?.email || '').trim();
+    let email = (user?.email || '').trim();
+    let name = user?.name || '';
+
+    if (!email) {
+      try {
+        const client = await clerkClient();
+        const clerkUser = await client.users.getUser(userId);
+        email = (clerkUser.primaryEmailAddress?.emailAddress || '').trim();
+        name = name || clerkUser.fullName || clerkUser.firstName || '';
+      } catch {
+        // Left for the empty-email check below to turn into a clean 401.
+      }
+    }
+
     if (!email) return deny(401, 'That account no longer exists.', 'no_user');
 
     const admin = isAdminEmail(email);
@@ -95,7 +115,7 @@ export async function requireExtensionUser(request: Request): Promise<Guard> {
       requester: {
         userId,
         email,
-        name: user?.name || email.split('@')[0],
+        name: name || email.split('@')[0],
         isAdmin: admin,
         via: 'token',
       },
