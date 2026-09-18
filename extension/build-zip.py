@@ -75,9 +75,9 @@ def firefox_manifest() -> str:
             "id": GECKO_ID,
             "strict_min_version": "142.0",
             # Required on AMO for new extensions. "none" is the honest answer:
-            # the extension talks to one origin, the student's own Layora
-            # account, and sends nothing anywhere else. Revisit this the day it
-            # gains analytics or a second endpoint.
+            # the extension talks only to the student's own workspaces (Layora
+            # and Club-Crumbs) and sends nothing anywhere else. Revisit this the
+            # day it gains analytics or a third-party endpoint.
             "data_collection_permissions": {"required": ["none"]},
         }
     }

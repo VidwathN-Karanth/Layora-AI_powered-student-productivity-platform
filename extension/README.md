@@ -4,12 +4,28 @@ A Manifest V3 popup that puts a student's quick launchers and course list one
 click from any tab. Chrome, Edge, Brave and any other Chromium browser, and
 Firefox.
 
+## Two workspaces
+
+The popup serves two workspaces — **Layora** and **Club-Crumbs** — from a
+single install. They are the same application deployed at their own origins, so
+they expose an identical `/api/extension/*` API and an identical `/extension`
+connect page; the extension only has to know the two origins and keep the
+tokens apart.
+
+A switcher in the header holds one button per workspace. A button is **disabled
+until that workspace is connected** — pairing happens on the workspace's own
+site (see *How it authenticates*), and that is what enables the button. Pressing
+an enabled button switches the lists, the account line and every outbound link
+to that workspace instantly, because each workspace keeps its own token and its
+own cache. Both can be connected at once.
+
 ## What it does
 
 - **Quicklaunch** — the student's saved links, click to open, `+` to add a new
-  one. A link added here appears on the Layora dashboard too.
+  one. A link added here appears on the active workspace's dashboard too.
 - **Courses** — their courses with platform and progress. Clicking one opens
-  Layora's courses page (Layora stores no per-course URL — see *Known limits*).
+  the active workspace's courses page (neither stores a per-course URL — see
+  *Known limits*).
 
 ## Running it locally
 
@@ -54,11 +70,13 @@ The popup does **not** rely on the Layora session cookie. A fetch from a
 `chrome-extension://` page is cross-site and Clerk's session cookie is
 `SameSite=Lax`, so the browser will not attach it.
 
-Instead: the student presses Connect on Layora's `/extension` page, which mints
-a token (`POST /api/extension/token`) and posts it to its own window.
-`connect.js` — a content script that only runs on that page — relays it to the
-service worker, which stores it in `chrome.storage.local`. Every API call then
-carries `Authorization: Bearer …`.
+Instead: the student presses Connect on a workspace's `/extension` page, which
+mints a token (`POST /api/extension/token`) and posts it to its own window.
+`connect.js` — a content script that runs on both workspaces' `/extension`
+pages — relays it to the service worker. The worker files the token under the
+workspace the message came *from* (`serviceForOrigin`), so a Club-Crumbs token
+can never land in the Layora slot, and stores it in `chrome.storage.local`.
+Every API call then carries `Authorization: Bearer …` against that workspace.
 
 The API still accepts a session cookie as well, so the same endpoints work from
 a signed-in tab, and so this can move to cookie auth later without a rewrite.
@@ -70,11 +88,11 @@ on every request, and can be revoked per browser from the same page.
 
 | File | Job |
 |---|---|
-| `manifest.json` | MV3 config for Chromium. `storage` + `alarms`, host permission for the Layora origin only. The Firefox manifest is generated from it by `build-zip.py` |
-| `popup.html/.css/.js` | The 360×480 popup: two tabs, add form, cache-first rendering |
-| `lib.js` | Storage helpers and the API wrapper, shared by popup and worker |
-| `background.js` | Receives the pairing token, refreshes the cache every 15 min |
-| `connect.js` | Content script on Layora's `/extension` page; relays the token |
+| `manifest.json` | MV3 config for Chromium. `storage` + `alarms`, host permission for both workspace origins. The Firefox manifest is generated from it by `build-zip.py` |
+| `popup.html/.css/.js` | The 360×480 popup: workspace switcher, two tabs, add form, cache-first rendering |
+| `lib.js` | The `SERVICES` map, per-workspace storage helpers and the API wrapper, shared by popup and worker |
+| `background.js` | Files an incoming pairing token by origin, refreshes each connected workspace's cache every 15 min |
+| `connect.js` | Content script on both workspaces' `/extension` pages; relays the token |
 | `build-zip.py` | Packages the folder for distribution |
 
 ## Cross-browser notes
@@ -99,13 +117,17 @@ shares one scope, so a top-level `const` in `connect.js` would collide with an
 identically named one in any sibling script and silently abort both. That is
 why `connect.js` is wrapped in an IIFE.
 
-## Pointing it at another deployment
+## Workspaces and origins
 
-The origin appears in three places and all three must agree:
+Each workspace's origin appears in two files, and every copy must agree:
 
-- `LAYORA_ORIGIN` in `lib.js`
-- `host_permissions` in `manifest.json`
-- `externally_connectable.matches` and `content_scripts.matches` in `manifest.json`
+- the `SERVICES` map in `lib.js` (id, label, origin)
+- `host_permissions`, `externally_connectable.matches` and
+  `content_scripts.matches` in `manifest.json`
+
+To add or move a workspace, edit those, then re-run `build-zip.py`. Nothing else
+references an origin directly — the popup, worker and content script all work in
+terms of a workspace id or the page's own origin.
 
 ## Known limits
 

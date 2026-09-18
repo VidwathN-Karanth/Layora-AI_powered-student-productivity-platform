@@ -18,16 +18,16 @@
     "semantic_hash": "6c4307ffa009658f5c97f5629094c0c2"
   },
   "extension/background.js": {
-    "mtime": 1787847804.4221895,
-    "seen": 1787913787.6345503,
-    "ast_hash": "1a0292a0058ddfb093eb31b5c6581ae5",
-    "semantic_hash": "1a0292a0058ddfb093eb31b5c6581ae5"
+    "mtime": 1789173166.0879138,
+    "seen": 1789224154.8222554,
+    "ast_hash": "f60a9af440f36556e1ecc6d6d374c4db",
+    "semantic_hash": ""
   },
   "extension/build-zip.py": {
-    "mtime": 1787851362.0062342,
-    "seen": 1787913787.634552,
-    "ast_hash": "444a722fb6415d57eafc351f6d7d3246",
-    "semantic_hash": "444a722fb6415d57eafc351f6d7d3246"
+    "mtime": 1789173762.6381176,
+    "seen": 1789224154.8222594,
+    "ast_hash": "f701cc6517e72405f4500424c36630c2",
+    "semantic_hash": ""
   },
   "extension/connect.js": {
     "mtime": 1787849050.4553227,
@@ -36,22 +36,22 @@
     "semantic_hash": "d27bd790d06d058d1555500e3e62e1eb"
   },
   "extension/lib.js": {
-    "mtime": 1787847804.4211879,
-    "seen": 1787913787.6345556,
-    "ast_hash": "ee1a7bee58da33e3e244d3bd08c9eb26",
-    "semantic_hash": "ee1a7bee58da33e3e244d3bd08c9eb26"
+    "mtime": 1789173146.764865,
+    "seen": 1789224154.822266,
+    "ast_hash": "217079dff49c51491ba7803cef3d81b3",
+    "semantic_hash": ""
   },
   "extension/manifest.json": {
-    "mtime": 1787755607.919082,
-    "seen": 1787913787.634557,
-    "ast_hash": "f4cf6dc3e3c97f8cd21e6e98c8be5d73",
-    "semantic_hash": "f4cf6dc3e3c97f8cd21e6e98c8be5d73"
+    "mtime": 1789173174.6667833,
+    "seen": 1789224154.8222685,
+    "ast_hash": "303e585668143df2a8eac5cee38a18de",
+    "semantic_hash": ""
   },
   "extension/popup.js": {
-    "mtime": 1787847776.9373379,
-    "seen": 1787913787.634558,
-    "ast_hash": "3095361ff38692e3089f0a9f897513a0",
-    "semantic_hash": "3095361ff38692e3089f0a9f897513a0"
+    "mtime": 1789173381.6651678,
+    "seen": 1789224154.8222709,
+    "ast_hash": "6dc6f5e1133cbe4f16773a17935207a6",
+    "semantic_hash": ""
   },
   "next.config.ts": {
     "mtime": 1786634712.1246645,
@@ -522,10 +522,10 @@
     "semantic_hash": "7d8be01db43f203e0a123db25e326a2d"
   },
   "src/lib/extensionAuth.ts": {
-    "mtime": 1787759408.777588,
-    "seen": 1787913787.6347218,
-    "ast_hash": "6cb7a6b531cb7964b7bd1dcebff920d6",
-    "semantic_hash": "6cb7a6b531cb7964b7bd1dcebff920d6"
+    "mtime": 1789224118.5454416,
+    "seen": 1789224154.8225284,
+    "ast_hash": "2e1cbb20b608d02586459fc0933b0232",
+    "semantic_hash": ""
   },
   "src/lib/extensionData.ts": {
     "mtime": 1787761697.2574878,
@@ -684,16 +684,16 @@
     "semantic_hash": ""
   },
   "extension/README.md": {
-    "mtime": 1788112236.2272098,
-    "seen": 1788714586.3166957,
-    "ast_hash": "5692fe740bb62b49622d59f1a6164b34",
+    "mtime": 1789173428.431882,
+    "seen": 1789224154.8226058,
+    "ast_hash": "5680a88da1a88655531d352236bdce11",
     "semantic_hash": ""
   },
   "extension/popup.html": {
-    "mtime": 1787760321.1879983,
-    "seen": 1787913787.6347628,
-    "ast_hash": "4dda76732ef4d54f8d70491578b98df0",
-    "semantic_hash": "4dda76732ef4d54f8d70491578b98df0"
+    "mtime": 1789173217.987784,
+    "seen": 1789224154.8226078,
+    "ast_hash": "156a7445b7cb585727cbd2293e15918f",
+    "semantic_hash": ""
   },
   "public/googled4e1c5fef53d8763.html": {
     "mtime": 1786107530.30976,

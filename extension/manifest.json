@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Layora Quick Access",
-  "version": "1.0.0",
-  "description": "Your Layora quick launchers and courses, one click from any tab.",
+  "version": "1.1.0",
+  "description": "Your Layora and Club-Crumbs quick launchers and courses, one click from any tab.",
   "action": {
     "default_popup": "popup.html",
     "default_title": "Layora Quick Access"
@@ -12,11 +12,13 @@
     "alarms"
   ],
   "host_permissions": [
-    "https://layora239.vercel.app/*"
+    "https://layora239.vercel.app/*",
+    "https://club-crumbs.vercel.app/*"
   ],
   "externally_connectable": {
     "matches": [
-      "https://layora239.vercel.app/*"
+      "https://layora239.vercel.app/*",
+      "https://club-crumbs.vercel.app/*"
     ]
   },
   "background": {
@@ -31,7 +33,8 @@
   "content_scripts": [
     {
       "matches": [
-        "https://layora239.vercel.app/extension*"
+        "https://layora239.vercel.app/extension*",
+        "https://club-crumbs.vercel.app/extension*"
       ],
       "js": [
         "connect.js"

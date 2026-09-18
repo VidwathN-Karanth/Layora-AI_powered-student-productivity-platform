@@ -4,11 +4,16 @@
  * Draws the cache first and revalidates behind it, so opening this feels
  * instant even on a slow connection. Every list item is a real <button>, so
  * the whole thing works from the keyboard without extra handling.
+ *
+ * Two workspaces, Layora and Club-Crumbs, share this one popup. Each keeps its
+ * own token and its own cache, so switching between them is instant; the header
+ * switcher only enables a workspace once it is connected.
  */
 
 import {
-  CONNECT_URL, COURSES_URL, DASHBOARD_URL, api, ext, fetchAll, getLastTab,
-  getToken, readCache, setLastTab, writeCache,
+  SERVICES, SERVICE_IDS, api, clearToken, connectedServices, ext, fetchAll,
+  getActiveService, getLastTab, migrateLegacy, readCache, serviceUrls,
+  setActiveService, setLastTab, writeCache,
 } from './lib.js';
 
 const el = (id) => document.getElementById(id);
@@ -16,9 +21,15 @@ const el = (id) => document.getElementById(id);
 const ui = {
   loading: el('loading'),
   gate: el('gate'),
+  gateTitle: el('gate-title'),
+  gateBody: el('gate-body'),
+  gateActions: el('gate-actions'),
   app: el('app'),
   who: el('who'),
   notice: el('notice'),
+  openDashboard: el('open-dashboard'),
+  openCourses: el('open-courses'),
+  switchBtns: { layora: el('svc-layora'), clubcrumbs: el('svc-clubcrumbs') },
   tabs: { launchers: el('tab-launchers'), courses: el('tab-courses') },
   panels: { launchers: el('panel-launchers'), courses: el('panel-courses') },
   launchers: el('launchers'),
@@ -33,9 +44,13 @@ const ui = {
   addSubmit: el('add-submit'),
 };
 
+/** The workspace the popup is currently showing. */
+let active = 'layora';
 let state = { launchers: [], courses: [] };
 /** The launcher currently being dragged, if any. */
 let dragId = null;
+
+const activeLabel = () => SERVICES[active].label;
 
 function closeMenus() {
   for (const menu of document.querySelectorAll('.menu')) menu.hidden = true;
@@ -193,12 +208,14 @@ function courseRow(course) {
   const li = document.createElement('li');
 
   // The course itself, not our page about it. Only a course saved without a
-  // link falls back to Layora, where they can add one.
-  const target = course.url || COURSES_URL;
+  // link falls back to the workspace, where they can add one.
+  const target = course.url || serviceUrls(active).courses;
 
   const row = document.createElement('button');
   row.className = 'row';
-  row.title = course.url ? `Continue ${course.name} at ${course.platform}` : `Open ${course.name} in Layora`;
+  row.title = course.url
+    ? `Continue ${course.name} at ${course.platform}`
+    : `Open ${course.name} in ${activeLabel()}`;
   row.addEventListener('click', () => openTab(target));
 
   row.append(fallbackIcon(course.platform || course.name));
@@ -238,11 +255,143 @@ function render() {
 
 function showTab(which) {
   for (const key of ['launchers', 'courses']) {
-    const active = key === which;
-    ui.tabs[key].setAttribute('aria-selected', String(active));
-    ui.panels[key].hidden = !active;
+    const isActive = key === which;
+    ui.tabs[key].setAttribute('aria-selected', String(isActive));
+    ui.panels[key].hidden = !isActive;
   }
   void setLastTab(which);
+}
+
+/* ── workspace switching ─────────────────────────────────────── */
+
+/** The account line under the header, e.g. "Asha Rao · Club-Crumbs". */
+function accountLine(me) {
+  const name = (me && me.name) || '';
+  return name ? `${name} · ${activeLabel()}` : activeLabel();
+}
+
+/** Paint the two switch buttons from what is connected. */
+function renderSwitch(connected) {
+  for (const id of SERVICE_IDS) {
+    const btn = ui.switchBtns[id];
+    const isConnected = connected.includes(id);
+    btn.disabled = !isConnected;
+    btn.setAttribute('aria-pressed', String(id === active && isConnected));
+    btn.title = isConnected
+      ? `Show ${SERVICES[id].label}`
+      : `Sign in on ${new URL(SERVICES[id].origin).host} and press Connect to enable`;
+  }
+}
+
+/** Outbound links and labels that depend on the active workspace. */
+function applyServiceChrome() {
+  ui.openDashboard.title = `Open the ${activeLabel()} dashboard`;
+  ui.openCourses.textContent = `Open courses in ${activeLabel()}`;
+}
+
+function showApp() {
+  ui.loading.hidden = true;
+  ui.gate.hidden = true;
+  ui.app.hidden = false;
+}
+
+function showGate(connected) {
+  ui.loading.hidden = true;
+  ui.app.hidden = true;
+  ui.who.hidden = true;
+
+  const unconnected = SERVICE_IDS.filter((id) => !connected.includes(id));
+  ui.gateTitle.textContent = connected.length ? `Connect ${activeLabel()}` : 'Connect a workspace';
+
+  ui.gateActions.replaceChildren(
+    ...unconnected.map((id, index) => {
+      const btn = document.createElement('button');
+      btn.className = index === 0 ? 'primary' : 'ghost';
+      btn.textContent = `Open ${SERVICES[id].label}`;
+      btn.addEventListener('click', () => openTab(serviceUrls(id).connect));
+      return btn;
+    })
+  );
+
+  ui.gate.hidden = false;
+}
+
+/** Which workspace to show: the stored choice if connected, else any connected. */
+async function resolveActive(connected) {
+  const stored = await getActiveService();
+  if (connected.includes(stored)) return stored;
+  if (connected.length) return connected[0];
+  return stored;
+}
+
+async function switchTo(id) {
+  if (id === active) return;
+  const connected = await connectedServices();
+  if (!connected.includes(id)) return; // Button is disabled anyway.
+
+  active = id;
+  await setActiveService(id);
+  notice('');
+  ui.app.hidden = true;
+  ui.loading.hidden = false;
+  await load(connected);
+}
+
+/**
+ * Draw the active workspace: cache first, then a live fetch behind it.
+ *
+ * A revoked token here fails over to the other workspace if one is connected,
+ * rather than dropping the student at a dead end.
+ */
+async function load(connected) {
+  connected = connected || (await connectedServices());
+  renderSwitch(connected);
+
+  if (!connected.includes(active)) {
+    showGate(connected);
+    return;
+  }
+
+  applyServiceChrome();
+  const cache = await readCache(active);
+
+  if (cache && cache.me) {
+    state = { launchers: cache.launchers || [], courses: cache.courses || [] };
+    ui.who.textContent = accountLine(cache.me);
+    ui.who.hidden = false;
+    render();
+    showApp();
+    showTab(await getLastTab());
+  }
+
+  try {
+    const data = await fetchAll(active);
+    state = { launchers: data.launchers, courses: data.courses };
+    ui.who.textContent = accountLine(data.me);
+    ui.who.hidden = false;
+    render();
+    await writeCache(active, data);
+    showApp();
+    showTab(await getLastTab());
+    notice('');
+  } catch (error) {
+    if (error.status === 401 || error.status === 403) {
+      // The token was revoked, or the account left the roster. Drop it and
+      // fall back to whatever else is connected.
+      await clearToken(active);
+      const now = await connectedServices();
+      active = await resolveActive(now);
+      await load(now);
+      return;
+    }
+
+    if (cache && cache.me) {
+      showApp();
+      notice(`Showing your last saved copy — couldn't reach ${activeLabel()}.`, 'error');
+    } else {
+      showGate(connected);
+    }
+  }
 }
 
 /* ── actions ─────────────────────────────────────────────────── */
@@ -254,12 +403,12 @@ async function removeLauncher(launcher) {
   render();
 
   try {
-    const body = await api(`/api/extension/quicklaunchers/?id=${encodeURIComponent(launcher.id)}`, {
+    const body = await api(active, `/api/extension/quicklaunchers/?id=${encodeURIComponent(launcher.id)}`, {
       method: 'DELETE',
     });
     state.launchers = body.launchers || [];
     render();
-    await writeCache({ launchers: state.launchers });
+    await writeCache(active, { launchers: state.launchers });
   } catch (error) {
     state.launchers = previous;
     render();
@@ -282,13 +431,13 @@ async function moveLauncher(sourceId, targetId) {
   render();
 
   try {
-    const body = await api('/api/extension/quicklaunchers/', {
+    const body = await api(active, '/api/extension/quicklaunchers/', {
       method: 'PATCH',
       body: JSON.stringify({ order: ids }),
     });
     state.launchers = body.launchers || state.launchers;
     render();
-    await writeCache({ launchers: state.launchers });
+    await writeCache(active, { launchers: state.launchers });
   } catch (error) {
     state.launchers = previous;
     render();
@@ -305,13 +454,13 @@ async function addLauncher(event) {
   notice('');
 
   try {
-    const body = await api('/api/extension/quicklaunchers/', {
+    const body = await api(active, '/api/extension/quicklaunchers/', {
       method: 'POST',
       body: JSON.stringify({ url, name: ui.name.value.trim() || undefined }),
     });
     state.launchers = body.launchers || [];
     render();
-    await writeCache({ launchers: state.launchers });
+    await writeCache(active, { launchers: state.launchers });
 
     ui.form.reset();
     ui.form.dataset.open = 'false';
@@ -326,11 +475,14 @@ async function addLauncher(event) {
 /* ── boot ────────────────────────────────────────────────────── */
 
 async function boot() {
-  el('open-dashboard').addEventListener('click', () => openTab(DASHBOARD_URL));
+  ui.openDashboard.addEventListener('click', () => openTab(serviceUrls(active).dashboard));
+  ui.openCourses.addEventListener('click', () => openTab(serviceUrls(active).courses));
   ui.tabs.launchers.addEventListener('click', () => showTab('launchers'));
   ui.tabs.courses.addEventListener('click', () => showTab('courses'));
-  el('connect').addEventListener('click', () => openTab(CONNECT_URL));
-  el('open-courses').addEventListener('click', () => openTab(COURSES_URL));
+
+  for (const id of SERVICE_IDS) {
+    ui.switchBtns[id].addEventListener('click', () => void switchTo(id));
+  }
 
   ui.addOpen.addEventListener('click', () => {
     ui.form.dataset.open = 'true';
@@ -346,54 +498,10 @@ async function boot() {
   ui.form.addEventListener('submit', addLauncher);
   document.addEventListener('click', closeMenus);
 
-  const token = await getToken();
-  const cache = await readCache();
-
-  // Something to look at immediately, if we have ever succeeded before.
-  if (cache && cache.me) {
-    state = { launchers: cache.launchers || [], courses: cache.courses || [] };
-    ui.who.textContent = cache.me.name || '';
-    render();
-    ui.loading.hidden = true;
-    ui.app.hidden = false;
-    showTab(await getLastTab());
-  } else if (!token) {
-    // Never connected and no cookie session to fall back on.
-    ui.loading.hidden = true;
-    ui.gate.hidden = false;
-    return;
-  }
-
-  try {
-    const data = await fetchAll();
-    state = { launchers: data.launchers, courses: data.courses };
-    ui.who.textContent = (data.me && data.me.name) || '';
-    render();
-    await writeCache(data);
-
-    ui.loading.hidden = true;
-    ui.gate.hidden = true;
-    ui.app.hidden = false;
-    showTab(await getLastTab());
-    notice('');
-  } catch (error) {
-    if (error.status === 401 || error.status === 403) {
-      // The token was revoked, or the account left the roster.
-      ui.loading.hidden = true;
-      ui.app.hidden = true;
-      ui.gate.hidden = false;
-      notice(error.message, 'error');
-      return;
-    }
-
-    ui.loading.hidden = true;
-    if (cache && cache.me) {
-      notice("Showing your last saved copy — couldn't reach Layora.", 'error');
-    } else {
-      ui.gate.hidden = false;
-      notice(error.message || 'Could not reach Layora.', 'error');
-    }
-  }
+  await migrateLegacy();
+  const connected = await connectedServices();
+  active = await resolveActive(connected);
+  await load(connected);
 }
 
 void boot();
