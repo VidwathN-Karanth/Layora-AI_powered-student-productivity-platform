@@ -721,9 +721,10 @@ export default function RootPage() {
   const router = useRouter();
   const { isLoaded: isAuthLoaded, isSignedIn } = useAuth();
   const { isLoaded: isUserLoaded } = useUser();
-  // Derived, not stored: a state set inside the effect only to mirror what the
-  // props already say costs an extra render pass on every visit.
-  const showLanding = isAuthLoaded && isUserLoaded && !isSignedIn;
+  // Landing is the default: on the server Clerk isn't loaded yet, and gating on
+  // that shipped an empty spinner to Google instead of the page. Only a known
+  // signed-in user gets the hand-off screen.
+  const showLanding = !isSignedIn;
 
   useEffect(() => {
     if (!isAuthLoaded || !isUserLoaded || !isSignedIn) return;
