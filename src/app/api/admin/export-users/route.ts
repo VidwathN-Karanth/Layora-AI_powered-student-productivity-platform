@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     if (!guard.ok) return guard.response;
 
     const { cohort } = guard.requester;
-    const rosterEmails = emailsForCohort(cohort);
+    const rosterEmails = await emailsForCohort(cohort);
     const allowed = new Set(rosterEmails);
 
     const allUsers = await User.findAll();

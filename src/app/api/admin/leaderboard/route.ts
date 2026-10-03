@@ -28,7 +28,7 @@ export async function GET(request: Request) {
 
   try {
     const leaderboard = await DailyActivity.getLeaderboard(range as Range, {
-      restrictToEmails: emailsForCohort(cohort),
+      restrictToEmails: await emailsForCohort(cohort),
     });
     return NextResponse.json({ cohort, range, leaderboard });
   } catch (error: unknown) {

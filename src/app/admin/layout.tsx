@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth, useUser } from '@clerk/nextjs';
 import {
   Activity, Award, CalendarDays, ChevronLeft, ChevronRight, Clock, FileText,
-  Globe, LayoutDashboard, LogOut, Menu, Moon, ScrollText, Settings, Sun, Trophy,
+  Globe, KeyRound, LayoutDashboard, LogOut, Menu, Moon, ScrollText, Settings, Sun, Trophy,
   Users, X,
 } from 'lucide-react';
 
@@ -38,6 +38,7 @@ import { AdminProvider, useAdmin } from './AdminContext';
 const MENU = [
   { name: 'Overview', path: '/admin', icon: LayoutDashboard },
   { name: 'Student Nodes', path: '/admin/students', icon: Users },
+  { name: 'Access', path: '/admin/access', icon: KeyRound },
   { name: 'Leaderboard', path: '/admin/leaderboard', icon: Trophy },
   { name: 'Events', path: '/admin/events', icon: CalendarDays },
   { name: 'Certificates', path: '/admin/certificates', icon: Award },

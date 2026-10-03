@@ -4,8 +4,7 @@ import { NextResponse } from 'next/server';
 import { clerkClient } from '@clerk/nextjs/server';
 
 import { getRequester } from './authz';
-import { isAdminEmail } from './admin';
-import { isOnRoster } from './roster';
+import { getAccess } from './roster';
 import { ExtensionToken } from './models/ExtensionToken';
 import { User } from './models/User';
 
@@ -105,8 +104,8 @@ export async function requireExtensionUser(request: Request): Promise<Guard> {
 
     if (!email) return deny(401, 'That account no longer exists.', 'no_user');
 
-    const admin = isAdminEmail(email);
-    if (!admin && !isOnRoster(email)) {
+    const { isAdmin: admin, cohort } = await getAccess(email);
+    if (!admin && !cohort) {
       return deny(403, 'This account is not on the CSE roster.', 'not_on_roster');
     }
 

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useUser } from '@clerk/nextjs';
-import { Check, Link2, Loader2, Plug, ShieldCheck, Trash2 } from 'lucide-react';
+import { ArrowLeft, Check, Link2, Loader2, Plug, ShieldCheck, Trash2 } from 'lucide-react';
 
 import { apiFetch, readJson, errorMessage } from '@/lib/apiClient';
 import { formatDateTime } from '@/lib/dateFormat';
@@ -29,6 +29,10 @@ type ConnectState = 'idle' | 'working' | 'done' | 'error';
 
 /** Set once this browser has been paired without being asked. */
 const AUTO_CONNECT_KEY = 'layora:ext-autoconnected';
+/** Last automatic reload to pick up a just-installed extension (loop guard). */
+const RELOAD_KEY = 'layora:ext-reloaded-at';
+/** Query flag: connect as soon as the reloaded page sees the extension. */
+const CONNECT_PARAM = 'connect';
 
 export default function ExtensionPage() {
   const { isLoaded, isSignedIn } = useUser();
@@ -37,6 +41,18 @@ export default function ExtensionPage() {
   const [connections, setConnections] = useState<Connection[]>([]);
   const [connectState, setConnectState] = useState<ConnectState>('idle');
   const [message, setMessage] = useState('');
+
+  // Where to send the "back" button, passed as ?return= (e.g. from a student's
+  // or an admin's Settings). Only internal paths are honoured.
+  const [returnTo, setReturnTo] = useState<string | null>(null);
+  useEffect(() => {
+    queueMicrotask(() => {
+      try {
+        const p = new URLSearchParams(window.location.search).get('return');
+        if (p && p.startsWith('/') && !p.startsWith('//')) setReturnTo(p);
+      } catch { /* no query, no back button */ }
+    });
+  }, []);
 
   /** The extension's content script answers a ping; nothing else can. */
   useEffect(() => {
@@ -52,14 +68,36 @@ export default function ExtensionPage() {
     };
 
     window.addEventListener('message', onMessage);
-    window.postMessage({ type: 'layora:ping' }, window.location.origin);
+    const ping = () => window.postMessage({ type: 'layora:ping' }, window.location.origin);
+    ping();
 
-    // No answer in a second means it is not there.
+    // No answer in a second means it is not there — yet. Keep asking, so an
+    // install that injects the bridge into this open tab is picked up live.
     const timer = setTimeout(() => { if (!settled) setInstalled(false); }, 1000);
+    const poll = setInterval(() => { if (!settled) ping(); }, 1500);
+
+    // Coming back from the store tab without the bridge showing up means this
+    // page loaded before the install. Reload once so it gets the content
+    // script, instead of making the student figure that out.
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible' || settled) return;
+      setTimeout(() => {
+        if (settled) return;
+        try {
+          const last = Number(sessionStorage.getItem(RELOAD_KEY) || 0);
+          if (Date.now() - last < 15_000) return;
+          sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+        } catch { return; }
+        window.location.reload();
+      }, 1200);
+    };
+    document.addEventListener('visibilitychange', onVisible);
 
     return () => {
       window.removeEventListener('message', onMessage);
+      document.removeEventListener('visibilitychange', onVisible);
       clearTimeout(timer);
+      clearInterval(poll);
     };
   }, []);
 
@@ -93,6 +131,16 @@ export default function ExtensionPage() {
 
   /** Mint a token and hand it to the extension. No ids, no copy-paste. */
   const connect = useCallback(async (auto = false) => {
+    // The bridge is injected at page load, so a page opened before the install
+    // cannot reach it. Reload and finish the connect on the other side.
+    if (installed === false) {
+      const url = new URL(window.location.href);
+      if (!url.searchParams.has(CONNECT_PARAM)) {
+        url.searchParams.set(CONNECT_PARAM, '1');
+        window.location.replace(url.toString());
+        return;
+      }
+    }
     setConnectState('working');
     setMessage('');
 
@@ -140,7 +188,17 @@ export default function ExtensionPage() {
       setConnectState('error');
       setMessage(errorMessage(err, 'Could not create a connection.'));
     }
-  }, [loadConnections]);
+  }, [loadConnections, installed]);
+
+  // Finish a connect the student asked for before the reload above.
+  useEffect(() => {
+    if (!isSignedIn || installed !== true || connectState !== 'idle') return;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has(CONNECT_PARAM)) return;
+    url.searchParams.delete(CONNECT_PARAM);
+    window.history.replaceState(null, '', url.toString());
+    queueMicrotask(() => { void connect(); });
+  }, [isSignedIn, installed, connectState, connect]);
 
   /* ── Connect it without being asked ──
      A student who has just installed from the store should not have to find a
@@ -186,6 +244,14 @@ export default function ExtensionPage() {
   return (
     <main className="min-h-screen bg-surface text-on-surface px-5 py-16 sm:px-8">
       <div className="mx-auto max-w-3xl space-y-10">
+        {returnTo && (
+          <a
+            href={returnTo}
+            className="inline-flex items-center gap-1.5 text-sm text-on-surface-variant hover:text-on-surface transition"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to settings
+          </a>
+        )}
         <header className="space-y-3">
           <span className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
             Browser extension
@@ -239,7 +305,7 @@ export default function ExtensionPage() {
 
               {installed === false && (
                 <p className="font-mono text-[11px] text-amber-400">
-                  The extension has not been detected on this browser yet. Finish step 1, then reload this page.
+                  The extension has not been detected on this browser yet. Finish step 1, then press Connect — the page will refresh itself if needed.
                 </p>
               )}
 

@@ -242,3 +242,67 @@ alter table public.extension_tokens enable row level security;
 
 create index if not exists idx_extension_tokens_user on public.extension_tokens(user_id);
 create index if not exists idx_extension_tokens_hash on public.extension_tokens(token_hash);
+
+-- 14. Access grants — who may sign in, and as what
+-- Replaced the two hardcoded lists (src/lib/admin.ts and the COHORT_ROSTER in
+-- src/lib/roster.ts) so admins can manage the roster from the console's Access
+-- page with no redeploy. Every gate reads it through src/lib/roster.ts.
+--
+--   role='admin'   → cohort is NULL (staff, not students)
+--   role='student' → cohort is the ONE year they are in
+--
+-- Enforced in the API layer (src/app/api/admin/access/route.ts):
+--   • an email is an admin or a student, never both
+--   • students must have an @mite.ac.in address
+--   • the last admin can never be removed, so the app cannot be locked out
+create table if not exists public.access_grants (
+  id         uuid primary key default gen_random_uuid(),
+  email      text not null,                                     -- normalized lowercase
+  role       text not null check (role in ('admin', 'student')),
+  cohort     text,                                              -- NULL for admin; a year otherwise
+  granted_by text,                                              -- actor email, for the audit trail
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  constraint access_grants_cohort_shape check (
+    (role = 'admin' and cohort is null) or (role = 'student' and cohort is not null)
+  ),
+  -- NULLS NOT DISTINCT so one email cannot be listed as an admin twice.
+  constraint access_grants_unique unique nulls not distinct (email, role, cohort)
+);
+
+-- A student is in exactly one year; moving them replaces the row.
+create unique index if not exists idx_access_grants_one_year
+  on public.access_grants(email) where role = 'student';
+create index if not exists idx_access_grants_cohort_role on public.access_grants(cohort, role);
+
+alter table public.access_grants enable row level security;
+
+-- One-time seed: the lists as they stood in code when the roster moved here,
+-- so nobody signed in loses access. Safe to re-run.
+insert into public.access_grants (email, role, cohort, granted_by) values
+  ('vidwathkaranth@gmail.com', 'admin',   null,       'seed'),
+  ('shreejith@mite.ac.in',     'admin',   null,       'seed'),
+  ('ravinarayana@mite.ac.in',  'admin',   null,       'seed'),
+  ('4mt24cs239@mite.ac.in',    'student', '3rd Year', 'seed'),
+  ('4mt24cs130@mite.ac.in',    'student', '3rd Year', 'seed'),
+  ('4mt24cs140@mite.ac.in',    'student', '3rd Year', 'seed'),
+  ('4mt24cs076@mite.ac.in',    'student', '3rd Year', 'seed'),
+  ('4mt24cs077@mite.ac.in',    'student', '3rd Year', 'seed')
+on conflict do nothing;
+
+-- 15. Mind maps — a student's private learning roadmaps
+-- A graph of topic cards (each with an optional course link) joined by edges.
+-- Grows unbounded and is written on every drag, so it lives in its own table
+-- rather than the user_states blob. Every read/write in src/lib/mapsData.ts is
+-- scoped by owner_id; RLS is on as a backstop with no client policies.
+create table if not exists public.mind_maps (
+  id         uuid primary key default gen_random_uuid(),
+  owner_id   text not null,                                     -- Clerk userId
+  title      text not null,
+  data       jsonb not null default '{"nodes":[],"edges":[]}'::jsonb,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.mind_maps enable row level security;
+
+create index if not exists idx_mind_maps_owner on public.mind_maps(owner_id, updated_at desc);

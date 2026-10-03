@@ -32,7 +32,7 @@ export async function GET(request: Request) {
     if (!guard.ok) return guard.response;
 
     const { cohort } = guard.requester;
-    const rosterEmails = new Set(emailsForCohort(cohort));
+    const rosterEmails = new Set(await emailsForCohort(cohort));
 
     const { data: certs, error } = await supabaseAdmin
       .from('certificates')

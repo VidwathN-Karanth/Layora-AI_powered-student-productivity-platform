@@ -7,8 +7,8 @@ import { emailsForCohort } from '@/lib/roster';
  * Student state rows for one academic year.
  *
  * The console shows one year at a time, so `?cohort=` is required. Cohort
- * membership lives in the roster rather than the database, so the filter is
- * applied here on the email each state row carries.
+ * membership lives in the roster (access_grants), not on the state row, so the
+ * filter is applied here on the email each state row carries.
  */
 export async function GET(request: Request) {
   try {
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
 
     if (error) throw error;
 
-    const rosterEmails = new Set(emailsForCohort(cohort));
+    const rosterEmails = new Set(await emailsForCohort(cohort));
     const scoped = (data || []).filter((row) => {
       const email = (row?.state?.user?.email || '').trim().toLowerCase();
       return rosterEmails.has(email);

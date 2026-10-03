@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   const { cohort } = guard.requester;
 
   try {
-    const rosterEmails = new Set(emailsForCohort(cohort));
+    const rosterEmails = new Set(await emailsForCohort(cohort));
     const users = await User.findAll();
 
     const resumes = users

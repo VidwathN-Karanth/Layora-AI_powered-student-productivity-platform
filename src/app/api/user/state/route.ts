@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
-import { isAdminEmail } from '@/lib/admin';
 import { getRequester } from '@/lib/authz';
 
 export async function GET() {
@@ -40,7 +39,7 @@ export async function GET() {
         // 2. No user_states row found. Check if the user is an admin
         const clerkUser = await currentUser();
         const email = clerkUser?.primaryEmailAddress?.emailAddress || '';
-        if (email && isAdminEmail(email)) {
+        if (email && requester.isAdmin) {
           // Admin users should bypass onboarding
           const adminDefaultState = {
             user: {

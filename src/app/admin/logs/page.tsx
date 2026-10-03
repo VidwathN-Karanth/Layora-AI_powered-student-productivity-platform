@@ -30,6 +30,8 @@ const ACTION_LABEL: Record<string, string> = {
   'users.export': 'Data export',
   'resumes.export': 'CVs downloaded',
   'stats.sync': 'Stats sync',
+  'access.grant': 'Access granted',
+  'access.revoke': 'Access removed',
 };
 
 const ACTION_TONE: Record<string, string> = {
@@ -43,6 +45,8 @@ const ACTION_TONE: Record<string, string> = {
   'users.export': 'bg-amber-500/10 border-amber-500/30 text-amber-300',
   'resumes.export': 'bg-amber-500/10 border-amber-500/30 text-amber-300',
   'stats.sync': 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300',
+  'access.grant': 'bg-violet-500/10 border-violet-500/30 text-violet-300',
+  'access.revoke': 'bg-rose-500/10 border-rose-500/30 text-rose-300',
   default: 'bg-white/5 border-white/10 text-white/50',
 };
 

@@ -530,7 +530,7 @@ export default function SettingsPage() {
             )}
 
             <a
-              href="/extension"
+              href="/extension?return=/dashboard/settings"
               className="flex items-center justify-between gap-3 rounded-xl border border-outline-variant bg-white/2 p-3.5 transition hover:border-primary hover:bg-surface-container cursor-pointer group"
             >
               <span className="min-w-0">

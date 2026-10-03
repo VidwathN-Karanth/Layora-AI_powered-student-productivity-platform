@@ -214,6 +214,40 @@ function platformLabel(raw: string): string {
   }
 }
 
+/**
+ * Adds a course to the student's workspace and returns its id. Used by the
+ * Mind Map pin action to mirror a pinned card into their Courses; the same
+ * cap as launchers keeps a runaway client from bloating the state blob.
+ */
+export async function addCourseToState(
+  userId: string,
+  input: { name: string; platform: string }
+): Promise<string> {
+  const state = (await readState(userId)) || {};
+  const courses = Array.isArray(state.courses) ? [...state.courses] : [];
+
+  if (courses.length >= 60) {
+    throw new Error('You have reached the maximum of 60 courses.');
+  }
+
+  const id = `course-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  // Same shape the web form writes, so the dashboard renders it identically.
+  courses.push({ id, name: input.name.slice(0, 120), platform: input.platform, progress: 0 });
+
+  await writeState(userId, { ...state, courses });
+  return id;
+}
+
+/** Removes a course by id (when a Mind Map card is unpinned). */
+export async function removeCourseFromState(userId: string, courseId: string): Promise<void> {
+  const state = (await readState(userId)) || {};
+  const courses = Array.isArray(state.courses) ? state.courses : [];
+  const remaining = courses.filter((c) => String(c.id) !== courseId);
+  if (remaining.length !== courses.length) {
+    await writeState(userId, { ...state, courses: remaining });
+  }
+}
+
 export async function listCourses(userId: string): Promise<ExtensionCourse[]> {
   const state = await readState(userId);
 

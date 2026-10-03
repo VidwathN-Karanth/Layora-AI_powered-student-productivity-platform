@@ -3,9 +3,8 @@ import 'server-only';
 import { NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
 
-import { isAdminEmail } from './admin';
 import { COHORTS, isCohort, type Cohort } from './cohorts';
-import { getCohortForEmail, isCollegeEmail } from './roster';
+import { getAccess, isCollegeEmail } from './roster';
 
 export type AccessDenialReason = 'signed_out' | 'wrong_domain' | 'not_on_roster';
 
@@ -35,7 +34,9 @@ export async function getRequester(): Promise<Requester | null> {
   const email = user?.primaryEmailAddress?.emailAddress || '';
   const name = user?.fullName || user?.firstName || email.split('@')[0] || 'Student';
 
-  if (isAdminEmail(email)) {
+  const { isAdmin, cohort } = await getAccess(email);
+
+  if (isAdmin) {
     return { userId, email, name, isAdmin: true, cohort: null, allowed: true, denialReason: null };
   }
 
@@ -43,7 +44,6 @@ export async function getRequester(): Promise<Requester | null> {
     return { userId, email, name, isAdmin: false, cohort: null, allowed: false, denialReason: 'wrong_domain' };
   }
 
-  const cohort = getCohortForEmail(email);
   if (!cohort) {
     return { userId, email, name, isAdmin: false, cohort: null, allowed: false, denialReason: 'not_on_roster' };
   }

@@ -30,6 +30,8 @@ export const ADMIN_ACTIONS = [
   'users.export',
   'resumes.export',
   'stats.sync',
+  'access.grant',
+  'access.revoke',
 ] as const;
 
 export type AdminAction = (typeof ADMIN_ACTIONS)[number];

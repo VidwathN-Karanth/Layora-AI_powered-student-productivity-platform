@@ -1,155 +1,229 @@
 import "server-only";
 
+import { supabaseAdmin } from "./supabaseAdmin";
 import {
-  COHORTS,
   COLLEGE_EMAIL_DOMAIN,
+  isCohort,
   normalizeEmail,
   type Cohort,
 } from "./cohorts";
 
 /**
  * ============================================================================
- *  THE CSE DEPARTMENT ROSTER — this is the file the lecturer edits.
+ *  THE CSE DEPARTMENT ROSTER — who may sign in, and as what.
  * ============================================================================
  *
- *  Everything else in Layora is derived from this list. A student's email
- *  decides which leaderboard they compete on, which shared resources they can
- *  see, and which year the admin console shows them under. Nothing about a
- *  cohort is stored in the database, so editing this file is the only step
- *  needed to move someone between years.
+ *  Lives in public.access_grants and is edited from the admin console's Access
+ *  page, so adding a student no longer needs a code change or a redeploy.
+ *  Every gate (the proxy, the API guards, the extension) asks this module.
  *
- *  HOW TO ADD A STUDENT
- *  --------------------
- *  Paste their full college address into the right year's list, in quotes,
- *  with a trailing comma. Case and stray spaces do not matter. Then redeploy.
+ *  A student's year decides which leaderboard they compete on, which shared
+ *  resources they can see, and which year the admin console shows them under.
  *
- *  DO NOT TRY TO DERIVE THE YEAR FROM THE ROLL NUMBER
- *  --------------------------------------------------
- *  The USN prefix does not indicate academic year, and no amount of parsing
- *  will make it:
- *    - Lateral-entry students join directly into 2nd year carrying a '4mt25cs'
- *      prefix while sitting alongside the '4mt24cs' batch.
- *    - A student who fails and repeats a year keeps their original prefix in
- *      the year below their batch.
- *  So '4mt24cs239' being in 3rd Year is not a typo to be "corrected", and any
- *  future attempt to auto-assign or validate cohorts from the roll number
- *  would silently put real students on the wrong leaderboard. Only the
- *  lecturer knows the truth, which is exactly why these lists are manual.
+ *  DO NOT DERIVE THE YEAR FROM THE ROLL NUMBER
+ *  -------------------------------------------
+ *  The USN prefix does not indicate academic year. Lateral-entry students join
+ *  2nd year with the next batch's prefix, and a repeater keeps their original
+ *  prefix in the year below. Only the lecturer knows, so the lists are manual.
  *
  *  THE YEARLY ROLLOVER (once each August)
  *  --------------------------------------
- *  1. Delete the '4th Year' list — those students have graduated.
- *  2. Move '3rd Year' → '4th Year'.
- *  3. Move '2nd Year' → '3rd Year'.
- *  4. Paste the incoming 2nd-year batch into '2nd Year'.
- *  5. Redeploy.
- *  Repeaters and lateral entrants are the exceptions to this shift — move them
- *  by hand rather than with their batch.
+ *  On the Access page, paste the 3rd-year list into 4th Year, then the
+ *  2nd-year list into 3rd Year — adding a student to a year moves them out of
+ *  their old one. Remove the graduating batch, then paste the new 2nd years.
  *
- *  RULES ENFORCED FOR YOU
- *  ----------------------
- *  - An address must end in @mite.ac.in or the student cannot sign in at all.
- *  - An address missing from all three lists cannot sign in; they are shown a
- *    message telling them to ask you to add it. This is deliberate — it means
- *    nobody can ever end up competing outside their year.
- *  - The same address in two lists is a mistake, and the app refuses to start
- *    in development until it is fixed (see the guard at the bottom).
- *
- *  NOTE: admins (see `admin.ts`) are not students and do not belong here.
+ *  RULES
+ *  -----
+ *  - A student needs an @mite.ac.in address and a place in exactly one year.
+ *  - An admin is staff, not a student, and has no year.
+ *  - If the table cannot be read, everyone is denied until it can — the safe
+ *    direction to fail, since there is no hardcoded fallback list.
  * ============================================================================
  */
-export const COHORT_ROSTER: Record<Cohort, string[]> = {
-  "2nd Year": [
-    // e.g. '4mt24cs001@mite.ac.in',
-  ],
 
-  "3rd Year": [
-    "4mt24cs239@mite.ac.in",
-    "4mt24cs130@mite.ac.in",
-    "4mt24cs140@mite.ac.in",
-    "4mt24cs076@mite.ac.in",
-    "4mt24cs077@mite.ac.in",
-  ],
+export type Role = "admin" | "student";
 
-  "4th Year": [
-    // e.g. '4mt22cs001@mite.ac.in',
-  ],
-};
+export interface Grant {
+  email: string;
+  role: Role;
+  /** Null for admins; the year for students. */
+  cohort: Cohort | null;
+}
+
+export interface Access {
+  isAdmin: boolean;
+  /** The student's year. Null for admins and for anyone not on the roster. */
+  cohort: Cohort | null;
+}
+
+const TABLE = "access_grants";
 
 /**
- * Lowercased lookup built once at module load, so a request never scans the
- * roster linearly.
+ * A short per-instance cache of "the grants for this email".
+ *
+ * A protected navigation hits the proxy and then several API guards, each of
+ * which asks this question. Serverless instances are short-lived, so this only
+ * collapses repeats within one instance and expires fast enough that a roster
+ * change is visible everywhere within seconds. Writes bust it immediately.
  */
-const EMAIL_TO_COHORT: Map<string, Cohort> = (() => {
-  const map = new Map<string, Cohort>();
-  const duplicates: string[] = [];
+const CACHE_TTL_MS = 30_000;
+const cache = new Map<string, { at: number; grants: Grant[] }>();
 
-  for (const cohort of COHORTS) {
-    for (const rawEmail of COHORT_ROSTER[cohort]) {
-      const email = normalizeEmail(rawEmail);
-      if (!email) continue;
+function invalidate(email: string): void {
+  cache.delete(email);
+}
 
-      const existing = map.get(email);
-      if (existing && existing !== cohort) {
-        duplicates.push(
-          `${email} is listed under both ${existing} and ${cohort}`,
-        );
-        continue;
-      }
-      map.set(email, cohort);
+async function getGrantsForEmail(email: string): Promise<Grant[]> {
+  if (!email) return [];
+
+  const hit = cache.get(email);
+  if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.grants;
+
+  const { data, error } = await supabaseAdmin
+    .from(TABLE)
+    .select("email, role, cohort")
+    .eq("email", email);
+
+  if (error) {
+    // Not cached, so access comes back the moment the table is readable.
+    console.error("[roster] Could not read access grants; denying:", error.message);
+    return [];
+  }
+
+  const grants: Grant[] = [];
+  for (const row of (data || []) as { role: string; cohort: string | null }[]) {
+    if (row.role === "admin") grants.push({ email, role: "admin", cohort: null });
+    // A student row whose year is no longer a real cohort grants nothing.
+    else if (row.role === "student" && isCohort(row.cohort)) {
+      grants.push({ email, role: "student", cohort: row.cohort });
     }
   }
 
-  if (duplicates.length > 0) {
-    const detail = duplicates.join("; ");
-    // Fail loudly in development so the mistake is fixed before it ships. In
-    // production, keep serving with the first listing rather than taking the
-    // whole department offline mid-term.
-    if (process.env.NODE_ENV !== "production") {
-      throw new Error(`Roster error in src/lib/roster.ts — ${detail}`);
-    }
-    console.error(
-      `[roster] Duplicate roster entries, using the first listing for each: ${detail}`,
-    );
-  }
-
-  return map;
-})();
+  cache.set(email, { at: Date.now(), grants });
+  return grants;
+}
 
 /** Whether this address belongs to the college at all. */
 export function isCollegeEmail(email: string | null | undefined): boolean {
+  return normalizeEmail(email).endsWith(`@${COLLEGE_EMAIL_DOMAIN}`);
+}
+
+/** Everything a gate needs to know about one address, from one cached read. */
+export async function getAccess(email: string | null | undefined): Promise<Access> {
   const normalized = normalizeEmail(email);
-  return normalized.endsWith(`@${COLLEGE_EMAIL_DOMAIN}`);
-}
-
-/** The student's year, or null if they are not on the roster. */
-export function getCohortForEmail(
-  email: string | null | undefined,
-): Cohort | null {
-  return EMAIL_TO_COHORT.get(normalizeEmail(email)) ?? null;
-}
-
-/** Every roster address for one year, lowercased. Used to scope DB queries. */
-/**
- * The one question every gate asks: may this address in?
- *
- * A student needs both a college address and a place on the roster. Kept here,
- * beside the list itself, so the middleware, the API guards and the client gate
- * cannot answer it three slightly different ways.
- */
-export function isOnRoster(email: string | null | undefined): boolean {
-  return isCollegeEmail(email) && getCohortForEmail(email) !== null;
-}
-
-export function emailsForCohort(cohort: Cohort): string[] {
-  return COHORT_ROSTER[cohort].map(normalizeEmail).filter(Boolean);
-}
-
-/** How many students each year has on the roster. For admin diagnostics. */
-export function rosterCounts(): Record<Cohort, number> {
+  const grants = await getGrantsForEmail(normalized);
+  const isAdmin = grants.some((g) => g.role === "admin");
+  const student = grants.find((g) => g.role === "student");
   return {
-    "2nd Year": emailsForCohort("2nd Year").length,
-    "3rd Year": emailsForCohort("3rd Year").length,
-    "4th Year": emailsForCohort("4th Year").length,
+    isAdmin,
+    cohort: !isAdmin && student && isCollegeEmail(normalized) ? student.cohort : null,
   };
+}
+
+/** Every student address in one year, lowercased. Used to scope DB queries. */
+export async function emailsForCohort(cohort: Cohort): Promise<string[]> {
+  const { data, error } = await supabaseAdmin
+    .from(TABLE)
+    .select("email")
+    .eq("role", "student")
+    .eq("cohort", cohort);
+
+  if (error) throw new Error(`Could not read the ${cohort} roster: ${error.message}`);
+  return (data || []).map((r: { email: string }) => normalizeEmail(r.email)).filter(Boolean);
+}
+
+/* ── Writes, for the Access page ─────────────────────────────────────────── */
+
+export interface GrantRow extends Grant {
+  granted_by: string | null;
+  created_at: string;
+}
+
+export async function listGrants(): Promise<GrantRow[]> {
+  const { data, error } = await supabaseAdmin
+    .from(TABLE)
+    .select("email, role, cohort, granted_by, created_at")
+    .order("email", { ascending: true });
+
+  if (error) throw new Error(`Could not load the roster: ${error.message}`);
+  return (data || []) as GrantRow[];
+}
+
+export type AddOutcome =
+  | { ok: true; movedFrom?: Cohort }
+  | { ok: false; reason: string };
+
+/**
+ * Adds one grant. Adding a student who is already in another year moves them,
+ * which is what the yearly rollover is. The caller has already checked that
+ * the actor is an admin.
+ */
+export async function addGrant(
+  input: { email: string; role: Role; cohort: Cohort | null },
+  actorEmail: string,
+): Promise<AddOutcome> {
+  const email = normalizeEmail(input.email);
+  if (!email) return { ok: false, reason: "Empty address" };
+
+  if (input.role === "student" && (!input.cohort || !isCollegeEmail(email))) {
+    return { ok: false, reason: `Not an @${COLLEGE_EMAIL_DOMAIN} address` };
+  }
+
+  invalidate(email);
+  const existing = await getGrantsForEmail(email);
+  const asStudent = existing.find((g) => g.role === "student");
+
+  if (input.role === "admin") {
+    if (existing.some((g) => g.role === "admin")) return { ok: false, reason: "Already an admin" };
+    if (asStudent) return { ok: false, reason: `A student in ${asStudent.cohort} — remove them first` };
+  } else {
+    if (existing.some((g) => g.role === "admin")) return { ok: false, reason: "Already an admin" };
+    if (asStudent?.cohort === input.cohort) return { ok: false, reason: `Already in ${input.cohort}` };
+    if (asStudent) {
+      const { error } = await supabaseAdmin
+        .from(TABLE)
+        .delete()
+        .eq("email", email)
+        .eq("role", "student");
+      if (error) return { ok: false, reason: "Could not move them" };
+    }
+  }
+
+  const { error } = await supabaseAdmin.from(TABLE).insert({
+    email,
+    role: input.role,
+    cohort: input.role === "admin" ? null : input.cohort,
+    granted_by: normalizeEmail(actorEmail) || null,
+  });
+  invalidate(email);
+
+  if (error) {
+    console.error("[roster] addGrant failed:", error.message);
+    return { ok: false, reason: "Could not save" };
+  }
+  return asStudent?.cohort ? { ok: true, movedFrom: asStudent.cohort } : { ok: true };
+}
+
+/** Revokes one grant. Their workspace and history stay, so re-adding restores them. */
+export async function removeGrant(email: string, role: Role): Promise<void> {
+  const normalized = normalizeEmail(email);
+  const { error } = await supabaseAdmin
+    .from(TABLE)
+    .delete()
+    .eq("email", normalized)
+    .eq("role", role);
+  invalidate(normalized);
+  if (error) throw new Error(`Could not remove that grant: ${error.message}`);
+}
+
+/** How many admins exist. Guards the last-admin case. */
+export async function adminCount(): Promise<number> {
+  const { count, error } = await supabaseAdmin
+    .from(TABLE)
+    .select("email", { count: "exact", head: true })
+    .eq("role", "admin");
+  // On a bad read, report one so the delete is refused rather than risk
+  // removing a genuine last admin.
+  if (error) return 1;
+  return count ?? 0;
 }

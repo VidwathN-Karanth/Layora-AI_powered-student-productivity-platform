@@ -66,7 +66,7 @@ export async function GET(request: Request) {
 
   let resumes: { name: string; email: string; url: string; fileName: string | null; uploadedAt: string | null }[];
   try {
-    const rosterEmails = new Set(emailsForCohort(cohort));
+    const rosterEmails = new Set(await emailsForCohort(cohort));
     const users = await User.findAll();
 
     resumes = users
