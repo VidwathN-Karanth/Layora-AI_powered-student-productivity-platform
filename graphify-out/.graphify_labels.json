@@ -1,6 +1,6 @@
 {
   "0": "requireStudent",
-  "1": "requireAdminCohort",
+  "1": "authz.ts",
   "2": "recurrence.ts",
   "3": "extensionData.ts",
   "4": "download/route.ts",
@@ -50,11 +50,8 @@
   "48": "cohorts.ts",
   "49": "upload-drive/route.ts",
   "50": "apiFetch",
-  "51": "syncLogic.ts",
   "52": "vercel.json",
   "53": "connect.js",
-  "54": "global/route.ts",
   "55": "draw_mark",
-  "56": "authz.ts",
-  "58": "link-accounts/route.ts"
+  "58": "syncLogic.ts"
 }
